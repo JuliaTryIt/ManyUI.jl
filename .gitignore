@@ -1,0 +1,40 @@
+# Allowlist .gitignore: nothing is tracked unless a rule below re-includes
+# it. A new kind of file is invisible to git until it is named here -- that
+# is the point: generated output, editor droppings and machine-local state
+# cannot arrive by accident.
+
+# 1. Ignore everything ...
+*
+
+# 2. ... but still descend into directories, so the rules below can match
+#    files nested inside them. Without this git prunes at the first level
+#    and every `!` rule underneath is dead.
+!*/
+
+# 3. Repository metadata
+!/.gitignore
+!/README.md
+!/LICENSE
+!/CHANGELOG.md
+
+# 4. The package
+!/Project.toml
+!/src/**/*.jl
+
+# 5. Tests
+!/test/**/*.jl
+
+# 6. Documentation sources (docs/build/ is generated -- see 8)
+!/docs/Project.toml
+!/docs/make.jl
+!/docs/src/**/*.md
+
+# 7. Continuous integration, issue/PR templates, dependabot
+!/.github/**
+
+# 8. Never tracked, whatever the rules above say. Redundant against `*`,
+#    but stated so the intent survives later edits -- and re-ignoring these
+#    directories stops git walking them at all.
+/Manifest.toml
+/docs/Manifest.toml
+/docs/build/

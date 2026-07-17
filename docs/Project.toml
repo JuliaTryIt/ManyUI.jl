@@ -1,0 +1,3 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DualUI = "4f14d67d-91c5-4d6b-929d-6ac291535b21"

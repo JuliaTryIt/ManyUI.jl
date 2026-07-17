@@ -1,0 +1,28 @@
+name = "DualUI"
+uuid = "4f14d67d-91c5-4d6b-929d-6ac291535b21"
+authors = ["Sebastien Celles <s.celles@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+InlineStrings = "842dd82b-1e85-43dc-bf29-5d0ee9dffc48"
+REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
+Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
+
+[compat]
+Aqua = "0.8"
+DocStringExtensions = "0.9"
+InlineStrings = "1"
+REPL = "1"
+Test = "1"
+TestItemRunner = "1"
+Unicode = "1"
+julia = "1.12"
+
+[extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
+
+[targets]
+test = ["Aqua", "Test", "TestItemRunner"]

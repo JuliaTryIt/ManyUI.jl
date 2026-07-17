@@ -1,0 +1,54 @@
+name: Documentation
+on:
+  push:
+    branches:
+      - main
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  docs:
+    name: Build documentation
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      # `read`, not `write`: this job deliberately does NOT publish to
+      # GitHub Pages. See "To enable publishing" on the build step below --
+      # bumping this to `write` is part of turning it on.
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+      - uses: julia-actions/cache@v2
+      - name: Configure doc environment
+        shell: julia --project=docs --color=yes {0}
+        run: |
+          using Pkg
+          # docs/Manifest.toml is not committed, so the docs environment's
+          # path dep on this package (`path = ".."`) has to be
+          # re-established here rather than restored from the manifest.
+          Pkg.develop([
+              PackageSpec(path=pwd())
+          ])
+          Pkg.instantiate()
+      - name: Build documentation
+        # Build only -- nothing is published. docs/make.jl has no
+        # deploydocs() call, and no GITHUB_TOKEN / DOCUMENTER_KEY is wired
+        # in, so this cannot reach GitHub Pages. It still earns its place:
+        # make.jl sets `warnonly = false`, so any docs warning fails the job.
+        #
+        # To enable publishing later:
+        #   1. append deploydocs(repo = "github.com/s-celles/DualUI.jl")
+        #      to docs/make.jl, and drop the `remotes = nothing` /
+        #      `repolink = nothing` / `edit_link = nothing` overrides, which
+        #      are only there because there is no git remote yet;
+        #   2. change `contents:` above to `write`;
+        #   3. add to this step:
+        #        env:
+        #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        #          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+        run: julia --project=docs --color=yes -e 'include("docs/make.jl")'
