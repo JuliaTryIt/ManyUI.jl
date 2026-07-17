@@ -254,6 +254,17 @@ Ask the loop to stop, by posting a `QuitEvent`.
 quit!(app::App)::Nothing = post!(app, QuitEvent())
 
 """
+Forward to `quit!`.
+
+`launch` promises that whatever handle it returns answers `isopen`, `close`
+and `wait`, so that a caller can stop an app without knowing which backend
+produced it. `WebServer` already closes; this is the `App` half of that
+promise. Idempotent, because `post!` on a finished app is a no-op rather
+than an error.
+"""
+Base.close(app::App)::Nothing = quit!(app)
+
+"""
 Stop the loop and record `code`.
 
 `App` carries no exit-code field, only `error`, and `run!` returns

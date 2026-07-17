@@ -68,6 +68,7 @@ include("widgets/overlay.jl")
 include("headless.jl")
 include("terminal.jl")
 include("app.jl")
+include("backend.jl")
 include("precompile.jl")
 
 # types.jl
@@ -221,5 +222,8 @@ export AppConfig, App, run!, quit!, exit!, post!
 export call_later!, set_interval!, invalidate!, pause!, resume!
 export handle!, frame!, refresh!
 export focused, focus!, focus_next!, focus_prev!, bind!, on_action
+
+# backend.jl
+export Backend, TerminalBackend, HeadlessBackend, make_driver, launch
 
 end # module

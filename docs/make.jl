@@ -21,6 +21,7 @@ makedocs(;
     pages = [
         "Home" => "index.md",
         "Concepts" => "concepts.md",
+        "Backends" => "backends.md",
         "Layout" => "layout.md",
         "Styling" => "styling.md",
         "Events" => "events.md",
