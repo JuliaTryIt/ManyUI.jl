@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Three widgets: `Checkbox`/`RadioGroup` (with `CheckState`, `toggle!`,
+  `set_state!`, `choose!`, ...), `Tabs` (a tab strip over swappable panels,
+  with `add_tab!`/`select_tab!`), and `TreeView` (a collapsible tree over
+  `TreeNode`s, with `expand_node!`/`collapse_all!`/`toggle_node!`/...). Each
+  follows the existing widget seam -- `measure`/`render!`/`on_event!` -- and
+  ships with its test suite.
+
 - `Backend`, an inert description of where an app should run, and `launch`,
   one verb that runs an app on any of them. Swapping a target is now an
   argument rather than a rewrite: `launch(ui)` for this terminal,

@@ -14,6 +14,7 @@ namespace.
 Align
 Attr
 BorderKind
+CheckState
 ColorDepth
 ColorKind
 Combinator

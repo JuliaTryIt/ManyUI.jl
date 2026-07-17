@@ -65,6 +65,17 @@ include("widgets/list.jl")
 include("widgets/table.jl")
 include("widgets/datatable.jl")
 include("widgets/overlay.jl")
+# `toggle.jl` defines `Checkbox`/`RadioGroup`, `tabs.jl` defines `Tabs`,
+# `tree.jl` defines `TreeView` (and needs `tablecore.jl`).
+#
+# NOT wired yet: `widgets/dropdown.jl` and `widgets/form.jl`. `DropDown`
+# depends on a popup layer (`Popup`, `open_popup!`, `close_popup!`,
+# `popup_of`, an `App.popup` slot) that does not exist in the codebase, and
+# `form.jl` in turn depends on `DropDown`. Both stay on disk until that
+# subsystem lands.
+include("widgets/toggle.jl")
+include("widgets/tabs.jl")
+include("widgets/tree.jl")
 include("headless.jl")
 include("terminal.jl")
 include("app.jl")
@@ -215,6 +226,17 @@ export Table, set_rows!, push_row!, insert_row!, delete_row!
 export set_columns!, refresh_columns!, refresh_rows!
 # widgets/datatable.jl
 export DataTable, sort_by!, toggle_sort!
+# widgets/toggle.jl
+export CheckState, Checkbox, RadioGroup
+export check_state, is_checked, set_state!, toggle!
+export selected, selected_option, radio_cursor, choose!
+# widgets/tabs.jl
+export Tabs, TabStrip, n_tabs, tab_title, tab_panel
+export add_tab!, select_tab!, tab_at
+# widgets/tree.jl
+export TreeNode, TreeRow, TreeView, is_leaf, is_expanded
+export expand_node!, collapse_node!, toggle_node!, expand_all!, collapse_all!
+export tree_rows, tree_cursor, node_at, set_roots!, refresh_tree!
 export sort_column, sort_direction, source_index, sort_indicator
 
 # app.jl
