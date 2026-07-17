@@ -7,7 +7,7 @@ stream of ANSI escape sequences.
 
 DualUI has **no** web, HTTP or socket dependency, and never will. Its
 only extension point is the nine-method `Driver` seam; the companion
-package [`DualUIWeb`](../DualUIWeb) plugs a browser into that seam from
+package [`DualUIWeb`](https://github.com/s-celles/DualUIWeb.jl) plugs a browser into that seam from
 the outside without DualUI knowing the web exists.
 
 ## Status
