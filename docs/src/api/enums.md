@@ -29,6 +29,7 @@ MouseAction
 MouseButton
 Overflow
 Phase
+PopupPlacement
 ScrollAxis
 ScrollMode
 SelectMode

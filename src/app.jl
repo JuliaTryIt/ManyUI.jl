@@ -56,6 +56,8 @@ mutable struct App{D<:Driver} <: AbstractApp
     back::Buffer
     "The focused widget, or `nothing`."
     focus::Union{Nothing,Widget}
+    "The open popup painted over the tree, or `nothing`."
+    popup::Union{Nothing,Popup}
     "Key to action name."
     const bindings::Dict{KeyEvent,Symbol}
     "The current renderable area."
@@ -113,7 +115,7 @@ function App(root::Widget, driver::D;
                       sync_frames = config.sync_frames &&
                                     caps.sync_output)
     a = App{D}(driver, root, overlay, config, enc, stylesheet,
-               Buffer(vp), Buffer(vp), nothing,
+               Buffer(vp), Buffer(vp), nothing, nothing,
                Dict{KeyEvent,Symbol}(), vp, false, false,
                should_suspend(vp, config.min_size), true, 0, nothing,
                Timer[])
@@ -443,6 +445,13 @@ end
 E3. Route to `hit_test`, falling back to the root.
 """
 function handle!(app::App, e::MouseEvent)::Nothing
+    # A popup is a modal-ish layer: it is hit-tested BEFORE the tree, and a
+    # press outside it dismisses it and is swallowed. `_popup_dismiss!`
+    # returns true when it has taken the event; only then is the tree
+    # spared. See popup_ops.jl.
+    if app.popup !== nothing && _popup_dismiss!(app, e)
+        return nothing
+    end
     dispatch_event!(app.root, e, app.focus)
     return nothing
 end
@@ -565,6 +574,9 @@ function frame!(app::App)::Int
         _paint_overlay!(app)                                   # 3'
     else
         paint!(app.back, app.root)
+        # 3''. The popup paints OVER the tree, the same slot the min-size
+        # overlay uses, but only when one is open. See popup_ops.jl.
+        app.popup === nothing || _paint_popup!(app)
     end
     p = app.needs_full ? full_patch(app.back) :
         diff(app.front, app.back; gap = app.config.diff_gap)   # 4

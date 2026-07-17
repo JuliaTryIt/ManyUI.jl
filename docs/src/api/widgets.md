@@ -26,3 +26,4 @@ Pages = ["widgets/tabs.jl"]
 Modules = [DualUI]
 Pages = ["widgets/tree.jl"]
 ```
+

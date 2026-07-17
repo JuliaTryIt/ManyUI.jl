@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A popup layer, and the two widgets that ride it. `DropDown` (a `<select>`
+  over any vector, with `set_open!`/`options`/`selected_item`) opens its
+  list on the new popup layer -- a second root painted over the tree and
+  hit-tested before it, owned by the `App` via a new `App.popup` slot,
+  opened with `open_popup!` and closed through `close_popup!`/
+  `on_popup_close!`. `Form` collects a set of fields (`add_field!`,
+  `submit!`, `form_values`) over the input widgets, reading each through
+  `form_value`. The popup layer generalizes the min-size overlay the app
+  already paints over the tree.
 - Three widgets: `Checkbox`/`RadioGroup` (with `CheckState`, `toggle!`,
   `set_state!`, `choose!`, ...), `Tabs` (a tab strip over swappable panels,
   with `add_tab!`/`select_tab!`), and `TreeView` (a collapsible tree over

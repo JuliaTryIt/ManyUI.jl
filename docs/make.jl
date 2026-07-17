@@ -13,6 +13,12 @@ makedocs(;
         canonical = "https://s-celles.github.io/DualUI.jl",
         edit_link = nothing,
         repolink = nothing,
+        # The aggregate search index grows with the library and is past the
+        # 500 KiB soft default; raise its ceiling so a full API stays one
+        # warning-free build. `size_threshold` gets headroom too.
+        search_size_threshold_warn = 1024 * 1024,
+        size_threshold_warn = 500 * 1024,
+        size_threshold = 1024 * 1024,
     ),
     # The package is not in a git checkout yet, so there is no remote to
     # infer source links from. Drop them rather than guess a URL that
@@ -39,6 +45,7 @@ makedocs(;
             "api/drivers.md",
             "api/app.md",
             "api/widgets.md",
+            "api/inputs.md",
             "api/scrolling.md",
             "api/text.md",
             "api/data.md",

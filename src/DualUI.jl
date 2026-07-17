@@ -66,19 +66,21 @@ include("widgets/table.jl")
 include("widgets/datatable.jl")
 include("widgets/overlay.jl")
 # `toggle.jl` defines `Checkbox`/`RadioGroup`, `tabs.jl` defines `Tabs`,
-# `tree.jl` defines `TreeView` (and needs `tablecore.jl`).
-#
-# NOT wired yet: `widgets/dropdown.jl` and `widgets/form.jl`. `DropDown`
-# depends on a popup layer (`Popup`, `open_popup!`, `close_popup!`,
-# `popup_of`, an `App.popup` slot) that does not exist in the codebase, and
-# `form.jl` in turn depends on `DropDown`. Both stay on disk until that
-# subsystem lands.
+# `tree.jl` defines `TreeView` (needs `tablecore.jl`). `popup.jl` defines
+# the `Popup` value BEFORE app.jl, because `App` carries an `App.popup`
+# field; `dropdown.jl` opens one (`DropDown` needs the popup layer) and
+# `form.jl` USES `Checkbox`/`RadioGroup`/`DropDown`/`Tabs`, so both come
+# after. The App-facing popup verbs are in `popup_ops.jl`, AFTER app.jl.
 include("widgets/toggle.jl")
 include("widgets/tabs.jl")
 include("widgets/tree.jl")
+include("widgets/popup.jl")
+include("widgets/dropdown.jl")
+include("widgets/form.jl")
 include("headless.jl")
 include("terminal.jl")
 include("app.jl")
+include("popup_ops.jl")
 include("backend.jl")
 include("precompile.jl")
 
@@ -237,6 +239,13 @@ export add_tab!, select_tab!, tab_at
 export TreeNode, TreeRow, TreeView, is_leaf, is_expanded
 export expand_node!, collapse_node!, toggle_node!, expand_all!, collapse_all!
 export tree_rows, tree_cursor, node_at, set_roots!, refresh_tree!
+# widgets/popup.jl + popup_ops.jl
+export Popup, PopupPlacement, popup_region, on_popup_close!
+export popup_of, open_popup!, close_popup!
+# widgets/dropdown.jl
+export DropDown, DropDownList, options, selected_item, is_open, set_open!
+# widgets/form.jl
+export Form, form_value, add_field!, field, submit!, form_values
 export sort_column, sort_direction, source_index, sort_indicator
 
 # app.jl
