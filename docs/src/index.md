@@ -4,19 +4,22 @@
 CurrentModule = ManyUI
 ```
 
-A user interface framework for Julia that targets the terminal *and*
-the web browser, without rewriting the application or the interface.
+**ManyUI** is a unified, declarative User Interface framework for Julia. 
 
-Inspired by Python's [Textual](https://textual.textualize.io/), ManyUI
-does not compile your interface into HTML. It applies web development
-paradigms — a virtual DOM, a CSS-like box model, an asynchronous
-reactive event loop — directly onto a 2D character grid. The output is
-a stream of ANSI escape sequences.
+Its philosophy is simple: **write your domain model and UI presentation once, and render it anywhere.** 
+Instead of tightly coupling your code to a single platform, `ManyUI` uses a hierarchical widget tree and an event-driven architecture that can be projected onto multiple backends seamlessly.
 
-Targeting the browser does not change the nature of the application. It
-only offloads the final step, drawing those ANSI bytes, to a terminal
-emulator running in the browser. That is what `ManyUIWeb` does, and it
-is why this package has no HTTP dependency:
+The ecosystem is extended by companion packages that provide different rendering projections:
+
+1. **[ManyUI.jl](https://github.com/s-celles/ManyUI.jl) (Core & TUI)**
+   Render your application directly in the terminal with full interactivity, utilizing an optimized diffing renderer that emits minimal ANSI escape sequences.
+2. **[ManyUIWeb.jl](https://github.com/s-celles/ManyUIWeb.jl)**
+   - *WebTerminal*: Serve your TUI application over the web. The terminal is emulated in the browser via WebSockets.
+   - *WebNative*: Translate the exact same widget tree into native HTML and DOM elements for a true semantic web experience.
+3. **[ManyUICLI.jl](https://github.com/s-celles/ManyUICLI.jl)**
+   Automatically generate a Command-Line Interface from your declarative UI model using `Comonicon.jl`.
+4. **[ManyUIDemos.jl](https://github.com/s-celles/ManyUIDemos.jl)**
+   A centralized demonstration hub showcasing how to write a domain model once and launch it across all `ManyUI` projections.
 
 ```@docs
 ManyUI

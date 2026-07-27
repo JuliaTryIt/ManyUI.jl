@@ -11,14 +11,15 @@ This repository is the core engine of the framework. It defines the fundamental 
 
 The ecosystem is extended by companion packages that provide different rendering projections:
 
-1. **Terminal UI (TUI)** (Built-in)
+1. **[ManyUI.jl](https://github.com/s-celles/ManyUI.jl) (Core & TUI)**
    Render your application directly in the terminal with full interactivity, utilizing an optimized diffing renderer that emits minimal ANSI escape sequences.
-2. **WebTerminal (`ManyUIWeb.jl`)**
-   Serve your TUI application over the web. The terminal is emulated in the browser via WebSockets, allowing remote access with zero changes to your code.
-3. **WebNative (`ManyUIWeb.jl`)**
-   Translate the exact same `ManyUI.Widget` tree into native HTML and DOM elements (`<div>`, `<button>`, `<span>`). This provides a true, semantic web experience with vanilla CSS styling, fully driven by the Julia backend.
-4. **CLI (`ManyUICLI.jl`)**
+2. **[ManyUIWeb.jl](https://github.com/s-celles/ManyUIWeb.jl)**
+   - *WebTerminal*: Serve your TUI application over the web. The terminal is emulated in the browser via WebSockets.
+   - *WebNative*: Translate the exact same widget tree into native HTML and DOM elements for a true semantic web experience.
+3. **[ManyUICLI.jl](https://github.com/s-celles/ManyUICLI.jl)**
    Automatically generate a Command-Line Interface from your declarative UI model using `Comonicon.jl`. Expose your domain actions as flags and subcommands instantly.
+4. **[ManyUIDemos.jl](https://github.com/s-celles/ManyUIDemos.jl)**
+   A centralized demonstration hub showcasing how to write a domain model once and launch it across all `ManyUI` projections.
 
 ## Quickstart
 
