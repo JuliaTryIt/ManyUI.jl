@@ -1,99 +1,76 @@
-# ManyUI
+# ManyUI.jl
 
-A terminal-first UI framework for Julia: a hierarchical widget tree, a
-CSS-like box model with a flex layout engine, declarative styling, an
-asynchronous event loop, and a diffing renderer that emits the minimal
-stream of ANSI escape sequences.
+**ManyUI** is a unified, declarative User Interface framework for Julia. 
 
-ManyUI has **no** web, HTTP or socket dependency, and never will. Its
-only extension point is the nine-method `Driver` seam; the companion
-package [`ManyUIWeb`](https://github.com/s-celles/ManyUIWeb.jl) plugs a browser into that seam from
-the outside without ManyUI knowing the web exists.
+Its philosophy is simple: **write your domain model and UI presentation once, and render it anywhere.** 
+Instead of tightly coupling your code to a single platform, `ManyUI` uses a hierarchical widget tree and an event-driven architecture that can be projected onto multiple backends seamlessly.
 
-## Status
+## The `ManyUI` Ecosystem
 
-Implemented, with 8625 passing tests. The API is at `0.1.0` and should
-be expected to move before `1.0`.
+This repository is the core engine of the framework. It defines the fundamental widget primitives (`Container`, `Label`, `Button`, etc.), the reactive model, and the rendering pipeline.
+
+The ecosystem is extended by companion packages that provide different rendering projections:
+
+1. **Terminal UI (TUI)** (Built-in)
+   Render your application directly in the terminal with full interactivity, utilizing an optimized diffing renderer that emits minimal ANSI escape sequences.
+2. **WebTerminal (`ManyUIWeb.jl`)**
+   Serve your TUI application over the web. The terminal is emulated in the browser via WebSockets, allowing remote access with zero changes to your code.
+3. **WebNative (`ManyUIWeb.jl`)**
+   Translate the exact same `ManyUI.Widget` tree into native HTML and DOM elements (`<div>`, `<button>`, `<span>`). This provides a true, semantic web experience with vanilla CSS styling, fully driven by the Julia backend.
+4. **CLI (`ManyUICLI.jl`)**
+   Automatically generate a Command-Line Interface from your declarative UI model using `Comonicon.jl`. Expose your domain actions as flags and subcommands instantly.
 
 ## Quickstart
 
 ```julia
 using ManyUI
 
-clicks = Ref(0)
-readout = Label("Count: 0"; id = :count)
+# 1. Define your Domain Model
+mutable struct CounterModel
+    clicks::Int
+end
 
-ui = Container(
-    readout,
-    Button("Click me", _ -> begin
-               clicks[] += 1
-               readout.text[] = "Count: $(clicks[])"
-               nothing
-           end; id = :go),
-)
+struct Increment <: Action end
 
-run!(App(ui, TerminalDriver()))   # blocks until quit!
+# 2. Define your Domain Logic
+function ManyUI.execute!(model::CounterModel, ::Increment)
+    model.clicks += 1
+end
+
+# 3. Define your UI Projection
+function ManyUI.render(model::CounterModel, proj::ManyUI.Projection)
+    Container(
+        Label("Count: $(model.clicks)"),
+        Button("Click me", _ -> ManyUI.execute!(model, Increment()))
+    )
+end
+
+# 4. Launch!
+model = CounterModel(0)
+
+# Launch in Terminal
+ManyUI.launch(model, TUI())
+
+# Launch as a Native Web App (requires ManyUIWeb)
+# ManyUI.launch(model, WebNative(); port=8080)
 ```
 
-`Label.text` is reactive: writing it marks the label dirty, the next
-frame repaints it, and the diff sends only the one cell that changed.
-
-Full documentation:
-
-```julia
-julia --project=ManyUI/docs ManyUI/docs/make.jl   # then open docs/build/index.html
-```
-
-## The render pipeline
-
-```
-tree -> cascade -> layout -> Buffer -> diff -> Patch -> ANSI bytes
-     -> Driver.emit!
-```
-
-A `Driver` never sees a `Buffer`, `Patch`, `Widget`, `Region` or
-`LayoutMap` -- only `Vector{UInt8}`, `Size`, `DriverCaps` and `Event`.
-
-## Layout
+## Architecture & Layout
 
 | Path | Responsibility |
 |---|---|
-| `src/types.jl` | The four abstract types: `Widget`, `Driver`, `AbstractApp`, `Event` |
-| `src/geometry.jl` | `Size`, `Offset`, `Region`, `Spacing` and their algebra |
-| `src/unicode.jl` | Grapheme-cluster widths; wide characters occupy two cells |
-| `src/color.jl` | `Color`, palettes, and `degrade` (TrueColor to 256/16/mono) |
-| `src/style.jl` | `Style` as bits plus a specified-mask; `merge` is the cascade fold |
-| `src/events.jl` | Event structs, `Modifiers`, `Dispatch{E}`, `Phase` |
-| `src/boxmodel.jl` | `Length`, `Border`, `BoxStyle`, `BoxPatch`, `LayoutBox` |
-| `src/buffer.jl` | `Cell`, `Buffer`, `BufferView` and the clipped writers |
-| `src/diff.jl` | `Span`, `Patch`, the pure `diff`, `apply!` |
-| `src/ansi.jl` | Escape-sequence constants and the stateful `AnsiEncoder` |
-| `src/input.jl` | `parse_events`: bytes in, events out; no byte-source type |
-| `src/driver.jl` | `DriverCaps` and the nine-method seam |
-| `src/widget.jl` | `WidgetNode`, the tree API, dirty flagging |
-| `src/reactive.jl` | `Reactive{T}`: a write marks dirty and schedules a frame |
-| `src/dispatch.jl` | `hit_test`, capture/at-target/bubble propagation |
-| `src/layout.jl` | The pure `compute_layout`, the flex kernel, `layout!` |
-| `src/css.jl` | Selectors, `Stylesheet`, the pure `cascade`, `@css_str` |
-| `src/paint.jl` | `render!`, `paint!`, `paint_border!` |
-| `src/headless.jl` | `HeadlessDriver` -- the proof the seam is right |
-| `src/terminal.jl` | `TerminalDriver`: raw mode, alternate screen, restore |
-| `src/widgets/` | `Container`, `Label`, `Static`, `Button`, `MinSizeOverlay` |
-| `src/widgets/scroll.jl` | `Scrollpane`, `Scrollbar`, and the scrollable seam |
-| `src/widgets/textinput.jl` | `TextInput` and the shared grapheme helpers |
-| `src/widgets/textarea.jl` | `TextArea`: scrolls by indexing its lines |
-| `src/widgets/tablecore.jl` | `Column`, `Selection`: the model List/Table/DataTable share |
-| `src/widgets/list.jl` | `List`: rows are data, never widgets |
-| `src/widgets/table.jl` | `Table`: columns, and a header that does not scroll away |
-| `src/widgets/datatable.jl` | `DataTable`: stable, non-mutating sorting |
-| `src/app.jl` | `App{D}`, `run!`, `frame!`, `handle!`, focus, bindings |
+| `src/core.jl` | Core primitives: `Action`, `Widget`, `Projection` and the `execute!` / `render` / `launch` interfaces |
+| `src/widgets/` | Standard widgets (`Container`, `Label`, `Button`, `TextInput`, etc.) |
+| `src/events.jl` | Event definitions (`Click`, `KeyPress`, etc.) and the dispatch mechanism |
+| `src/style.jl` | Declarative CSS-like styling constraints and layout engine |
+| `src/terminal/` | The ANSI backend, terminal raw mode, diffing engine, and input parsing |
+| `src/reactive.jl` | Reactive state primitives for the TUI event loop |
 
-## Tests
+## Testing
 
 ```julia
 julia --project=ManyUI -e 'using Pkg; Pkg.test()'
 ```
 
-Tests are `@testitem` blocks run by
-[TestItemRunner.jl](https://github.com/julia-vscode/TestItemRunner.jl);
-each block is self-contained and none requires a TTY.
+Tests are written using `@testitem` and run via [TestItemRunner.jl](https://github.com/julia-vscode/TestItemRunner.jl).
+The core logic and rendering pipeline are thoroughly tested in a headless environment.
