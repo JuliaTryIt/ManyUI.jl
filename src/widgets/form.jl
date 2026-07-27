@@ -31,15 +31,15 @@ FORM'S concept, not the text field's.
 """
 function form_value end
 
-# SOURCE wins over the contract here: there is no `text(::Any)`
-# method (only `text(::Any)`), so a `TextInput`'s content is read
+# SOURCE wins over the contract here: there is no `text(::TextInput)`
+# method (only `text(::TextArea)`), so a `TextInput`'s content is read
 # through its `text` reactive. Reported as a deviation.
-form_value(w::Any)::String = w.text[]
-form_value(w::Any)::String = text(w)
-form_value(w::Any)::Any = w.state[]
-form_value(w::Any)::Int = w.selected[]
-form_value(w::Any)::Int = w.selected[]
-form_value(w::Any)::Int = selected(w)
+form_value(w::TextInput)::String = w.text[]
+form_value(w::TextArea)::String = text(w)
+form_value(w::Checkbox)::CheckState.T = w.state[]
+form_value(w::RadioGroup)::Int = w.selected[]
+form_value(w::DropDown)::Int = w.selected[]
+form_value(w::Tabs)::Int = selected(w)
 
 "The default validator: everything passes. Internal."
 _fm_ok(::Widget)::Bool = true
@@ -54,11 +54,11 @@ mutable struct Form{S,V} <: Widget
     node::WidgetNode
     "Named fields, in `add_field!` order. NOT the tab order -- that is
      `children`, pre-order, and it always was."
-    const fields::Any}
+    const fields::Vector{Pair{Symbol,Widget}}
     "Called as `on_submit(form)` when `submit!` passes validation."
-    on_submit::Any
+    on_submit::S
     "Called as `on_validate(form)::Bool`. False VETOES the submit."
-    on_validate::Any
+    on_validate::V
 end
 
 """
@@ -112,9 +112,9 @@ capture:
 
 No chicken-and-egg, no registry, no `Ref`.
 """
-function Form(on_submit::Any = _tc_noop; on_validate::Any = _fm_ok,
+function Form(on_submit::S = _tc_noop; on_validate::V = _fm_ok,
               id::Symbol = gensym(:form),
-              classes = Symbol[])::Any where {S,V}
+              classes = Symbol[])::Form{S,V} where {S,V}
     return Form{S,V}(WidgetNode(; id = id, classes = classes,
                                 type_name = :Form),
                      Pair{Symbol,Widget}[], on_submit, on_validate)
@@ -128,7 +128,7 @@ is the NAME MAP; they are the same widgets in the same order. Plain
 `mount!(f, w)` still works and adds an UNNAMED field: a field with no
 name is one `form_values` does not report, which is right for a `Button`.
 """
-function add_field!(f::Any, name::Symbol, w::Widget)::Any
+function add_field!(f::Form, name::Symbol, w::Widget)::Form
     mount!(f, w)
     push!(f.fields, name => w)
     return f
@@ -137,7 +137,7 @@ end
 """
 The field named `name`, or `nothing`. O(fields); a form has ten. Pure.
 """
-function field(f::Any, name::Symbol)::Any
+function field(f::Form, name::Symbol)::Union{Nothing,Widget}
     for (n, w) in f.fields
         n === name && return w
     end
@@ -149,7 +149,7 @@ Validate, then submit. `on_validate(f) || return false; on_submit(f);
 return true`. THE whole validation story: one predicate and a veto. True
 iff the submit ran.
 """
-function submit!(f::Any)::Bool
+function submit!(f::Form)::Bool
     f.on_validate(f) || return false
     f.on_submit(f)
     return true
@@ -163,7 +163,7 @@ by definition, its `String`s and `CheckState.T`s and `Int`s sharing one
 `Dict{Symbol,Any}`. A BOUNDARY call, made once on submit and NEVER on a
 frame path, which is what licenses both.
 """
-function form_values(f::Any)::Any
+function form_values(f::Form)::Dict{Symbol,Any}
     out = Dict{Symbol,Any}()
     for (n, w) in f.fields
         out[n] = form_value(w)

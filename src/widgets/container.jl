@@ -20,14 +20,14 @@ hold other widgets. Direction, gap, padding, border and background all
 come from its `BoxStyle`, which is the cascade's business.
 """
 Container(; id::Symbol = gensym(:container),
-            classes = Symbol[])::Any =
+            classes = Symbol[])::Container =
     Container(WidgetNode(; id = id, classes = classes,
                          type_name = :Container))
 
 """
 A container with `children` already mounted, in order.
 """
-function Container(children::Widget...; kwargs...)::Any
+function Container(children::Widget...; kwargs...)::Container
     c = Container(; kwargs...)
     for child in children
         mount!(c, child)

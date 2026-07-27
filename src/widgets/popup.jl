@@ -43,9 +43,9 @@ mutable struct Popup
     "The widget that opened it, notified on close."
     const owner::Widget
     "The owner's declared size, including any border."
-    const size::Any
+    const size::Size
     "Where it sits relative to the owner."
-    const placement::Any
+    const placement::PopupPlacement.T
 end
 
 """
@@ -54,8 +54,8 @@ $(SIGNATURES)
 A popup over `content`, owned by `owner`, `size` cells, placed by
 `placement` (default `AUTO`).
 """
-Popup(content::Widget, owner::Widget, size::Any;
-      placement::Any = PopupPlacement.AUTO)::Any =
+Popup(content::Widget, owner::Widget, size::Size;
+      placement::PopupPlacement.T = PopupPlacement.AUTO)::Popup =
     Popup(content, owner, size, placement)
 
 """
@@ -81,8 +81,8 @@ above only when the popup would run off the bottom and there is room above
 the screen: a list taller than the terminal is not a special case, it is
 just clipped.
 """
-function popup_region(head::Any, size::Any,
-                      placement::Any, viewport::Any)::Any
+function popup_region(head::Region, size::Size,
+                      placement::PopupPlacement.T, viewport::Size)::Region
     w = min(size.width, viewport.width)
     h = min(size.height, viewport.height)
     # x tracks the head, then slides left just enough to stay on screen.

@@ -14,7 +14,7 @@ mutable struct Label <: Widget
     "Per-widget state."
     node::WidgetNode
     "The text; writing it marks the label dirty."
-    text::Any
+    text::Reactive{String}
 end
 
 """
@@ -24,7 +24,7 @@ A label showing `text`.
 can change the label's extent and therefore its siblings' positions.
 """
 function Label(text::AbstractString; id::Symbol = gensym(:label),
-               classes = Symbol[])::Any
+               classes = Symbol[])::Label
     w = Label(WidgetNode(; id = id, classes = classes,
                          type_name = :Label),
               Reactive(String(text)))
@@ -39,7 +39,7 @@ line by the number of lines. Pure with respect to the tree.
 `Size(0, 0)` when there is no text or no width -- a label that cannot
 be laid out is empty, not an error.
 """
-function measure(w::Any, avail::Any)::Any
+function measure(w::Label, avail::Size)::Size
     lines = wrap_width(w.text[], avail.width)
     isempty(lines) && return Size(0, 0)
     widest = 0
@@ -56,7 +56,7 @@ Paint the wrapped text into the content box.
 so wrapping to `size(buf)[1]` wraps to the width layout actually
 granted -- which may be less than `measure` asked for.
 """
-function render!(w::Any, buf::Any)::Nothing
+function render!(w::Label, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
@@ -76,14 +76,14 @@ mutable struct Static <: Widget
     "Per-widget state."
     node::WidgetNode
     "The text; writing it marks the widget dirty."
-    text::Any
+    text::Reactive{String}
 end
 
 """
 A single-line label showing `text`.
 """
 function Static(text::AbstractString; id::Symbol = gensym(:static),
-                classes = Symbol[])::Any
+                classes = Symbol[])::Static
     w = Static(WidgetNode(; id = id, classes = classes,
                           type_name = :Static),
                Reactive(String(text)))
@@ -99,7 +99,7 @@ A `Static` never wraps, so it never pays the allocation `wrap_width`
 costs `Label` on every `measure` -- which is the whole reason the two
 types are separate.
 """
-measure(w::Any, avail::Any)::Any = Size(text_width(w.text[]), 1)
+measure(w::Static, avail::Size)::Size = Size(text_width(w.text[]), 1)
 
 """
 Paint one line of text into the content box, truncated to its width.
@@ -108,7 +108,7 @@ Paint one line of text into the content box, truncated to its width.
 would straddle it, so the truncation is grapheme-exact and costs
 nothing extra here.
 """
-function render!(w::Any, buf::Any)::Nothing
+function render!(w::Static, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     write_text!(buf, 1, 1, w.text[], computed_style(w))

@@ -12,7 +12,7 @@ X2. PURE predicate, so the threshold is testable with no App:
     should_suspend(Size(12, 3), Size(20, 5)) === true
     should_suspend(Size(80, 24), Size(20, 5)) === false
 """
-should_suspend(actual::Any, min::Any)::Bool =
+should_suspend(actual::Size, min::Size)::Bool =
     actual.width < min.width || actual.height < min.height
 
 """
@@ -40,11 +40,11 @@ mutable struct MinSizeOverlay <: Widget
     "Per-widget state."
     node::WidgetNode
     "The minimum the app needs."
-    required::Any
+    required::Reactive{Size}
     "What the target currently offers."
-    actual::Any
+    actual::Reactive{Size}
     "The headline message."
-    message::Any
+    message::Reactive{String}
 end
 
 """
@@ -52,7 +52,7 @@ A fresh overlay. Its id defaults to `:_min_size_overlay` so a
 stylesheet can target it.
 """
 function MinSizeOverlay(; message::AbstractString = OVERLAY_MESSAGE,
-                        id::Symbol = :_min_size_overlay)::Any
+                        id::Symbol = :_min_size_overlay)::MinSizeOverlay
     w = MinSizeOverlay(WidgetNode(; id = id,
                                   type_name = :MinSizeOverlay),
                        Reactive(Size(0, 0)), Reactive(Size(0, 0)),
@@ -64,7 +64,7 @@ end
 """
 The dimensions line: what the app needs against what it has. Pure.
 """
-_ov_dims(required::Any, actual::Any)::String =
+_ov_dims(required::Size, actual::Size)::String =
     string("Need ", required.width, "x", required.height, " - have ",
            actual.width, "x", actual.height)
 
@@ -73,8 +73,8 @@ Write `line` centred on row `y`, truncated to `width`. A wide cluster
 that would straddle the right edge is dropped by `truncate_width`, not
 halved.
 """
-function _ov_center!(buf::Any, line::AbstractString,
-                     y::Int, width::Int, st::Any)::Nothing
+function _ov_center!(buf::AbstractMatrix{Cell}, line::AbstractString,
+                     y::Int, width::Int, st::Style)::Nothing
     shown = truncate_width(line, width)
     x = 1 + (width - text_width(shown)) ÷ 2
     write_text!(buf, x, y, shown, st)
@@ -85,9 +85,9 @@ end
 Write `lines` as a block centred on both axes, dropping any line that
 does not fit vertically.
 """
-function _ov_block!(buf::Any,
-                    lines::Any}, width::Int,
-                    height::Int, st::Any)::Nothing
+function _ov_block!(buf::AbstractMatrix{Cell},
+                    lines::Tuple{Vararg{String}}, width::Int,
+                    height::Int, st::Style)::Nothing
     n = min(length(lines), height)
     y0 = 1 + (height - n) ÷ 2
     for i in 1:n
@@ -100,7 +100,7 @@ end
 The extent of the message plus the dimensions line: the wider of the
 two, by two rows. Pure with respect to the tree.
 """
-function measure(w::Any, avail::Any)::Any
+function measure(w::MinSizeOverlay, avail::Size)::Size
     dims = _ov_dims(w.required[], w.actual[])
     return Size(max(text_width(w.message[]), text_width(dims)), 2)
 end
@@ -108,7 +108,7 @@ end
 """
 Paint `message` and "Need {rw}x{rh} - have {aw}x{ah}", centred.
 """
-function render!(w::Any, buf::Any)::Nothing
+function render!(w::MinSizeOverlay, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     _ov_block!(buf, (w.message[], _ov_dims(w.required[], w.actual[])),
@@ -132,8 +132,8 @@ MUST NOT call `layout!`, `measure` or `cascade`. This is the path taken
 when `buffer_size(buf)` is below `OVERLAY_MIN_SIZE` -- layout is by
 definition unusable at that size.
 """
-function render_min_size_overlay!(buf::Any, actual::Any,
-                                  required::Any)::Nothing
+function render_min_size_overlay!(buf::Buffer, actual::Size,
+                                  required::Size)::Nothing
     clear!(buf)
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing

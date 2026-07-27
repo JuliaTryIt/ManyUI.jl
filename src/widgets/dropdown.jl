@@ -21,7 +21,7 @@ const DD_OPEN = "^"
 "Cells the arrow and its separating space claim on the closed row."
 const DD_ARROW_W = 2
 "The focused head. `TC_CURSOR`'s meaning."
-const DD_FOCUS = (; underline = true)
+const DD_FOCUS = Style(; underline = true)
 "Rows a `DropDown` shows before its list scrolls, by default."
 const DD_MAX_ROWS = 8
 
@@ -63,9 +63,9 @@ mutable struct DropDownList{L<:Widget} <: Widget
     "Per-widget state."
     node::WidgetNode
     "The options, as a `List`. A CHILD of this node."
-    const list::Any
+    const list::L
     "The `DropDown` a row click commits to. Bound by the constructor."
-    owner::Any
+    owner::Union{Nothing,Widget}
 end
 
 """
@@ -80,7 +80,7 @@ not moved its cursor yet, so `row_cursor` is still the OLD row;
 `_tc_row_at` reads the POINTER, over `painted_region`, and is correct
 inside a scrolled pane.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::DropDownList, d::Dispatch{MouseEvent})::Nothing
     d.phase === Phase.CAPTURE || return nothing
     is_consumed(d) && return nothing
     e = event(d)
@@ -127,19 +127,19 @@ mutable struct DropDown{T,F,C} <: Widget
     absent from `children(w)`. The popup is a paint-and-hit layer, not a
     focus layer: the DropDown KEEPS FOCUS while it is open and forwards.
     """
-    const panel::Any}
+    const panel::DropDownList{List{T,F,typeof(_tc_noop)}}
     "True while the popup is open. PAINT-reactive: the arrow flips."
-    open::Any
+    open::Reactive{Bool}
     "The COMMITTED option, 1-based; `0` when nothing is chosen."
-    selected::Any
+    selected::Reactive{Int}
     "True while focused. PAINT-reactive."
-    focused::Any
+    focused::Reactive{Bool}
     "Rows the open list shows at most, before it scrolls."
     const max_rows::Int
     "Shown when `selected == 0`."
     const placeholder::String
     "Called as `on_change(dd)` when the selection COMMITS."
-    on_change::Any
+    on_change::C
 end
 
 """
@@ -154,11 +154,11 @@ its rows.
 Focusable by construction; the open list is NOT -- it is the popup and
 the popup is not a focus layer.
 """
-function DropDown(items::Any, on_change::Any = _tc_noop;
-                  format::Any = _tc_show, max_rows::Int = DD_MAX_ROWS,
+function DropDown(items::Vector{T}, on_change::C = _tc_noop;
+                  format::F = _tc_show, max_rows::Int = DD_MAX_ROWS,
                   placeholder::AbstractString = "",
                   id::Symbol = gensym(:dropdown),
-                  classes = Symbol[])::Any where {T,F,C}
+                  classes = Symbol[])::DropDown{T,F,C} where {T,F,C}
     lst = List(items, _tc_noop; format = format,
                mode = SelectMode.SINGLE, id = Symbol(id, :_list))
     node(lst).focusable = false
@@ -187,7 +187,7 @@ end
 """
 A drop-down over any `AbstractVector`, collected ONCE into a `Vector`.
 """
-DropDown(items::Any, args...; kwargs...) =
+DropDown(items::AbstractVector, args...; kwargs...) =
     DropDown(collect(items), args...; kwargs...)
 
 """
@@ -199,7 +199,7 @@ O(1) after the first call, because `_lst_scan!` is MEMOIZED on
 `List.scanned` (list.jl:200), and THIS IS THE FRAME PATH. Writing
 `maximum(text_width, items)` here is forbidden.
 """
-measure(w::Any, avail::Any)::Any =
+measure(w::DropDown, avail::Size)::Size =
     Size(max(_lst_scan!(w.panel.list),
              text_width(w.placeholder)) + DD_ARROW_W, 1)
 
@@ -207,7 +207,7 @@ measure(w::Any, avail::Any)::Any =
 The head's caption: the placeholder when nothing is selected, else the
 committed option through the `List`'s own formatter. Internal.
 """
-function _dd_caption(w::Any)::String
+function _dd_caption(w::DropDown)::String
     s = w.selected[]
     s == 0 && return w.placeholder
     lst = w.panel.list
@@ -219,7 +219,7 @@ Paint the caption, truncated to leave room for the arrow, and the arrow
 in the last column. Underlined while focused, and the arrow flips
 `v`/`^` with `open`.
 """
-function render!(w::Any, buf::Any)::Nothing
+function render!(w::DropDown, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
@@ -233,22 +233,22 @@ end
 # --- pure / read-only API ---------------------------------------------
 
 "The options, ALIASED. Pure."
-options(w::Any) = w.panel.list.items
+options(w::DropDown) = w.panel.list.items
 
 "The committed option index, `0` when nothing is chosen. Pure."
-selected(w::Any)::Int = w.selected[]
+selected(w::DropDown)::Int = w.selected[]
 
 """
 The committed option, or `nothing` when nothing is chosen. Pure.
 """
-function selected_item(w::Any)::Any where {T}
+function selected_item(w::DropDown{T})::Union{Nothing,T} where {T}
     s = w.selected[]
     s == 0 && return nothing
     return w.panel.list.items[s]
 end
 
 "True while the popup is open. Pure."
-is_open(w::Any)::Bool = w.open[]
+is_open(w::DropDown)::Bool = w.open[]
 
 # --- keyboard: the head OWNS the keyboard and FORWARDS ----------------
 
@@ -260,7 +260,7 @@ A `DropDown` activates on the way up, never in capture -- the same rule
 so the tab order stays alive and `ctrl+*` bindings are not shadowed.
 Internal.
 """
-_dd_acts(d::Any, e::Any)::Bool =
+_dd_acts(d::Dispatch, e::KeyEvent)::Bool =
     d.phase !== Phase.CAPTURE && !is_consumed(d) && isempty(e.mods)
 
 """
@@ -269,7 +269,7 @@ SPACE COMMIT the highlight, ESCAPE closes without committing. SPACE is
 `Key.SPACE` (and the legacy `Key.CHAR(' ')` form), never one or the
 other. Consumes ONLY what it handles. Internal.
 """
-function _dd_key_open!(w::Any, d::Any, e::Any)::Nothing
+function _dd_key_open!(w::DropDown, d::Dispatch, e::KeyEvent)::Nothing
     if e.code === Key.UP
         move_cursor!(w.panel.list, -1)
         consume!(d)
@@ -293,7 +293,7 @@ Keys while CLOSED: UP/DOWN cycle the committed selection and fire
 open the list. SPACE is `Key.SPACE`. Consumes ONLY what it handles.
 Internal.
 """
-function _dd_key_closed!(w::Any, d::Any, e::Any)::Nothing
+function _dd_key_closed!(w::DropDown, d::Dispatch, e::KeyEvent)::Nothing
     if e.code === Key.UP
         _dd_select!(w, w.selected[] - 1)
         consume!(d)
@@ -313,7 +313,7 @@ Forward the keyboard: OPEN and CLOSED behave differently and each
 consumes only what it handles, so TAB, BACK_TAB and modified keys stay
 unconsumed and the tab order -- and close-on-TAB -- keep working.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::DropDown, d::Dispatch{KeyEvent})::Nothing
     e = event(d)
     _dd_acts(d, e) || return nothing
     w.open[] ? _dd_key_open!(w, d, e) : _dd_key_closed!(w, d, e)
@@ -327,7 +327,7 @@ ON the head is delivered here (that clause of `_popup_dismiss!` returns
 false), which is why clicking the head of an open dropdown closes it
 here instead of dismiss-then-reopen. Wheel and drag fall through.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::DropDown, d::Dispatch{MouseEvent})::Nothing
     d.phase === Phase.CAPTURE && return nothing
     is_consumed(d) && return nothing
     e = event(d)
@@ -355,7 +355,7 @@ entire viewport. `popup_region` then clamps this to the screen, so a
 `_lst_scan!` is MEMOIZED (list.jl:200), so this is O(1) per open after
 the first. Internal.
 """
-function _dd_popup_size(w::Any)::Any
+function _dd_popup_size(w::DropDown)::Size
     n = length(w.panel.list.items)
     wd = max(_lst_scan!(w.panel.list),
              text_width(w.placeholder)) + 2      # +2: the border
@@ -384,7 +384,7 @@ selection and fire `on_change`.
 Puts the list's cursor on the CURRENT selection, so DOWN-DOWN-ENTER from
 a selected option moves TWO, not to the top. Internal.
 """
-function _dd_open!(w::Any)::Bool
+function _dd_open!(w::DropDown)::Bool
     w.open[] && return false
     isempty(w.panel.list.items) && return false
     a = app(w)
@@ -407,7 +407,7 @@ which is exactly what TABbing from one dropdown onto another does. Also
 clears `open[]` when there is no App, so a standalone widget cannot be
 stranded believing it is open. Internal.
 """
-function _dd_close!(w::Any)::Bool
+function _dd_close!(w::DropDown)::Bool
     a = app(w)
     a isa App || return (w.open[] = false; false)
     return close_popup!(a, w)          # -> on_popup_close!(w)
@@ -423,7 +423,7 @@ ESCAPE and click-away both ABANDON the highlight. After `_dd_commit!`
 the two are already equal and this is a no-op -- so COMMIT NEEDS NO
 SPECIAL CASE.
 """
-function on_popup_close!(w::Any)::Nothing
+function on_popup_close!(w::DropDown)::Nothing
     w.open[] = false
     s = w.selected[]
     s == 0 || set_cursor!(w.panel.list, s)
@@ -437,7 +437,7 @@ it really changed. True iff `k` was in range.
 THE single exit of every commit -- keyboard ENTER, keyboard SPACE and a
 row click all land here. Internal.
 """
-function _dd_commit!(w::Any, k::Int)::Bool
+function _dd_commit!(w::DropDown, k::Int)::Bool
     n = length(w.panel.list.items)
     (1 <= k <= n) || return false
     changed = w.selected[] != k
@@ -453,7 +453,7 @@ The CLOSED-state selection cycle: clamp to `1:n`, early-out on no
 change, write `selected[]`, fire `on_change`. Does NOT touch the popup.
 Internal.
 """
-function _dd_select!(w::Any, k::Int)::Bool
+function _dd_select!(w::DropDown, k::Int)::Bool
     n = length(w.panel.list.items)
     n == 0 && return false
     t = clamp(k, 1, n)
@@ -466,7 +466,7 @@ end
 """
 Open or close the popup. `true` iff the state changed. Public.
 """
-set_open!(w::Any, v::Bool)::Bool = v ? _dd_open!(w) : _dd_close!(w)
+set_open!(w::DropDown, v::Bool)::Bool = v ? _dd_open!(w) : _dd_close!(w)
 
 """
 Replace the options. CLOSES the popup first, clears the selection, and
@@ -475,11 +475,11 @@ marks the head for relayout EXPLICITLY.
 The list is UNBOUND while closed (`close_popup!` clears `node(w).app`),
 so its `Reactive` marks nothing and posts nothing, and the DropDown's
 own `measure` just changed -- hence the explicit `mark!` and `post!`.
-Clearing `selected` is `set_items!(::Any)`'s argument verbatim
+Clearing `selected` is `set_items!(::List)`'s argument verbatim
 (list.jl:394): an index into data that no longer exists names the WRONG
 option.
 """
-function set_items!(w::Any, xs::Any)::Nothing
+function set_items!(w::DropDown, xs::AbstractVector)::Nothing
     _dd_close!(w)
     set_items!(w.panel.list, xs)
     w.selected[] = 0
@@ -496,14 +496,14 @@ Gain focus: show as focused and reveal into any scrolling ancestor.
 `reveal!` is called EXPLICITLY because overriding `on_focus!` REPLACES
 the default that would have called it.
 """
-on_focus!(w::Any)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::DropDown)::Nothing = (w.focused[] = true; reveal!(w))
 
 """
 Lose focus: the popup's lifetime is bounded by its owner's focus, which
 is what makes TAB-while-open correct with ZERO code in app.jl -- TAB is
 not consumed -> `:focus_next` -> `focus!` -> `on_blur!` -> here.
 """
-on_blur!(w::Any)::Nothing =
+on_blur!(w::DropDown)::Nothing =
     (w.focused[] = false; _dd_close!(w); nothing)
 
 """
@@ -512,4 +512,4 @@ widget that is no longer in any tree. Relies on `unmount!` calling
 `on_unmount!` BEFORE it clears `node(w).app` (widget.jl:367, 374), so
 `app(w)` still finds the App and the popup actually goes.
 """
-on_unmount!(w::Any)::Nothing = (_dd_close!(w); nothing)
+on_unmount!(w::DropDown)::Nothing = (_dd_close!(w); nothing)

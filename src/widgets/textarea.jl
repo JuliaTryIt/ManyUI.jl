@@ -31,7 +31,7 @@ The caret's cell: REVERSE video, merged onto whatever is under it.
 A caret is not a hardware cursor -- the tree paints into a `Buffer` and
 the `Driver` seam has no cursor-placement method. Internal.
 """
-const _TA_CARET = (; reverse = true)
+const _TA_CARET = Style(; reverse = true)
 
 """
 Multi-line text entry.
@@ -61,12 +61,12 @@ mutable struct TextArea{F} <: Widget
     ALWAYS non-empty: an empty document is `[""]`, so `lines[line]` is
     total. Mutated IN PLACE.
     """
-    const lines::Any
+    const lines::Vector{String}
     """
     Bumped by every edit. THE reactive cell. LAYOUT-reactive: a new line
     genuinely changes the extent.
     """
-    version::Any
+    version::Reactive{Int}
     "Cursor line, 1-based."
     line::Int
     "Cursor column, a 0-based GRAPHEME index within `lines[line]`."
@@ -76,16 +76,16 @@ mutable struct TextArea{F} <: Widget
     "Monotone high-water mark of the widest line, in cells."
     widest::Int
     "True while focused."
-    focused::Any
+    focused::Reactive{Bool}
     "Called as `on_change(area)` after every edit."
-    on_change::Any
+    on_change::F
 end
 
 """
 `s` split on newlines into a document. NEVER empty: an empty string is
 `[""]`, which is exactly what makes `lines[line]` total. Pure. Internal.
 """
-function _ta_split(s::AbstractString)::Any
+function _ta_split(s::AbstractString)::Vector{String}
     out = String[]
     for part in split(s, '\n')
         push!(out, String(part))
@@ -101,9 +101,9 @@ Focusable by construction, so it appears in `focusable_widgets` and is
 reachable by TAB with no further wiring.
 """
 function TextArea(text::AbstractString = "",
-                  on_change::Any = _ta_noop;
+                  on_change::F = _ta_noop;
                   id::Symbol = gensym(:textarea),
-                  classes = Symbol[])::Any where {F}
+                  classes = Symbol[])::TextArea{F} where {F}
     w = TextArea{F}(WidgetNode(; id = id, classes = classes,
                                type_name = :TextArea, focusable = true),
                     _ta_split(text),
@@ -131,7 +131,8 @@ place in the file where a byte and a cluster index meet, and it meets
 them through the shared helpers alone.
 """
 function _ta_split_at(s::String,
-                      k::Int)::Any
+                      k::Int)::Tuple{SubString{String},
+                                     SubString{String}}
     b = _byte_after(s, k)
     return (SubString(s, 1, thisind(s, b)), SubString(s, b + 1))
 end
@@ -147,7 +148,7 @@ _ta_cells_before(s::String, k::Int)::Int =
 Raise the high-water mark to fit `s`. O(text_width(s)), never O(lines).
 Internal.
 """
-function _ta_widen!(w::Any, s::AbstractString)::Nothing
+function _ta_widen!(w::TextArea, s::AbstractString)::Nothing
     w.widest = max(w.widest, text_width(s))
     return nothing
 end
@@ -158,7 +159,7 @@ end
 (nonexistent) children is not its extent. This override IS the whole
 integration with `Scrollbar`.
 """
-content_extent(w::Any)::Any = Size(w.widest, length(w.lines))
+content_extent(w::TextArea)::Size = Size(w.widest, length(w.lines))
 
 """
 `avail`. A `TextArea` takes the space it is offered and scrolls its
@@ -166,7 +167,7 @@ content: an auto-HEIGHT `TextArea` would be as tall as its text and
 would never scroll at all. Give it `height: 10` or a `grow: 1` parent.
 Pure with respect to the tree.
 """
-measure(w::Any, avail::Any)::Any = avail
+measure(w::TextArea, avail::Size)::Size = avail
 
 """
 Recompute `widest` from scratch. O(lines).
@@ -179,7 +180,7 @@ small and there is slack to the right -- until this is called.
 `set_text!` calls it. The alternative, an O(lines) rescan per keystroke,
 costs the editor to save a scrollbar thumb one cell.
 """
-function refresh_extent!(w::Any)::Any
+function refresh_extent!(w::TextArea)::Size
     m = 0
     for line in w.lines
         m = max(m, text_width(line))
@@ -192,7 +193,7 @@ end
 Replace the document with `s`, split on newlines. Resets the caret, the
 scroll and the extent.
 """
-function set_text!(w::Any, s::AbstractString)::Nothing
+function set_text!(w::TextArea, s::AbstractString)::Nothing
     empty!(w.lines)
     append!(w.lines, _ta_split(s))
     w.line = 1
@@ -206,7 +207,7 @@ end
 """
 The document as one string, lines joined by `\\n`.
 """
-text(w::Any)::String = join(w.lines, "\n")
+text(w::TextArea)::String = join(w.lines, "\n")
 
 """
 Paint `lines[scroll.y+1 : scroll.y+height]`, each sliced at `scroll.x`,
@@ -221,7 +222,7 @@ would have orphaned a continuation into column 1.
 ONE pass over the graphemes, no `grapheme_cells`: it allocates a
 `Vector` per call and this is the frame path.
 """
-function render!(w::Any, buf::Any)::Nothing
+function render!(w::TextArea, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
@@ -261,7 +262,7 @@ The caret is RECOMPUTED from the new prefix, never advanced by the
 inserted cluster count: a combining mark MERGES into the preceding
 cluster and the count may not increase at all.
 """
-function insert_text!(w::Any, t::AbstractString)::Nothing
+function insert_text!(w::TextArea, t::AbstractString)::Nothing
     isempty(t) && return nothing
     head, tail = _ta_split_at(w.lines[w.line], w.col)
     parts = split(t, '\n')
@@ -294,13 +295,13 @@ end
 """
 Split the current line at the caret.
 """
-insert_newline!(w::Any)::Nothing = insert_text!(w, "\n")
+insert_newline!(w::TextArea)::Nothing = insert_text!(w, "\n")
 
 """
 Delete the cluster BEFORE the caret; at column 0 of line `n > 1` this
 JOINS with the previous line. False at `(1, 0)`.
 """
-function backspace!(w::Any)::Bool
+function backspace!(w::TextArea)::Bool
     if w.col > 0
         cur = w.lines[w.line]
         head, _ = _ta_split_at(cur, w.col - 1)
@@ -328,7 +329,7 @@ end
 Delete the cluster AT the caret; at the end of line `n < end` this JOINS
 the next line. False at the end of the document.
 """
-function delete_forward!(w::Any)::Bool
+function delete_forward!(w::TextArea)::Bool
     cur = w.lines[w.line]
     if w.col < _ngraphemes(cur)
         head, _ = _ta_split_at(cur, w.col)
@@ -354,7 +355,7 @@ end
 One cluster right, crossing into the next line at the end of this one.
 False at the end of the DOCUMENT. Internal.
 """
-function _ta_step_right!(w::Any)::Bool
+function _ta_step_right!(w::TextArea)::Bool
     if w.col < _ngraphemes(w.lines[w.line])
         w.col += 1
         return true
@@ -369,7 +370,7 @@ end
 One cluster left, crossing into the previous line at column 0. False at
 the start of the DOCUMENT. Internal.
 """
-function _ta_step_left!(w::Any)::Bool
+function _ta_step_left!(w::TextArea)::Bool
     if w.col > 0
         w.col -= 1
         return true
@@ -386,7 +387,7 @@ Move the caret by `n` CLUSTERS, wrapping across lines. Resets `goal`.
 Clamped at both ends of the document: `move_by!(w, typemax(Int) ÷ 2)` is
 End-of-document and cannot run off it.
 """
-function move_by!(w::Any, n::Int)::Nothing
+function move_by!(w::TextArea, n::Int)::Nothing
     if n > 0
         for _ in 1:n
             _ta_step_right!(w) || break
@@ -409,7 +410,7 @@ new line.
 come to rest INSIDE a wide cluster, and a run down through a SHORT line
 and back up returns to the column the user started in.
 """
-function move_line!(w::Any, n::Int)::Int
+function move_line!(w::TextArea, n::Int)::Int
     w.line = clamp(w.line + n, 1, length(w.lines))
     w.col = _col_at_cell(w.lines[w.line], w.goal)
     mark!(w, Dirty.PAINT)
@@ -422,7 +423,7 @@ Move the caret to cluster `col` of the CURRENT line, clamped: `0` is
 Home and `typemax(Int)` is End. A horizontal move, so it re-pins `goal`.
 Internal.
 """
-function _ta_move_col!(w::Any, col::Int)::Nothing
+function _ta_move_col!(w::TextArea, col::Int)::Nothing
     w.col = clamp(col, 0, _ngraphemes(w.lines[w.line]))
     _ta_moved!(w)
     return nothing
@@ -436,7 +437,7 @@ HORIZONTAL move and every edit -- and by nothing else.
 and a grapheme goal lands UP/DOWN in a visually different column across
 wide clusters. Internal.
 """
-function _ta_set_goal!(w::Any)::Nothing
+function _ta_set_goal!(w::TextArea)::Nothing
     w.goal = _ta_cells_before(w.lines[w.line], w.col)
     return nothing
 end
@@ -445,7 +446,7 @@ end
 Re-pin `goal`, mark PAINT and follow the caret. THE single exit of every
 HORIZONTAL move, so none of the three can be forgotten. Internal.
 """
-function _ta_moved!(w::Any)::Nothing
+function _ta_moved!(w::TextArea)::Nothing
     _ta_set_goal!(w)
     mark!(w, Dirty.PAINT)
     _ta_follow_caret!(w)
@@ -457,7 +458,7 @@ Bump `version`, re-pin `goal`, fire `on_change`. THE single exit of
 every edit, so none of the three can be forgotten at a call site.
 Internal.
 """
-function _ta_edited!(w::Any)::Nothing
+function _ta_edited!(w::TextArea)::Nothing
     w.version[] = w.version[] + 1
     _ta_set_goal!(w)
     _ta_follow_caret!(w)
@@ -479,7 +480,7 @@ A no-op before the first layout, when the content box is still empty:
 there is no window to move yet, and `set_text!`/`render!` are correct at
 offset zero regardless.
 """
-function _ta_follow_caret!(w::Any)::Nothing
+function _ta_follow_caret!(w::TextArea)::Nothing
     c = layout_of(w).content
     (c.width <= 0 || c.height <= 0) && return nothing
     off = scroll_of(w)
@@ -497,14 +498,14 @@ Lines one PAGE_UP/PAGE_DOWN travels: one viewport LESS ONE ROW of
 overlap, so the reader keeps a landmark. At least one, so an unlaid-out
 area still moves. Internal.
 """
-_ta_page(w::Any)::Int = max(1, layout_of(w).content.height - 1)
+_ta_page(w::TextArea)::Int = max(1, layout_of(w).content.height - 1)
 
 """
 True while `d` is live and at or past its target -- everywhere except
 the capture phase, which belongs to ancestors that want to intercept.
 Internal.
 """
-_ta_acts(d::Any)::Bool =
+_ta_acts(d::Dispatch)::Bool =
     d.phase !== Phase.CAPTURE && !is_consumed(d)
 
 """
@@ -519,7 +520,7 @@ HOME and END are per LINE, not per document -- that is what a caret in a
 text editor means, and `Scrollpane`'s document-wide HOME/END still reach
 an ancestor pane whenever this area is not focused.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::TextArea, d::Dispatch{KeyEvent})::Nothing
     _ta_acts(d) || return nothing
     e = event(d)
     isempty(e.mods) || return nothing
@@ -563,7 +564,7 @@ Insert a paste at the caret, splitting it on newlines into real lines.
 Unlike `TextInput`, which has nowhere to put a line break and strips
 them, a `TextArea` is exactly the widget a multi-line paste belongs in.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::TextArea, d::Dispatch{PasteEvent})::Nothing
     _ta_acts(d) || return nothing
     insert_text!(w, event(d).text)
     consume!(d)
@@ -575,9 +576,9 @@ Show the caret, and scroll every ancestor pane until this area is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it.
 """
-on_focus!(w::Any)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::TextArea)::Nothing = (w.focused[] = true; reveal!(w))
 
 """
 Hide the caret.
 """
-on_blur!(w::Any)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::TextArea)::Nothing = (w.focused[] = false; nothing)

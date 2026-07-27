@@ -49,7 +49,7 @@ verbatim (textinput.jl:158): "`Reactive`'s default is the conservative
 `Dirty.LAYOUT` precisely because choosing PAINT for state that can
 change size is a correctness bug. The text-independent `measure` above
 is what licenses PAINT here; do not copy the choice to a widget without
-that property." `measure(::Any, avail) = avail` HAS that property, and
+that property." `measure(::List, avail) = avail` HAS that property, and
 `compute_layout` NEVER calls `content_extent`. A data change therefore
 PROVABLY cannot move a box, so `push_item!` on a 100 000-item list costs
 ZERO layout and never fires `escalate_auto!`. `TextArea`'s LAYOUT is
@@ -63,16 +63,16 @@ mutable struct List{T,F,A} <: RowsWidget
     "Per-widget state."
     node::WidgetNode
     "The data, one entry per row. ALIASED. Mutated IN PLACE."
-    const items::Any
+    const items::Vector{T}
     "`format(item)::AbstractString`. CONCRETE: dispatches statically."
-    const format::Any
+    const format::F
     """
     Bumped by every data OR selection change. THE reactive cell.
     Dirty.PAINT -- see above.
     """
-    version::Any
+    version::Reactive{Int}
     "Cursor and selected set, in SOURCE row indices."
-    const sel::Any
+    const sel::Selection
     """
     MONOTONE high-water mark of the widest row, in cells. NEVER an
     UNDER-estimate once `scanned` -- see `_lst_scan!` for why that
@@ -85,9 +85,9 @@ mutable struct List{T,F,A} <: RowsWidget
     """
     scanned::Bool
     "True while focused. PAINT-reactive."
-    focused::Any
+    focused::Reactive{Bool}
     "Called as `on_activate(list)` on ENTER."
-    on_activate::Any
+    on_activate::A
 end
 
 """
@@ -114,11 +114,11 @@ nothing, and the constructor stays O(1) over an aliased `Vector`.
 `isempty(items)` is `scanned` BY CONSTRUCTION and is not a special case:
 `0` IS the exact maximum over no rows.
 """
-function List(items::Any, on_activate::Any = _tc_noop;
-              format::Any = _tc_show,
-              mode::Any = SelectMode.SINGLE,
+function List(items::Vector{T}, on_activate::A = _tc_noop;
+              format::F = _tc_show,
+              mode::SelectMode.T = SelectMode.SINGLE,
               id::Symbol = gensym(:list),
-              classes = Symbol[])::Any where {T,F,A}
+              classes = Symbol[])::List{T,F,A} where {T,F,A}
     w = List{T,F,A}(WidgetNode(; id = id, classes = classes,
                                type_name = :List, focusable = true),
                     items, format,
@@ -134,16 +134,16 @@ end
 """
 A list over any `AbstractVector`, collected ONCE into a `Vector`.
 """
-List(items::Any, args...; kwargs...) =
+List(items::AbstractVector, args...; kwargs...) =
     List(collect(items), args...; kwargs...)
 
 # --- the seam. FINAL: `tablecore.jl` dispatches on every one of these.
-selection_of(w::Any)::Any = w.sel
-row_count(w::Any)::Int = length(w.items)
-view_count(w::Any)::Int = length(w.items)
-view_source(::Any, k::Int)::Int = k
-view_rank(::Any, s::Int)::Int = s
-_tc_touch!(w::Any)::Nothing = (w.version[] = w.version[] + 1; nothing)
+selection_of(w::List)::Selection = w.sel
+row_count(w::List)::Int = length(w.items)
+view_count(w::List)::Int = length(w.items)
+view_source(::List, k::Int)::Int = k
+view_rank(::List, s::Int)::Int = s
+_tc_touch!(w::List)::Nothing = (w.version[] = w.version[] + 1; nothing)
 
 """
 `w.widest`, MEMOIZED on `scanned`: O(1) and ZERO allocation on a hit,
@@ -184,7 +184,7 @@ rows per keystroke. `_lst_widen!` MAINTAINS the mark across `push_item!`
 and `insert_item!` instead -- `max` over `items ∪ {x}` IS
 `max(mark, width(x))` -- so only the two BULK ops invalidate. Internal.
 """
-_tc_extent_width(w::Any)::Int = _lst_scan!(w)
+_tc_extent_width(w::List)::Int = _lst_scan!(w)
 
 """
 Measure every item and RAISE `widest` to fit, once. Returns the mark.
@@ -197,7 +197,7 @@ it safe to call from inside `scroll_to!`'s own `content_extent` read,
 where a `_lst_reclamp!` would recurse. `refresh_extent!` is the call
 that can LOWER the mark, and it is the one that re-clamps. Internal.
 """
-function _lst_scan!(w::Any)::Int
+function _lst_scan!(w::List)::Int
     w.scanned && return w.widest
     m = w.widest
     for x in w.items
@@ -216,7 +216,7 @@ OVERRIDE IS THE WHOLE INTEGRATION WITH `Scrollbar` --
 `Scrollbar{List{T,F,A}}` works with ZERO new code in `scroll.jl`,
 because the scrollable seam is three functions and not a type.
 
-`_tc_header_rows(::Any) == 0`, so the `+ hh` of `_tc_extent`
+`_tc_header_rows(::List) == 0`, so the `+ hh` of `_tc_extent`
 degenerates and this is `Size(widest, n)` exactly.
 
 O(1) AND ZERO ALLOCATION ON EVERY CALL BUT THE FIRST, which is the bar
@@ -234,7 +234,7 @@ rows, and the alternative -- inferring the mark from what `render!`
 painted -- is the fixpoint `_tc_extent_width` documents, which does not
 cost O(rows) only because it never works at all.
 """
-content_extent(w::Any)::Any = _tc_extent(w)
+content_extent(w::List)::Size = _tc_extent(w)
 
 """
 `avail`. `TextArea`'s argument verbatim (textarea.jl:164): a `List`
@@ -243,7 +243,7 @@ auto-HEIGHT `List` would be as tall as its data and would never scroll
 at all. Give it `height: 10` or a `grow: 1` parent. This is also what
 licenses `version`'s PAINT reactivity. Pure w.r.t. the tree.
 """
-measure(w::Any, avail::Any)::Any = avail
+measure(w::List, avail::Size)::Size = avail
 
 """
 Raise the high-water mark to fit `x`, formatted. O(text_width(x)), never
@@ -255,7 +255,7 @@ MAINTAINS `scanned` rather than clearing it, and that is what keeps
 not understate `items ∪ {x}` either. Building a list by `push_item!`
 therefore stays O(n) overall, never O(n^2). Internal.
 """
-function _lst_widen!(w::Any, x)::Nothing
+function _lst_widen!(w::List, x)::Nothing
     w.widest = max(w.widest, text_width(w.format(x)))
     return nothing
 end
@@ -266,7 +266,7 @@ functions that can SHRINK it -- `refresh_extent!` and `refresh_rows!` --
 and by nothing else, because `scroll_to!` reads `content_extent` and
 that is a cost the frame path must not pay for a no-op. Internal.
 """
-function _lst_reclamp!(w::Any)::Nothing
+function _lst_reclamp!(w::List)::Nothing
     scroll_to!(w, scroll_of(w))
     return nothing
 end
@@ -278,7 +278,7 @@ O(items), and it CALLS THE FORMATTER ONCE PER ITEM.
 `widest` is a MONOTONE HIGH-WATER MARK: `render!` raises it from the
 width `_tc_paint_slice!` returns, in O(1) per painted row, and nothing
 lowers it. THE SAME NAME, THE SAME CONTRACT and the same return type as
-`refresh_extent!(::Any)` (textarea.jl:183) -- one name, one
+`refresh_extent!(::TextArea)` (textarea.jl:183) -- one name, one
 meaning, four widgets, and no new export.
 
 THE TRADEOFF, stated so nobody discovers it, and it is now the SAME as
@@ -298,7 +298,7 @@ little small, never a cell you cannot reach.
 Re-clamps the stored offset afterwards, because this is the only call
 that can SHRINK the extent and strand an offset past the end.
 """
-function refresh_extent!(w::Any)::Any
+function refresh_extent!(w::List)::Size
     m = 0
     for x in w.items
         m = max(m, text_width(w.format(x)))
@@ -325,7 +325,7 @@ MUTATING `widest` and `sel.n` inside `render!` is safe for the reason
 `Scrollpane.render!` gives at length (scroll.jl:389-415): neither is a
 `Reactive`, so this marks NOTHING and cannot loop, and it converges.
 """
-function render!(w::Any, buf::Any)::Nothing
+function render!(w::List, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     _tc_sync!(w)
@@ -354,13 +354,13 @@ end
 """
 Keys: see `_tc_key!`. Consumes only when something actually moved.
 """
-on_event!(w::Any, d::Any)::Nothing =
+on_event!(w::List, d::Dispatch{KeyEvent})::Nothing =
     (_tc_key!(w, d); nothing)
 
 """
 Mouse: see `_tc_mouse!`. Consumes only when something actually changed.
 """
-on_event!(w::Any, d::Any)::Nothing =
+on_event!(w::List, d::Dispatch{MouseEvent})::Nothing =
     (_tc_mouse!(w, d); nothing)
 
 """
@@ -368,12 +368,12 @@ Show the cursor, and scroll every ancestor pane until this list is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it (widget.jl:666).
 """
-on_focus!(w::Any)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::List)::Nothing = (w.focused[] = true; reveal!(w))
 
 """
 Hide the cursor.
 """
-on_blur!(w::Any)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::List)::Nothing = (w.focused[] = false; nothing)
 
 # --- data ops. Each routes through `refresh_rows!`. -------------------
 
@@ -381,7 +381,7 @@ on_blur!(w::Any)::Nothing = (w.focused[] = false; nothing)
 Replace the contents. CLEARS the selection and cursor and rewinds the
 scroll: every index the selection held names a row that may no longer
 exist, and silently keeping them would select the WRONG ROWS.
-`set_text!(::Any)` makes the same choice with the caret.
+`set_text!(::TextArea)` makes the same choice with the caret.
 
 The mark is INVALIDATED for the same reason and by the same precedent:
 `set_text!` calls `refresh_extent!`, because a mark measured over data
@@ -391,7 +391,7 @@ Dropping it to ZERO and clearing `scanned` is the O(1) half of that --
 one -- and it leaves EXACTLY the state the constructor leaves, which is
 what "replace the contents" should mean.
 """
-function set_items!(w::Any, xs::Any)::Nothing where {T}
+function set_items!(w::List{T}, xs::AbstractVector)::Nothing where {T}
     empty!(w.items)
     append!(w.items, xs)
     w.widest = 0
@@ -415,7 +415,7 @@ end
 """
 Append `x`. O(1) plus an O(text_width(x)) mark raise.
 """
-function push_item!(w::Any, x::Any)::Nothing where {T}
+function push_item!(w::List{T}, x::T)::Nothing where {T}
     push!(w.items, x)
     _lst_widen!(w, x)
     refresh_rows!(w)
@@ -426,7 +426,7 @@ end
 Insert `x` at `i`, clamped. REINDEXES the selection via
 `reindex_insert!`: every selected row at or above `i` moves up one.
 """
-function insert_item!(w::Any, i::Int, x::Any)::Nothing where {T}
+function insert_item!(w::List{T}, i::Int, x::T)::Nothing where {T}
     k = clamp(i, 1, length(w.items) + 1)
     insert!(w.items, k, x)
     _lst_widen!(w, x)
@@ -445,7 +445,7 @@ Delete row `i`. False when out of range. REINDEXES via
 `reindex_delete!`: `i` leaves the selection and the cursor lands on the
 row that took its place, or on the new last row.
 """
-function delete_item!(w::Any, i::Int)::Bool
+function delete_item!(w::List, i::Int)::Bool
     (1 <= i <= length(w.items)) || return false
     deleteat!(w.items, i)
     reindex_delete!(w.sel, i)           # BEFORE `refresh_rows!`
@@ -459,7 +459,7 @@ cursor. THE single exit of every data change, so none of the four can be
 forgotten at a call site -- `_ta_edited!`'s pattern (textarea.jl:461).
 ALSO the public escape hatch for "I mutated `items` myself".
 """
-function refresh_rows!(w::Any)::Nothing
+function refresh_rows!(w::List)::Nothing
     _tc_touch!(w)
     _tc_sync!(w)
     _lst_reclamp!(w)

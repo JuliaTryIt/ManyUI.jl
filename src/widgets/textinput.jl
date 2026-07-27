@@ -120,7 +120,7 @@ count onto the index of the character it lands on, which for a cluster
 boundary is that character's start, so the split is exact and never
 loses a byte. `truncate_width` takes the same precaution.
 """
-_ti_head(s::String, b::Int)::Any =
+_ti_head(s::String, b::Int)::SubString{String} =
     SubString(s, 1, thisind(s, b))
 
 """
@@ -131,7 +131,7 @@ Legal at BOTH ends without a special case: `b` is a cluster boundary, so
 `b + 1` starts a character, and one past the last byte yields the empty
 string rather than a `BoundsError`.
 """
-_ti_tail(s::String, b::Int)::Any = SubString(s, b + 1)
+_ti_tail(s::String, b::Int)::SubString{String} = SubString(s, b + 1)
 
 # --- TextInput --------------------------------------------------------
 
@@ -144,7 +144,7 @@ _ti_noop(::Widget)::Nothing = nothing
 The caret's own style: REVERSE video, MERGED onto whatever cell the
 caret rests on so the glyph under it survives. Internal.
 """
-const _TI_CARET = (; reverse = true)
+const _TI_CARET = Style(; reverse = true)
 
 """
 Single-line text entry.
@@ -171,15 +171,15 @@ mutable struct TextInput{F} <: Widget
     "Per-widget state."
     node::WidgetNode
     "The content. PAINT-reactive: the box cannot move."
-    text::Any
+    text::Reactive{String}
     "Caret, a 0-based GRAPHEME index in `0:n`. PAINT-reactive."
-    cursor::Any
+    cursor::Reactive{Int}
     "True while focused; drives the caret cell. PAINT-reactive."
-    focused::Any
+    focused::Reactive{Bool}
     "Shown dimmed while `text` is empty."
     const placeholder::String
     "Called as `on_submit(input)` on ENTER."
-    on_submit::Any
+    on_submit::F
 end
 
 """
@@ -192,10 +192,10 @@ The caret starts at the END of `text`, where a user who is handed a
 pre-filled field expects to carry on typing.
 """
 function TextInput(text::AbstractString = "",
-                   on_submit::Any = _ti_noop;
+                   on_submit::F = _ti_noop;
                    placeholder::AbstractString = "",
                    id::Symbol = gensym(:textinput),
-                   classes = Symbol[])::Any where {F}
+                   classes = Symbol[])::TextInput{F} where {F}
     s = String(text)
     w = TextInput{F}(WidgetNode(; id = id, classes = classes,
                                 type_name = :TextInput,
@@ -214,7 +214,7 @@ end
 scrolls the rest; it never sizes to its content. Give it `width: 20` for
 a narrow box. Pure with respect to the tree.
 """
-measure(w::Any, avail::Any)::Any = Size(avail.width, 1)
+measure(w::TextInput, avail::Size)::Size = Size(avail.width, 1)
 
 """
 The content extent for the scrollable seam: `Size(text_width(text) + 1,
@@ -223,7 +223,7 @@ The content extent for the scrollable seam: `Size(text_width(text) + 1,
 The `+ 1` is load-bearing: the caret must be able to rest ONE cell past
 the last glyph, and without it End scrolls one cell short.
 """
-content_extent(w::Any)::Any = Size(text_width(w.text[]) + 1, 1)
+content_extent(w::TextInput)::Size = Size(text_width(w.text[]) + 1, 1)
 
 """
 The caret, clamped into `0:n`. Internal.
@@ -233,7 +233,7 @@ that assigns `w.text[]` behind the editing ops' back can leave the caret
 past the end. Clamping on every READ makes every op below total, instead
 of scattering the same guard through each of them.
 """
-_ti_caret(w::Any)::Int =
+_ti_caret(w::TextInput)::Int =
     clamp(w.cursor[], 0, _ngraphemes(w.text[]))
 
 """
@@ -251,7 +251,7 @@ stopping AT the caret subsumes all three, and it clamps `cursor` into
 `0:n` on the way for free: a `want` below the range returns on the first
 cluster and one past it falls out of the loop.
 """
-function _ti_caret_cells(w::Any)::Any
+function _ti_caret_cells(w::TextInput)::Tuple{Int,Int}
     want = w.cursor[]
     cells = 0
     i = 0
@@ -271,7 +271,7 @@ Split out of `visible_scroll` so `render!` can pay for the caret's
 column ONCE and reuse it, rather than walking the prefix twice per
 frame.
 """
-function _ti_window(w::Any, width::Int, lo::Int, cw::Int)::Int
+function _ti_window(w::TextInput, width::Int, lo::Int, cw::Int)::Int
     pos = scroll_of(w).x
     width <= 0 && return pos
     pos = scroll_into_view(pos, width, lo, lo + cw - 1)
@@ -290,7 +290,7 @@ MINIMAL MOVEMENT falls out of `scroll_into_view`: content already inside
 the window does not move, and the clamp at `content_extent` is what lets
 End rest on the caret's own cell instead of one short of it.
 """
-function visible_scroll(w::Any, width::Int)::Int
+function visible_scroll(w::TextInput, width::Int)::Int
     lo, cw = _ti_caret_cells(w)
     return _ti_window(w, width, lo, cw)
 end
@@ -303,7 +303,7 @@ A no-op before the first layout: with no content box there is no window
 to be inside, and `render!` recomputes the offset from the width it is
 actually given in any case.
 """
-function _ti_sync_scroll!(w::Any)::Nothing
+function _ti_sync_scroll!(w::TextInput)::Nothing
     width = content_region(w).width
     width <= 0 && return nothing
     set_scroll!(w, Offset(visible_scroll(w, width), 0))
@@ -329,7 +329,7 @@ Reads the scroll rather than writing it: a paint MUST NOT mutate, and
 `visible_scroll` is the same function the editing ops stored, so the two
 cannot disagree.
 """
-function render!(w::Any, buf::Any)::Nothing
+function render!(w::TextInput, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
@@ -360,7 +360,7 @@ mark MERGES into the preceding cluster, so the cluster count may not
 increase at all, and an advance-by-`n` caret would then sit past the end
 of a string that never grew.
 """
-function insert_text!(w::Any, t::AbstractString)::Nothing
+function insert_text!(w::TextInput, t::AbstractString)::Nothing
     isempty(t) && return nothing
     s = w.text[]
     b = _byte_after(s, _ti_caret(w))
@@ -377,7 +377,7 @@ Delete the cluster BEFORE the caret. False at the start of the text.
 The WHOLE cluster goes: one backspace over a ZWJ family takes all 25 of
 its bytes, not the last codepoint of it.
 """
-function backspace!(w::Any)::Bool
+function backspace!(w::TextInput)::Bool
     cur = _ti_caret(w)
     cur <= 0 && return false
     s = w.text[]
@@ -395,7 +395,7 @@ Delete the cluster AT the caret. False at the end of the text.
 The caret does not move: it is the same count of clusters from the start
 as it was, which is why it is recomputed from the same byte offset.
 """
-function delete_forward!(w::Any)::Bool
+function delete_forward!(w::TextInput)::Bool
     cur = _ti_caret(w)
     s = w.text[]
     b = _byte_after(s, cur)
@@ -411,7 +411,7 @@ end
 Move the caret to cluster `i`, clamped to `0:n`: `0` is Home and
 `typemax(Int)` is End. Returns the new caret.
 """
-function move_to!(w::Any, i::Int)::Int
+function move_to!(w::TextInput, i::Int)::Int
     v = clamp(i, 0, _ngraphemes(w.text[]))
     w.cursor[] = v
     _ti_sync_scroll!(w)
@@ -429,7 +429,7 @@ Saturates instead of overflowing: the caret is non-negative, so only the
 rightward sum can leave `Int`, and a request that far right is an End by
 any reading.
 """
-function move_by!(w::Any, n::Int)::Int
+function move_by!(w::TextInput, n::Int)::Int
     cur = _ti_caret(w)
     i = (n > 0 && n > typemax(Int) - cur) ? typemax(Int) : cur + n
     return move_to!(w, i)
@@ -445,7 +445,7 @@ never an interceptor. `AT_TARGET` counts because a childless input IS
 the target, and the bubble phase excludes the target, so bubble alone
 would never visit it. Internal.
 """
-_ti_edits(d::Any)::Bool =
+_ti_edits(d::Dispatch)::Bool =
     d.phase !== Phase.CAPTURE && !is_consumed(d)
 
 """
@@ -480,7 +480,7 @@ ESCAPE FALL THROUGH UNCONSUMED, which is what keeps the tab order alive.
 HOME and END are `move_to!` with the extremes of `Int` and let the clamp
 decide -- "go as far as you can" IS the implementation.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::TextInput, d::Dispatch{KeyEvent})::Nothing
     _ti_edits(d) || return nothing
     e = event(d)
     isempty(e.mods) || return nothing
@@ -519,7 +519,7 @@ Consumes either way. A paste that strips to nothing was still a paste
 into this input, and letting the husk bubble to an ancestor would be a
 second delivery of the same event.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::TextInput, d::Dispatch{PasteEvent})::Nothing
     _ti_edits(d) || return nothing
     insert_text!(w, _ti_strip_controls(event(d).text))
     consume!(d)
@@ -531,9 +531,9 @@ Show the caret, and scroll every ancestor pane until this input is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it.
 """
-on_focus!(w::Any)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::TextInput)::Nothing = (w.focused[] = true; reveal!(w))
 
 """
 Hide the caret.
 """
-on_blur!(w::Any)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::TextInput)::Nothing = (w.focused[] = false; nothing)

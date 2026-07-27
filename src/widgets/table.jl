@@ -37,7 +37,7 @@ decisive type decision of the tier. A `Vector{Column{T,G}}` parametric
 on the projection is IMPOSSIBLE -- each column's closure has its own
 type, so one `G` cannot serve them all -- which forces `Column` to hold
 an ABSTRACT projection field and pay ONE DYNAMIC DISPATCH PER VISIBLE
-CELL, FOREVER. `cell::Any` on the widget is one CONCRETE type parameter, a
+CELL, FOREVER. `cell::F` on the widget is one CONCRETE type parameter, a
 STATIC dispatch, the same expressive power (`cell(row, j)` can branch on
 `j` however it likes), and it is the `Button{F}` pattern this package
 already uses three times.
@@ -56,19 +56,19 @@ mutable struct Table{R,F,A} <: RowsWidget
     "Per-widget state."
     node::WidgetNode
     "The column model. IDENTICAL in kind to `DataTable`'s."
-    const grid::Any
+    const grid::TableGrid
     "The rows. ALIASED. Mutated IN PLACE, via the ops."
-    const rows::Any
+    const rows::Vector{R}
     "`cell(row, j)::AbstractString`. CONCRETE: dispatches statically."
-    const cell::Any
+    const cell::F
     "Bumped by every data OR selection change. Dirty.PAINT."
-    version::Any
+    version::Reactive{Int}
     "Cursor and selected set, in SOURCE row indices."
-    const sel::Any
+    const sel::Selection
     "True while focused. PAINT-reactive."
-    focused::Any
+    focused::Reactive{Bool}
     "Called as `on_activate(table)` on ENTER."
-    on_activate::Any
+    on_activate::A
 end
 
 """
@@ -86,15 +86,15 @@ A table of `rows` under `cols`, calling `on_activate(table)` on ENTER.
 construction. Seeds every AUTO column from the headers and SOURCE rows
 `1 : min(sample, length(rows))`, once -- see `_tc_auto!`.
 """
-function Table(rows::Any, cols::Any,
-               on_activate::Any = _tc_noop;
-               cell::Any = _tc_cell_default,
-               mode::Any = SelectMode.SINGLE,
+function Table(rows::Vector{R}, cols::Vector{Column},
+               on_activate::A = _tc_noop;
+               cell::F = _tc_cell_default,
+               mode::SelectMode.T = SelectMode.SINGLE,
                sep::AbstractString = " ", show_header::Bool = true,
                rule::Bool = false, rule_glyph::AbstractString = TC_RULE,
                sample::Int = TC_AUTO_SAMPLE,
                id::Symbol = gensym(:table),
-               classes = Symbol[])::Any where {R,F,A}
+               classes = Symbol[])::Table{R,F,A} where {R,F,A}
     w = Table{R,F,A}(WidgetNode(; id = id, classes = classes,
                                 type_name = :Table, focusable = true),
                      TableGrid(cols; sep = sep,
@@ -115,19 +115,19 @@ function Table(rows::Any, cols::Any,
 end
 
 # --- the seam. FINAL: `tablecore.jl` dispatches on every one of these.
-selection_of(w::Any)::Any = w.sel
-row_count(w::Any)::Int = length(w.rows)
-view_count(w::Any)::Int = length(w.rows)
-view_source(::Any, k::Int)::Int = k
-view_rank(::Any, s::Int)::Int = s
-grid_of(w::Any)::Any = w.grid
-_tc_touch!(w::Any)::Nothing = (w.version[] = w.version[] + 1; nothing)
+selection_of(w::Table)::Selection = w.sel
+row_count(w::Table)::Int = length(w.rows)
+view_count(w::Table)::Int = length(w.rows)
+view_source(::Table, k::Int)::Int = k
+view_rank(::Table, s::Int)::Int = s
+grid_of(w::Table)::TableGrid = w.grid
+_tc_touch!(w::Table)::Nothing = (w.version[] = w.version[] + 1; nothing)
 
 """
 `(show_header ? 1 : 0) + (show_header && rule ? 1 : 0)`. The rows of the
 content box that are pinned CHROME. `0`, `1` or `2`. Internal.
 """
-function _tc_header_rows(w::Any)::Int
+function _tc_header_rows(w::Table)::Int
     g = w.grid
     g.show_header || return 0
     return g.rule ? 2 : 1
@@ -141,7 +141,7 @@ with ZERO new code in `scroll.jl`. See `_tc_extent` for why the header
 rows are counted and why dropping them would make the last `hh` rows of
 every table unreachable. O(1) on the FRAME PATH.
 """
-content_extent(w::Any)::Any = _tc_extent(w)
+content_extent(w::Table)::Size = _tc_extent(w)
 
 """
 `avail`. A `Table` takes the space it is OFFERED and scrolls its
@@ -149,26 +149,26 @@ content: an auto-HEIGHT table would be as tall as its data and would
 never scroll at all. This is also what licenses `version`'s PAINT
 reactivity. Pure w.r.t. the tree.
 """
-measure(w::Any, avail::Any)::Any = avail
+measure(w::Table, avail::Size)::Size = avail
 
 """
 The pinned header, the optional rule, then the visible body rows in view
 order. O(visible rows x VISIBLE COLUMNS). See `_tc_render_table!`.
 """
-render!(w::Any, buf::Any)::Nothing =
+render!(w::Table, buf::AbstractMatrix{Cell})::Nothing =
     _tc_render_table!(w, buf)
 
 """
 Keys: see `_tc_key!`. Consumes only when something actually moved.
 """
-on_event!(w::Any, d::Any)::Nothing =
+on_event!(w::Table, d::Dispatch{KeyEvent})::Nothing =
     (_tc_key!(w, d); nothing)
 
 """
 Mouse: see `_tc_mouse!`. A press on the header does nothing: a `Table`
 never sorts.
 """
-on_event!(w::Any, d::Any)::Nothing =
+on_event!(w::Table, d::Dispatch{MouseEvent})::Nothing =
     (_tc_mouse!(w, d); nothing)
 
 """
@@ -176,12 +176,12 @@ Show the cursor, and scroll every ancestor pane until this table is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it (widget.jl:666).
 """
-on_focus!(w::Any)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::Table)::Nothing = (w.focused[] = true; reveal!(w))
 
 """
 Hide the cursor.
 """
-on_blur!(w::Any)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::Table)::Nothing = (w.focused[] = false; nothing)
 
 """
 Reset and re-measure every AUTO mark over EVERY row, re-resolve, and
@@ -189,17 +189,17 @@ return the new `content_extent`. O(rows x AUTO columns), each cell
 capped by `_tc_measure`.
 
 THE OPT-IN EXACT RESCAN, and the same name and meaning as
-`refresh_extent!(::Any)` and `refresh_extent!(::Any)`. This is the
+`refresh_extent!(::TextArea)` and `refresh_extent!(::List)`. This is the
 ONLY thing that can make an AUTO column NARROWER, and it is the
 documented escape from the sampling rule.
 """
-function refresh_extent!(w::Any)::Any
+function refresh_extent!(w::Table)::Size
     _tc_auto_reset!(w)
     _tc_auto!(w, 1, length(w.rows))
     e = content_extent(w)
     # Re-clamp: this is the ONLY call that can SHRINK the extent, and so
     # the only one that can strand an offset past the end.
-    # `refresh_extent!(::Any)` re-clamps for the same reason.
+    # `refresh_extent!(::List)` re-clamps for the same reason.
     scroll_to!(w, scroll_of(w))
     return e
 end
@@ -211,7 +211,7 @@ Replace the contents. CLEARS the selection and cursor, rewinds the
 scroll and RE-SEEDS the AUTO marks: every index the selection held names
 a row that may no longer exist.
 """
-function set_rows!(w::Any, rows::Any)::Nothing where {R}
+function set_rows!(w::Table{R}, rows::AbstractVector)::Nothing where {R}
     empty!(w.rows)
     append!(w.rows, rows)
     s = w.sel
@@ -222,7 +222,7 @@ function set_rows!(w::Any, rows::Any)::Nothing where {R}
     # and a table that selects a row before the user has touched it has
     # made a choice on their behalf. `resize_selection!` alone would not
     # move a cursor when the COUNT happens to be unchanged, and the rows
-    # under it are new either way. `set_text!(::Any)` re-pins its
+    # under it are new either way. `set_text!(::TextArea)` re-pins its
     # caret with the same two writes (textarea.jl:199).
     s.cursor = isempty(w.rows) ? 0 : 1
     s.anchor = s.cursor
@@ -240,7 +240,7 @@ THE ONE PLACE the sample is re-scanned, and it is never a data change:
 `push_row!`/`insert_row!` raise the marks from the NEW ROW ALONE, which
 is what keeps a push O(1). Internal.
 """
-function _tb_reseed!(w::Any)::Nothing
+function _tb_reseed!(w::Table)::Nothing
     _tc_auto_reset!(w)
     _tc_auto!(w, 1, w.grid.sample)
     return nothing
@@ -250,7 +250,7 @@ end
 Append `r`. O(1) plus an O(cap) mark raise for that row alone -- nothing
 rescans.
 """
-function push_row!(w::Any, r::Any)::Nothing where {R}
+function push_row!(w::Table{R}, r::R)::Nothing where {R}
     push!(w.rows, r)
     # THE NEW ROW ALONE. A `version`-keyed rescan of the whole sample
     # here would turn building a 100 000-row table by push into 20M cell
@@ -266,7 +266,7 @@ end
 Insert `r` at `i`, clamped. REINDEXES the selection via
 `reindex_insert!` and raises the AUTO marks from the new row alone.
 """
-function insert_row!(w::Any, i::Int, r::Any)::Nothing where {R}
+function insert_row!(w::Table{R}, i::Int, r::R)::Nothing where {R}
     # `_tc_sync!` FIRST, so `sel.n` is the PRE-insert count even when
     # `rows` was mutated behind `version`'s back: `reindex_insert!` is
     # arithmetic on that count and a stale one would shift the wrong
@@ -285,7 +285,7 @@ Delete row `i`. False when out of range. REINDEXES via
 `reindex_delete!`. An AUTO column stays TOO WIDE until `refresh_extent!`
 -- `TextArea.widest` makes exactly this trade (textarea.jl:176).
 """
-function delete_row!(w::Any, i::Int)::Bool
+function delete_row!(w::Table, i::Int)::Bool
     (1 <= i <= length(w.rows)) || return false
     _tc_sync!(w)                        # `sel.n` is the PRE-delete count
     deleteat!(w.rows, i)
@@ -300,7 +300,7 @@ direct mutation of `rows`. Bumps `version` (which invalidates the
 resolve memo), re-syncs the selection, re-clamps the scroll, follows the
 cursor.
 """
-function refresh_rows!(w::Any)::Nothing
+function refresh_rows!(w::Table)::Nothing
     _tc_touch!(w)                       # bumps `version`: the memo key
     _tc_sync!(w)
     scroll_to!(w, scroll_of(w))         # re-clamp: the extent may have
@@ -312,7 +312,7 @@ end
 Replace the columns. Resizes `widths`/`xs`/`autos`, re-seeds the AUTO
 marks and invalidates the memo.
 """
-function set_columns!(w::Any, cols::Any)::Nothing
+function set_columns!(w::Table, cols::Vector{Column})::Nothing
     g = w.grid
     empty!(g.cols)
     append!(g.cols, cols)
@@ -342,7 +342,7 @@ its NEIGHBOURS. A column model rewritten is a column model measured, and
 the cost is the construction cost -- O(min(sample, n) x AUTO columns),
 bounded, on an explicit call and never on a frame.
 """
-function refresh_columns!(w::Any)::Nothing
+function refresh_columns!(w::Table)::Nothing
     _tb_reseed!(w)                      # invalidates the memo
     _tc_touch!(w)
     return nothing

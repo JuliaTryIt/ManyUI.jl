@@ -5,7 +5,7 @@
 #
 # THE SPACE BAR IS `Key.SPACE`, NOT `Key.CHAR(' ')`. The input parser
 # emits `Key.SPACE` for byte 0x20 and NEVER `Key.CHAR(' ')`; `Button`
-# gets this right and the two `on_event!(::Any)` methods below check
+# gets this right and the two `on_event!(::KeyEvent)` methods below check
 # BOTH forms exactly as it does (button.jl:105). A checkbox is the widget
 # most likely in this project to ship with a dead space bar; it does not.
 
@@ -59,7 +59,7 @@ const CB_WIDTH = 3
 "Cells between the glyph and the caption."
 const CB_GAP = 1
 "The focused control: what SPACE will act on. `TC_CURSOR`'s meaning."
-const CB_FOCUS = (; underline = true)
+const CB_FOCUS = Style(; underline = true)
 
 # --- Checkbox --------------------------------------------------------
 
@@ -71,13 +71,13 @@ mutable struct Checkbox{F} <: Widget
     "Per-widget state."
     node::WidgetNode
     "The caption. LAYOUT-reactive: a new caption is a new extent."
-    label::Any
+    label::Reactive{String}
     "UNCHECKED, CHECKED or MIXED. PAINT-reactive; see `CB_WIDTH`."
-    state::Any
+    state::Reactive{CheckState.T}
     "True while focused. PAINT-reactive."
-    focused::Any
+    focused::Reactive{Bool}
     "Called as `on_change(checkbox)` after a REAL change."
-    on_change::Any
+    on_change::F
 end
 
 """
@@ -90,10 +90,10 @@ reachable by TAB with no further wiring. The `label`/`state` split is
 (a new caption is a new extent), `state` is `Dirty.PAINT`-reactive (every
 glyph is `CB_WIDTH` wide, so it cannot move a cell).
 """
-function Checkbox(label::AbstractString, on_change::Any = _tc_noop;
-                  state::Any = CheckState.UNCHECKED,
+function Checkbox(label::AbstractString, on_change::F = _tc_noop;
+                  state::CheckState.T = CheckState.UNCHECKED,
                   id::Symbol = gensym(:checkbox),
-                  classes = Symbol[])::Any where {F}
+                  classes = Symbol[])::Checkbox{F} where {F}
     w = Checkbox{F}(WidgetNode(; id = id, classes = classes,
                                type_name = :Checkbox, focusable = true),
                     Reactive(String(label)),
@@ -107,7 +107,7 @@ end
 """
 The glyph for `s`. Pure. Internal.
 """
-_cb_glyph(s::Any)::String =
+_cb_glyph(s::CheckState.T)::String =
     s === CheckState.CHECKED ? CB_CHECKED :
     s === CheckState.MIXED ? CB_MIXED : CB_UNCHECKED
 
@@ -120,7 +120,7 @@ A content extent, like every other `measure`: the box overhead is
 NOT `avail` -- a greedy checkbox would shrink a one-row Label beside it to
 ZERO rows. Pure w.r.t. the tree.
 """
-measure(w::Any, avail::Any)::Any =
+measure(w::Checkbox, avail::Size)::Size =
     isempty(w.label[]) ? Size(CB_WIDTH, 1) :
     Size(CB_WIDTH + CB_GAP + text_width(w.label[]), 1)
 
@@ -131,7 +131,7 @@ The glyph goes at column 1, the caption at `CB_WIDTH + CB_GAP + 1`, and a
 caption wider than the box is truncated at the content edge by
 `_tc_slice!`.
 """
-function render!(w::Any, buf::Any)::Nothing
+function render!(w::Checkbox, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
@@ -146,12 +146,12 @@ end
 """
 The current state. Pure.
 """
-check_state(w::Any)::Any = w.state[]
+check_state(w::Checkbox)::CheckState.T = w.state[]
 
 """
 True iff the box is `CHECKED`. Pure.
 """
-is_checked(w::Any)::Bool = w.state[] === CheckState.CHECKED
+is_checked(w::Checkbox)::Bool = w.state[] === CheckState.CHECKED
 
 """
 Set the state, firing `on_change` only when it actually moves. True iff
@@ -161,7 +161,7 @@ THE single exit. The `Reactive` `==` guard already makes a redundant
 write free (reactive.jl:63); the explicit compare here is what stops
 `on_change` firing on a write that changes nothing.
 """
-function set_state!(w::Any, s::Any)::Bool
+function set_state!(w::Checkbox, s::CheckState.T)::Bool
     w.state[] === s && return false
     w.state[] = s
     w.on_change(w)
@@ -175,7 +175,7 @@ Toggle the box and return the NEW state.
 becomes `CHECKED`. See `CheckState` for why a program-set `MIXED` must
 toggle out to `CHECKED`.
 """
-function toggle!(w::Any)::Any
+function toggle!(w::Checkbox)::CheckState.T
     set_state!(w, w.state[] === CheckState.CHECKED ?
                   CheckState.UNCHECKED : CheckState.CHECKED)
     return w.state[]
@@ -191,7 +191,7 @@ that eats it makes ENTER the one key an app cannot bind. Unmodified keys
 only; TAB, ESCAPE and modified keys pass through untouched so the tab
 order stays alive.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::Checkbox, d::Dispatch{KeyEvent})::Nothing
     (d.phase === Phase.CAPTURE || is_consumed(d)) && return nothing
     e = event(d)
     isempty(e.mods) || return nothing
@@ -209,7 +209,7 @@ A LEFT press toggles and consumes, anywhere in the box or caption.
 release activates nothing and consumes nothing. The box is one widget, so
 a click on the caption toggles it just like a click on the glyph.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::Checkbox, d::Dispatch{MouseEvent})::Nothing
     (d.phase === Phase.CAPTURE || is_consumed(d)) && return nothing
     e = event(d)
     e.button === MouseButton.LEFT || return nothing
@@ -225,12 +225,12 @@ Show the focus underline. `reveal!` is called EXPLICITLY because
 overriding `on_focus!` REPLACES the default that would have called it
 (widget.jl:666).
 """
-on_focus!(w::Any)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::Checkbox)::Nothing = (w.focused[] = true; reveal!(w))
 
 """
 Clear the focus underline.
 """
-on_blur!(w::Any)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::Checkbox)::Nothing = (w.focused[] = false; nothing)
 
 # --- RadioGroup ------------------------------------------------------
 
@@ -266,7 +266,7 @@ mutable struct RadioGroup{F} <: Widget
     "Per-widget state."
     node::WidgetNode
     "The captions, one per row. ALIASED, mutated in place."
-    const options::Any
+    const options::Vector{String}
     """
     The CHOSEN option, 1-based; `0` when nothing is chosen -- and NOTHING
     is chosen initially, exactly as `Selection` chooses nothing
@@ -274,7 +274,7 @@ mutable struct RadioGroup{F} <: Widget
     the box is as wide as the widest caption whatever is picked, so this
     provably cannot move a cell.
     """
-    selected::Any
+    selected::Reactive{Int}
     """
     The cursor, 1-based; `0` when there are no options. The option SPACE
     would choose. ARROWS MOVE THIS WITHOUT CHOOSING, and that is why it is
@@ -282,11 +282,11 @@ mutable struct RadioGroup{F} <: Widget
     the row it just moved to and fire `on_change` on EVERY KEYSTROKE --
     the trap `List` documents (list.jl:96). PAINT-reactive.
     """
-    cursor::Any
+    cursor::Reactive{Int}
     "True while focused. PAINT-reactive."
-    focused::Any
+    focused::Reactive{Bool}
     "Called as `on_change(group)` after a REAL choice."
-    on_change::Any
+    on_change::F
 end
 
 """
@@ -297,9 +297,9 @@ Focusable by construction. `selected` seeds to `0` (nothing chosen);
 `cursor` seeds to row 1, or `0` when there are no options. `options` is
 ALIASED, not copied.
 """
-function RadioGroup(options::Any, on_change::Any = _tc_noop;
+function RadioGroup(options::Vector{String}, on_change::F = _tc_noop;
                     id::Symbol = gensym(:radiogroup),
-                    classes = Symbol[])::Any where {F}
+                    classes = Symbol[])::RadioGroup{F} where {F}
     w = RadioGroup{F}(
         WidgetNode(; id = id, classes = classes,
                    type_name = :RadioGroup, focusable = true),
@@ -316,31 +316,31 @@ end
 A radio group over any string vector, collected ONCE into a
 `Vector{String}`.
 """
-RadioGroup(options::Any, args...;
+RadioGroup(options::AbstractVector{<:AbstractString}, args...;
            kwargs...) =
     RadioGroup(collect(String, options), args...; kwargs...)
 
 """
 The chosen option index; `0` iff nothing is chosen. Pure.
 """
-selected(w::Any)::Int = w.selected[]
+selected(w::RadioGroup)::Int = w.selected[]
 
 """
 The chosen caption, or `nothing`. Pure.
 """
-selected_option(w::Any)::Any =
+selected_option(w::RadioGroup)::Union{Nothing,String} =
     w.selected[] == 0 ? nothing : w.options[w.selected[]]
 
 """
 The cursor row; `0` iff there are no options. Pure.
 """
-radio_cursor(w::Any)::Int = w.cursor[]
+radio_cursor(w::RadioGroup)::Int = w.cursor[]
 
 """
 The CONTENT extent: `Size(0, 0)` when empty, else `Size(CB_WIDTH + CB_GAP
 + widest, n)`. NOT `avail`. Pure w.r.t. the tree.
 """
-function measure(w::Any, avail::Any)::Any
+function measure(w::RadioGroup, avail::Size)::Size
     n = length(w.options)
     n == 0 && return Size(0, 0)
     widest = 0
@@ -355,7 +355,7 @@ Paint one row per option: `RB_ON`/`RB_OFF` at column 1, the caption at
 `CB_WIDTH + CB_GAP + 1`, and the focus underline on the CURSOR row while
 focused. `break`s past the buffer height.
 """
-function render!(w::Any, buf::Any)::Nothing
+function render!(w::RadioGroup, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
@@ -378,7 +378,7 @@ end
 Move the cursor to `i`, clamped to `1:n`. True iff it moved. Does NOT
 choose and does NOT fire `on_change`. Internal.
 """
-function _rg_cursor!(w::Any, i::Int)::Bool
+function _rg_cursor!(w::RadioGroup, i::Int)::Bool
     n = length(w.options)
     n == 0 && return false
     j = clamp(i, 1, n)
@@ -395,7 +395,7 @@ real change.
 
 THE single exit for a choice.
 """
-function choose!(w::Any, i::Int)::Bool
+function choose!(w::RadioGroup, i::Int)::Bool
     n = length(w.options)
     n == 0 && return false
     j = clamp(i, 1, n)
@@ -414,7 +414,7 @@ The 1-based option row under mouse event `e`; `0` for a miss.
 unshifted border box. Bounds-checked against `layout_of(w).content` and
 the option count. Internal.
 """
-function _rg_row_at(w::Any, e::Any)::Int
+function _rg_row_at(w::RadioGroup, e::MouseEvent)::Int
     c = layout_of(w).content
     (c.width <= 0 || c.height <= 0) && return 0
     o = _tc_local(w, e)
@@ -433,7 +433,7 @@ commit the choice. Consumes ONLY on a real move or choice, so UP on
 option 1 bubbles. Unmodified keys only; TAB, ESCAPE and modified keys
 pass through untouched.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::RadioGroup, d::Dispatch{KeyEvent})::Nothing
     (d.phase === Phase.CAPTURE || is_consumed(d)) && return nothing
     e = event(d)
     isempty(e.mods) || return nothing
@@ -463,7 +463,7 @@ A LEFT press on an option row chooses it, cursor and all, and consumes.
 A press outside the rows chooses nothing and does not consume. `Button`'s
 rule (button.jl:119): the press does the work; the release does nothing.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::RadioGroup, d::Dispatch{MouseEvent})::Nothing
     (d.phase === Phase.CAPTURE || is_consumed(d)) && return nothing
     e = event(d)
     e.button === MouseButton.LEFT || return nothing
@@ -479,9 +479,9 @@ end
 Show the focus underline. `reveal!` is called EXPLICITLY, as for
 `Checkbox`.
 """
-on_focus!(w::Any)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::RadioGroup)::Nothing = (w.focused[] = true; reveal!(w))
 
 """
 Clear the focus underline.
 """
-on_blur!(w::Any)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::RadioGroup)::Nothing = (w.focused[] = false; nothing)

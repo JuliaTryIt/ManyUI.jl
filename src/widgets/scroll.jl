@@ -47,7 +47,7 @@ cannot silently drop the geometry an earlier one established.
 
 Internal: this is the pane's own machinery, never a user knob.
 """
-function _sp_box!(w::Widget, p::Any)::Nothing
+function _sp_box!(w::Widget, p::BoxPatch)::Nothing
     n = node(w)
     n.inline_box = merge(n.inline_box, p)
     n.box = apply(BOX_DEFAULT, n.inline_box)
@@ -58,9 +58,9 @@ end
 #
 # A node is scrollable iff it answers these three, and nothing else:
 #
-#     content_extent(w)::Any      -- how big the content is
-#     layout_of(w).content::Any -- how big the window is
-#     scroll_of(w)::Any         -- where the window currently is
+#     content_extent(w)::Size      -- how big the content is
+#     layout_of(w).content::Region -- how big the window is
+#     scroll_of(w)::Offset         -- where the window currently is
 #
 # There is no scrollable supertype, which is exactly why one `Scrollbar`
 # serves a bare `Container`, a `Scrollpane`'s canvas and a `TextArea`.
@@ -81,7 +81,7 @@ back into the extent.
 A widget whose content is DATA rather than children overrides this;
 `TextArea` is the worked example. Pure.
 """
-function content_extent(w::Widget)::Any
+function content_extent(w::Widget)::Size
     u = EMPTY_REGION
     for k in children(w)
         _laid_out(k) || continue
@@ -96,7 +96,7 @@ end
 The largest in-range scroll offset: `content_extent - content box`,
 clamped at zero per axis, via `clamp_scroll`. Pure.
 """
-function max_scroll(w::Widget)::Any
+function max_scroll(w::Widget)::Offset
     e = content_extent(w)
     c = layout_of(w).content
     return Offset(max(0, e.width - c.width),
@@ -111,7 +111,7 @@ Returning the stored offset is what makes scroll chaining fall out for
 free: a caller detects "this pane is at its limit" with
 `scroll_to!(w, o) === before` and simply does not consume the event.
 """
-function scroll_to!(w::Widget, o::Any)::Any
+function scroll_to!(w::Widget, o::Offset)::Offset
     e = content_extent(w)
     c = layout_of(w).content
     v = Offset(clamp_scroll(o.x, c.width, e.width),
@@ -123,7 +123,7 @@ end
 """
 `scroll_to!(w, scroll_of(w) + d)`. Returns the stored offset.
 """
-scroll_by!(w::Widget, d::Any)::Any =
+scroll_by!(w::Widget, d::Offset)::Offset =
     scroll_to!(w, scroll_of(w) + d)
 
 """
@@ -135,7 +135,7 @@ ancestor of `w` at all -- which is how `scroll_into_view!` tells "already
 in the right place" from "not my descendant" without a second walk. Pure.
 Internal.
 """
-function _scroll_between(vp::Widget, w::Widget)::Any
+function _scroll_between(vp::Widget, w::Widget)::Union{Nothing,Offset}
     acc = ORIGIN
     a = parent(w)
     while a !== nothing
@@ -159,7 +159,7 @@ Panes BETWEEN `vp` and `w` have already moved `w` and their shift is
 subtracted here, which is why `reveal!` must run NEAREST FIRST: an inner
 pane has to finish moving before `vp` can measure where `w` ended up.
 """
-function scroll_into_view!(vp::Widget, w::Widget)::Any
+function scroll_into_view!(vp::Widget, w::Widget)::Offset
     acc = _scroll_between(vp, w)
     acc === nothing && return scroll_of(vp)
     c = layout_of(vp).content
@@ -191,18 +191,18 @@ mutable struct Scrollpane <: Widget
     "Per-widget state."
     node::WidgetNode
     "Internal flex row holding the canvas and the vertical bar."
-    const row::Any
+    const row::Container
     "The node that carries the scroll offset. Its content box IS the
     window, so `content_extent` and `layout_of(...).content` mean two
     different things and the pane can tell whether it can scroll."
-    const canvas::Any
+    const canvas::Container
     "Internal node holding the user's child at its NATURAL size, which
     is what overflows the canvas and therefore what there is to scroll."
-    const holder::Any
+    const holder::Container
     "Vertical scrollbar policy."
-    const bar_y::Any
+    const bar_y::ScrollMode.T
     "Horizontal scrollbar policy."
-    const bar_x::Any
+    const bar_x::ScrollMode.T
     "Cells one vertical wheel notch scrolls."
     const wheel_step::Int
     "Cells one horizontal wheel notch scrolls."
@@ -239,13 +239,13 @@ nodes: one box cannot be both 3 rows tall (what you see) and 8 rows tall
 (what there is), and the scrollable seam reads the first from
 `layout_of(canvas).content` and the second from `content_extent(canvas)`.
 """
-function Scrollpane(child::Any = nothing;
-                    bar_y::Any = ScrollMode.AUTO,
-                    bar_x::Any = ScrollMode.NEVER,
+function Scrollpane(child::Union{Nothing,Widget} = nothing;
+                    bar_y::ScrollMode.T = ScrollMode.AUTO,
+                    bar_x::ScrollMode.T = ScrollMode.NEVER,
                     wheel_step::Int = 3, wheel_step_x::Int = 6,
                     focusable::Bool = true,
                     id::Symbol = gensym(:scrollpane),
-                    classes = Symbol[])::Any
+                    classes = Symbol[])::Scrollpane
     holder = Container(; id = Symbol(id, :_holder))
     _sp_box!(holder, BoxPatch(; shrink = 0f0, grow = 0f0))
 
@@ -280,7 +280,7 @@ function Scrollpane(child::Any = nothing;
                          direction = Direction.COLUMN,
                          overflow_x = Overflow.HIDDEN,
                          overflow_y = Overflow.HIDDEN))
-    # `invoke`, because `mount!(::Any, ::Widget)` below forwards
+    # `invoke`, because `mount!(::Scrollpane, ::Widget)` below forwards
     # to the holder: the pane's own machinery must bypass the very
     # redirection that machinery exists to provide.
     invoke(mount!, Tuple{Widget,Widget}, p, row)
@@ -300,7 +300,7 @@ Mount `c` INTO the canvas, not onto the pane: `children(pane)` is the
 pane's own machinery and the user never addresses it. Throws
 `ArgumentError` when the canvas already holds a child.
 """
-function mount!(p::Any, c::Widget)::Widget
+function mount!(p::Scrollpane, c::Widget)::Widget
     isempty(children(p.holder)) || throw(ArgumentError(
         "Scrollpane $(repr(id(p))) already holds a child; wrap several " *
         "in a Container"))
@@ -312,7 +312,7 @@ end
 The scrolling node of `p` -- what `scroll_to!`, `max_scroll` and
 `content_extent` take. `p.canvas`.
 """
-viewport(p::Any)::Any = p.canvas
+viewport(p::Scrollpane)::Container = p.canvas
 
 # The pane forwards the scrolling vocabulary to its canvas.
 #
@@ -330,12 +330,12 @@ viewport(p::Any)::Any = p.canvas
 """
 `content_extent(viewport(p))`: what `p` shows, not the shell around it.
 """
-content_extent(p::Any)::Any = content_extent(p.canvas)
+content_extent(p::Scrollpane)::Size = content_extent(p.canvas)
 
 """
 `max_scroll(viewport(p))`: how far `p` can actually scroll.
 """
-max_scroll(p::Any)::Any = max_scroll(p.canvas)
+max_scroll(p::Scrollpane)::Offset = max_scroll(p.canvas)
 
 """
 `scroll_of(viewport(p))`: where `p` is currently scrolled to.
@@ -344,18 +344,18 @@ This is also what makes the generic `scroll_by!(p, d)` --
 `scroll_to!(p, scroll_of(p) + d)` -- accumulate against the canvas's real
 offset instead of the pane's permanent zero.
 """
-scroll_of(p::Any)::Any = scroll_of(p.canvas)
+scroll_of(p::Scrollpane)::Offset = scroll_of(p.canvas)
 
 """
 `scroll_to!(viewport(p), o)`. Returns the offset actually stored.
 """
-scroll_to!(p::Any, o::Any)::Any = scroll_to!(p.canvas, o)
+scroll_to!(p::Scrollpane, o::Offset)::Offset = scroll_to!(p.canvas, o)
 
 """
 `scroll_into_view!(viewport(p), w)`: scroll `p` the minimum needed to
 reveal descendant `w`.
 """
-scroll_into_view!(p::Any, w::Widget)::Any =
+scroll_into_view!(p::Scrollpane, w::Widget)::Offset =
     scroll_into_view!(p.canvas, w)
 
 """
@@ -366,7 +366,7 @@ user's content rather than the pane's own machinery. Pure. Internal.
 is what stops `reveal!` on a focused scrollbar rewinding the pane to the
 top.
 """
-function _sp_is_content(p::Any, d::Widget)::Bool
+function _sp_is_content(p::Scrollpane, d::Widget)::Bool
     a = parent(d)
     while a !== nothing
         a === p.holder && return true
@@ -380,7 +380,7 @@ end
 Bring descendant `d` into the pane's window. Overrides the `widget.jl`
 hook; a no-op for the pane's own machinery (`row`, `canvas`, the bars).
 """
-function reveal_child!(w::Any, d::Widget)::Nothing
+function reveal_child!(w::Scrollpane, d::Widget)::Nothing
     _sp_is_content(w, d) || return nothing
     scroll_into_view!(w.canvas, d)
     return nothing
@@ -392,7 +392,7 @@ Re-clamp the stored offset to the CURRENT geometry, as the pane paints.
 Layout can move under a scroll offset that was legal when it was stored:
 grow the terminal until the content fits and an offset of 5 becomes an
 offset past the end, painting blank rows under content that would now fit
-whole. Nothing else can catch it -- `handle!(app, ::Any)`
+whole. Nothing else can catch it -- `handle!(app, ::ResizeEvent)`
 relayouts WITHOUT dispatching the event to the tree, so no `on_event!`
 method ever sees a resize.
 
@@ -409,7 +409,7 @@ It is UNCONDITIONAL on purpose: caching the last window would miss the
 case where the CONTENT shrinks under a fixed window, which strands the
 offset past the end just as surely.
 """
-function render!(w::Any, ::Any)::Nothing
+function render!(w::Scrollpane, ::AbstractMatrix{Cell})::Nothing
     scroll_to!(w.canvas, scroll_of(w.canvas))
     return nothing
 end
@@ -421,7 +421,7 @@ CAPTURE is excluded deliberately: acting there would let an OUTER pane
 steal the wheel from the inner pane the pointer is actually over. Pure.
 Internal.
 """
-_sp_acts(d::Any)::Bool =
+_sp_acts(d::Dispatch)::Bool =
     d.phase !== Phase.CAPTURE && !is_consumed(d)
 
 """
@@ -432,7 +432,7 @@ The whole of scroll chaining is this one rule: a pane at its limit does
 not consume, so the event bubbles to the next pane out and that pane
 takes over. No pane knows another exists. Internal.
 """
-function _sp_move!(w::Any, disp::Any, d::Any)::Nothing
+function _sp_move!(w::Scrollpane, disp::Dispatch, d::Offset)::Nothing
     before = scroll_of(w.canvas)
     scroll_by!(w.canvas, d) === before && return nothing
     consume!(disp)
@@ -450,7 +450,7 @@ next pane out -- scroll chaining, out of the phase rule alone.
 CAPTURE is excluded deliberately: acting there would let an outer pane
 steal the wheel from the inner pane the pointer is over.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::Scrollpane, d::Dispatch{MouseEvent})::Nothing
     _sp_acts(d) || return nothing
     e = event(d)
     is_scroll(e) || return nothing
@@ -472,8 +472,8 @@ the pane's. Pure with respect to the tree. Internal.
 no knowledge of how far that is. `typemax(Int) ÷ 2` so that
 `scroll_of(w) + d` cannot overflow.
 """
-function _sp_key_delta(w::Any,
-                       code::Any)::Any
+function _sp_key_delta(w::Scrollpane,
+                       code::Key.T)::Union{Nothing,Offset}
     s = w.wheel_step
     code === Key.UP && return Offset(0, -s)
     code === Key.DOWN && return Offset(0, s)
@@ -500,7 +500,7 @@ only, and consuming only on real movement.
 A focused `TextInput` consumes LEFT/RIGHT AT TARGET, so the pane never
 sees them. That precedence costs zero special-casing.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::Scrollpane, d::Dispatch{KeyEvent})::Nothing
     _sp_acts(d) || return nothing
     e = event(d)
     isempty(e.mods) || return nothing
@@ -530,20 +530,20 @@ mutable struct Scrollbar{V<:Widget} <: Widget
     "Per-widget state."
     node::WidgetNode
     "The axis this bar reports and controls."
-    const axis::Any
+    const axis::ScrollAxis.T
     "When the track and thumb are drawn."
-    const mode::Any
+    const mode::ScrollMode.T
     "The scrolling node this bar reports on."
-    const viewport::Any
+    const viewport::V
 end
 
 """
 A bar reporting on `vp` along `axis`.
 """
-function Scrollbar(vp::Any, axis::Any;
-                   mode::Any = ScrollMode.AUTO,
+function Scrollbar(vp::V, axis::ScrollAxis.T;
+                   mode::ScrollMode.T = ScrollMode.AUTO,
                    id::Symbol = gensym(:scrollbar),
-                   classes = Symbol[])::Any where {V<:Widget}
+                   classes = Symbol[])::Scrollbar{V} where {V<:Widget}
     return Scrollbar{V}(WidgetNode(; id = id, classes = classes,
                                    type_name = :Scrollbar),
                         axis, mode, vp)
@@ -571,7 +571,7 @@ Pure: four `Int`s, no widget, no layout, no buffer -- the whole of this
 widget's behaviour is one table test.
 """
 function thumb_span(track::Int, view::Int, total::Int,
-                    off::Int)::Any
+                    off::Int)::Tuple{Int,Int}
     (track <= 0 || view <= 0 || total <= 0) && return (0, 0)
     total <= view && return (0, 0)          # nothing to scroll
     len = clamp(round(Int, track * view / total), 1, track)
@@ -608,7 +608,7 @@ const SB_THUMB = "█"
 `Size(1, 0)` vertical, `Size(0, 1)` horizontal: a bar is one cell thick
 and claims nothing on its long axis. Pure with respect to the tree.
 """
-measure(w::Any, avail::Any)::Any =
+measure(w::Scrollbar, avail::Size)::Size =
     w.axis === ScrollAxis.VERTICAL ? Size(1, 0) : Size(0, 1)
 
 """
@@ -621,8 +621,8 @@ It never measures anything and never touches the pane, which is why one
 offset may legitimately be stale for one frame, and a thumb off the end
 of its track is worse than a thumb that led by one frame. Internal.
 """
-function _sb_metrics(w::Any,
-                     track::Int)::Any
+function _sb_metrics(w::Scrollbar,
+                     track::Int)::NTuple{4,Int}
     e = content_extent(w.viewport)
     c = layout_of(w.viewport).content
     s = scroll_of(w.viewport)
@@ -637,8 +637,8 @@ end
 Write one cell of the bar, in the bar's own long-axis coordinate.
 Internal.
 """
-_sb_put!(w::Any, buf::Any, i::Int,
-         g::AbstractString, st::Any)::Int =
+_sb_put!(w::Scrollbar, buf::AbstractMatrix{Cell}, i::Int,
+         g::AbstractString, st::Style)::Int =
     w.axis === ScrollAxis.VERTICAL ? set_cell!(buf, 1, i, g, st) :
                                      set_cell!(buf, i, 1, g, st)
 
@@ -650,7 +650,7 @@ reserved gutter blank -- the gutter is stable, the ink is not.
 `ScrollMode.ALWAYS` with nothing to scroll draws a FULL-LENGTH thumb,
 the honest picture of "all of it is visible".
 """
-function render!(w::Any, buf::Any)::Nothing
+function render!(w::Scrollbar, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     w.mode === ScrollMode.NEVER && return nothing
@@ -683,7 +683,7 @@ it. LEFT button only.
 is correct here precisely because a scrollbar is never inside a scrolled
 subtree.
 """
-function on_event!(w::Any, d::Any)::Nothing
+function on_event!(w::Scrollbar, d::Dispatch{MouseEvent})::Nothing
     _sp_acts(d) || return nothing
     w.mode === ScrollMode.NEVER && return nothing
     e = event(d)
