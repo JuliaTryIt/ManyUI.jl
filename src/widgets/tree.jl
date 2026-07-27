@@ -448,37 +448,6 @@ ZERO STRING BUILDING PER ROW. The indent is NOT PAINTED AT ALL --
 ARE the indent -- and the label goes through `_tc_slice!` at an explicit
 start column rather than through a concatenation.
 """
-function render!(w::TreeView, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    _tv_flat!(w)
-    _tc_sync!(w)
-    st = computed_style(w)
-    off = scroll_of(w)
-    n = length(w.rows)
-    foc = w.focused[]
-    for row in 1:height
-        i = off.y + row
-        # `1 <= i` and not just `i <= n`: `set_scroll!` clamps at zero
-        # but has NO upper bound (widget.jl:204), so a caller bypassing
-        # `scroll_to!` can over-scroll far enough to wrap `i` negative.
-        # An over-scroll is blank rows, NEVER a BoundsError. This is
-        # `List.render!`'s guard, verbatim (list.jl:342).
-        (1 <= i <= n) || break
-        r = w.rows[i]
-        rst = _tc_row_style(w, st, i, foc)
-        ind = TV_INDENT * r.depth
-        g = is_leaf(r.node) ? TV_LEAF :
-            r.node.expanded ? TV_OPEN : TV_CLOSED
-        _tc_slice!(buf, 1 + ind - off.x, row, width, g, rst)
-        _tc_slice!(buf, 1 + ind + 1 + TV_GAP - off.x, row, width,
-                   w.format(r.node.value), rst)
-        (is_selected(w.sel, i) || (foc && w.sel.cursor == i)) &&
-            style_region!(buf, Region(1, row, width, 1),
-                          _tc_bar_style(w.sel, i, foc))
-    end
-    return nothing
-end
 
 # --- keyboard ---------------------------------------------------------
 

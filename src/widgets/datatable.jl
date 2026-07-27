@@ -182,7 +182,6 @@ The pinned header, the optional rule, then the visible body rows IN VIEW
 ORDER -- `view_source(w, k)` inlines to `w.order[k]` and that is the
 whole of the sort's read side. See `_tc_render_table!`.
 """
-render!(w::DataTable, buf::AbstractMatrix{Cell})::Nothing =
     _tc_render_table!(w, buf)
 
 """

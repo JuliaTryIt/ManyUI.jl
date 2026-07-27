@@ -329,27 +329,6 @@ Reads the scroll rather than writing it: a paint MUST NOT mutate, and
 `visible_scroll` is the same function the editing ops stored, so the two
 cannot disagree.
 """
-function render!(w::TextInput, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    st = computed_style(w)
-    s = w.text[]
-    lo, cw = _ti_caret_cells(w)
-    off = _ti_window(w, width, lo, cw)
-    if isempty(s)
-        isempty(w.placeholder) ||
-            write_text!(buf, 1, 1, w.placeholder,
-                        with(st, Attr.DIM, true))
-    else
-        write_text!(buf, 1 - off, 1, s, st)
-    end
-    w.focused[] || return nothing
-    # `style_region!` clips, so a caret column outside the box is a
-    # no-op rather than a throw, and it keeps the cell's content and
-    # width -- reversing a head must not turn it into a fresh cell.
-    style_region!(buf, Region(lo - off + 1, 1, 1, 1), _TI_CARET)
-    return nothing
-end
 
 """
 Insert `t` at the caret. The caret is RECOMPUTED from the new prefix,

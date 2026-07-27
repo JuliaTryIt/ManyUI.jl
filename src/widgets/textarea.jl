@@ -222,38 +222,6 @@ would have orphaned a continuation into column 1.
 ONE pass over the graphemes, no `grapheme_cells`: it allocates a
 `Vector` per call and this is the frame path.
 """
-function render!(w::TextArea, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    st = computed_style(w)
-    off = scroll_of(w)
-    n = length(w.lines)
-    for row in 1:height
-        li = off.y + row
-        # `1 <= li` and not just `li <= n`: `set_scroll!` clamps at zero
-        # but has no upper bound, so a caller bypassing `scroll_to!` can
-        # over-scroll far enough to wrap `li` negative. An over-scroll
-        # is blank cells, never a BoundsError.
-        (1 <= li <= n) || break
-        cx = 1 - off.x
-        for g in graphemes(w.lines[li])
-            cx > width && break
-            gw = grapheme_width(g)
-            cx >= 1 && set_cell!(buf, cx, row, Cell(g, st))
-            cx += gw
-        end
-    end
-    w.focused[] || return nothing
-    cy = w.line - off.y
-    (1 <= cy <= height) || return nothing
-    cx = _ta_cells_before(w.lines[w.line], w.col) - off.x + 1
-    (1 <= cx <= width) || return nothing
-    # The caret reverses the cell it sits on -- the HEAD of a wide
-    # cluster, whose continuation stays a continuation, so the grid
-    # never desynchronises.
-    style_region!(buf, Region(cx, cy, 1, 1), _TA_CARET)
-    return nothing
-end
 
 """
 Insert `t` at the caret; a `'\\n'` splits the line.

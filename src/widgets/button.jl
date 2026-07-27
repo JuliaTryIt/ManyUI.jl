@@ -58,17 +58,6 @@ Paint the caption, centred in the content box, reversed while held.
 Truncated at the content box's right edge; a wide cluster that would
 straddle it is dropped rather than halved.
 """
-function render!(w::Button, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    st = computed_style(w)
-    w.pressed[] && (st = with(st, Attr.REVERSE, true))
-    caption = truncate_width(w.label[], width)
-    x = 1 + (width - text_width(caption)) ÷ 2
-    y = 1 + (height - 1) ÷ 2
-    write_text!(buf, x, y, caption, st)
-    return nothing
-end
 
 """
 True while `d` is live and at or past its target -- everywhere except

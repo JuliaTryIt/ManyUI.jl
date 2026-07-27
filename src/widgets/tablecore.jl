@@ -1198,17 +1198,6 @@ refuses the mirror case at the right edge (buffer.jl:419).
 ONE pass over the graphemes, no `grapheme_cells`: it allocates a
 `Vector` per call and this is the frame path. Internal.
 """
-function _tc_slice!(buf::AbstractMatrix{Cell}, x::Int, y::Int,
-                    width::Int, s::AbstractString, st::Style)::Int
-    cx = x
-    for g in graphemes(s)
-        cx > width && break
-        gw = grapheme_width(g)
-        cx >= 1 && set_cell!(buf, cx, y, Cell(g, st))
-        cx += gw
-    end
-    return cx
-end
 
 """
 Paint `s` on row `y` of a `width`-cell frame, having first dropped `skip`
@@ -1225,15 +1214,6 @@ is `TextArea.render!`'s loop (textarea.jl:239) and `TextInput`'s
 `write_text!(buf, 1 - off, ...)` (textinput.jl:344); this is the third
 and last copy. Internal.
 """
-function _tc_paint_slice!(buf::AbstractMatrix{Cell}, y::Int, width::Int,
-                          skip::Int, s::AbstractString, st::Style)::Int
-    cx = _tc_slice!(buf, 1 - skip, y, width, s, st)
-    # `cx > width` means the loop broke early and the row was CUT: it
-    # reached at least the right edge of the window. Understating a cut
-    # row is exactly what a high-water mark does.
-    cx > width && return skip + width
-    return cx - 1 + skip
-end
 
 """
 Write `text` into the `cw`-cell column whose left edge is FRAME column
@@ -1267,22 +1247,6 @@ layout.jl:163, REUSED. There is no `_tc_lead`.
 
 `Base.textwidth` appears NOWHERE. No byte indexes user text. Internal.
 """
-function _tc_put!(buf::AbstractMatrix{Cell}, x0::Int, y::Int, cw::Int,
-                  text::AbstractString, align::Align.T,
-                  st::Style)::Nothing
-    cw <= 0 && return nothing
-    width = size(buf, 1)
-    t = truncate_width(text, cw)
-    if _tc_truncated(t, text)
-        # LEFT-ANCHORED, whatever `align` says, and the marker last.
-        _tc_slice!(buf, x0, y, width, truncate_width(text, cw - 1), st)
-        set_cell!(buf, x0 + cw - 1, y, Cell(TC_ELLIPSIS, st))
-        return nothing
-    end
-    lead = first(cross_align(text_width(t), align, cw))
-    _tc_slice!(buf, x0 + lead, y, width, t, st)
-    return nothing
-end
 
 # --- column width resolution ------------------------------------------
 
@@ -1547,29 +1511,10 @@ Takes the glyph rather than reading `TC_RULE`: the grid OWNS
 `rule_glyph`, and a painter that ignored it would make the field a lie.
 Internal.
 """
-function _tc_rule!(buf::AbstractMatrix{Cell}, y::Int, width::Int,
-                   glyph::AbstractString, st::Style)::Nothing
-    for x in 1:width
-        set_cell!(buf, x, y, Cell(glyph, st))
-    end
-    return nothing
-end
 
 """
 Draw the separators between visible columns, on row `y`. Internal.
 """
-function _tc_seps!(buf::AbstractMatrix{Cell}, g::TableGrid,
-                   ws::Vector{Int}, lo::Int, hi::Int, off_x::Int,
-                   y::Int, st::Style, width::Int)::Nothing
-    g.sep_w > 0 || return nothing
-    n = length(g.cols)
-    # `lo - 1`: the separator to the LEFT of the first visible column can
-    # itself be visible when that column's left edge is past `off_x`.
-    for j in max(1, lo - 1):min(hi, n - 1)
-        _tc_slice!(buf, g.xs[j] + ws[j] - off_x + 1, y, width, g.sep, st)
-    end
-    return nothing
-end
 
 """
 Paint the pinned header, the optional rule, then
@@ -1600,49 +1545,3 @@ raw arithmetic on the frame is `TextArea.render!`'s established
 precedent and carving a view per column per row would allocate per cell.
 Internal.
 """
-function _tc_render_table!(w::W,
-                           buf::AbstractMatrix{Cell})::Nothing where
-                          {W<:RowsWidget}
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    _tc_sync!(w)
-    g = grid_of(w)
-    ws = _tc_resolve!(w, width)              # O(1) on a hit, 0 alloc
-    hh = _tc_header_rows(w)
-    off = scroll_of(w)
-    n = view_count(w)
-    st = computed_style(w)
-    lo, hi = _tc_visible_cols(g, off.x, width)
-    if g.show_header && hh >= 1
-        hst = merge(st, TC_HEADER)
-        for j in lo:hi
-            ws[j] > 0 && _tc_put!(buf, g.xs[j] - off.x + 1, 1, ws[j],
-                                  _tc_header_text(w, j),
-                                  g.cols[j].align, hst)
-        end
-        g.rule && _tc_rule!(buf, hh, width, g.rule_glyph, st)
-    end
-    s = selection_of(w)
-    foc = is_focused(w)
-    for r in 1:(height - hh)
-        k = off.y + r
-        # `1 <= k` and not just `k <= n`: `set_scroll!` clamps at zero
-        # but has NO upper bound (widget.jl:185), so a caller bypassing
-        # `scroll_to!` can over-scroll far enough to wrap `k` negative.
-        # An over-scroll is blank rows, NEVER a BoundsError.
-        (1 <= k <= n) || break
-        y = hh + r
-        src = view_source(w, k)
-        rst = _tc_row_style(w, st, src, foc)
-        for j in lo:hi
-            ws[j] > 0 && _tc_put!(buf, g.xs[j] - off.x + 1, y, ws[j],
-                                  _tc_cell_text(w, src, j),
-                                  g.cols[j].align, rst)
-        end
-        _tc_seps!(buf, g, ws, lo, hi, off.x, y, rst, width)
-        (is_selected(s, src) || (foc && s.cursor === src)) &&
-            style_region!(buf, Region(1, y, width, 1),
-                          _tc_bar_style(s, src, foc))
-    end
-    return nothing
-end

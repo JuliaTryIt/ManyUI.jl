@@ -73,28 +73,11 @@ Write `line` centred on row `y`, truncated to `width`. A wide cluster
 that would straddle the right edge is dropped by `truncate_width`, not
 halved.
 """
-function _ov_center!(buf::AbstractMatrix{Cell}, line::AbstractString,
-                     y::Int, width::Int, st::Style)::Nothing
-    shown = truncate_width(line, width)
-    x = 1 + (width - text_width(shown)) ÷ 2
-    write_text!(buf, x, y, shown, st)
-    return nothing
-end
 
 """
 Write `lines` as a block centred on both axes, dropping any line that
 does not fit vertically.
 """
-function _ov_block!(buf::AbstractMatrix{Cell},
-                    lines::Tuple{Vararg{String}}, width::Int,
-                    height::Int, st::Style)::Nothing
-    n = min(length(lines), height)
-    y0 = 1 + (height - n) ÷ 2
-    for i in 1:n
-        _ov_center!(buf, lines[i], y0 + i - 1, width, st)
-    end
-    return nothing
-end
 
 """
 The extent of the message plus the dimensions line: the wider of the
@@ -108,13 +91,6 @@ end
 """
 Paint `message` and "Need {rw}x{rh} - have {aw}x{ah}", centred.
 """
-function render!(w::MinSizeOverlay, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    _ov_block!(buf, (w.message[], _ov_dims(w.required[], w.actual[])),
-               width, height, computed_style(w))
-    return nothing
-end
 
 """
 X2. PURE and TREE-FREE fallback: paint the overlay directly into `buf`,
@@ -132,20 +108,3 @@ MUST NOT call `layout!`, `measure` or `cascade`. This is the path taken
 when `buffer_size(buf)` is below `OVERLAY_MIN_SIZE` -- layout is by
 definition unusable at that size.
 """
-function render_min_size_overlay!(buf::Buffer, actual::Size,
-                                  required::Size)::Nothing
-    clear!(buf)
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    dims = _ov_dims(required, actual)
-    msg_w = text_width(OVERLAY_MESSAGE)
-    st = STYLE_NONE
-    if height >= 2 && width >= max(msg_w, text_width(dims))
-        _ov_block!(buf, (OVERLAY_MESSAGE, dims), width, height, st)
-    elseif width >= msg_w
-        _ov_block!(buf, (OVERLAY_MESSAGE,), width, height, st)
-    elseif width >= text_width(OVERLAY_TINY_MESSAGE)
-        _ov_block!(buf, (OVERLAY_TINY_MESSAGE,), width, height, st)
-    end
-    return nothing
-end

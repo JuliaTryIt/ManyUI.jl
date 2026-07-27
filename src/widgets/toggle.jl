@@ -131,17 +131,6 @@ The glyph goes at column 1, the caption at `CB_WIDTH + CB_GAP + 1`, and a
 caption wider than the box is truncated at the content edge by
 `_tc_slice!`.
 """
-function render!(w::Checkbox, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    st = computed_style(w)
-    w.focused[] && (st = merge(st, CB_FOCUS))
-    write_text!(buf, 1, 1, _cb_glyph(w.state[]), st)
-    lbl = w.label[]
-    isempty(lbl) ||
-        _tc_slice!(buf, CB_WIDTH + CB_GAP + 1, 1, width, lbl, st)
-    return nothing
-end
 
 """
 The current state. Pure.
@@ -355,24 +344,6 @@ Paint one row per option: `RB_ON`/`RB_OFF` at column 1, the caption at
 `CB_WIDTH + CB_GAP + 1`, and the focus underline on the CURSOR row while
 focused. `break`s past the buffer height.
 """
-function render!(w::RadioGroup, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    st = computed_style(w)
-    foc = w.focused[]
-    cur = w.cursor[]
-    sel = w.selected[]
-    n = length(w.options)
-    for row in 1:height
-        row > n && break
-        rst = (foc && row == cur) ? merge(st, CB_FOCUS) : st
-        write_text!(buf, 1, row, sel == row ? RB_ON : RB_OFF, rst)
-        cap = w.options[row]
-        isempty(cap) ||
-            _tc_slice!(buf, CB_WIDTH + CB_GAP + 1, row, width, cap, rst)
-    end
-    return nothing
-end
 
 """
 Move the cursor to `i`, clamped to `1:n`. True iff it moved. Does NOT

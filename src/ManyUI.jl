@@ -38,17 +38,11 @@ include("color.jl")
 include("style.jl")
 include("events.jl")
 include("boxmodel.jl")
-include("buffer.jl")
-include("diff.jl")
-include("ansi.jl")
-include("input.jl")
-include("driver.jl")
 include("widget.jl")
 include("reactive.jl")
 include("dispatch.jl")
 include("layout.jl")
 include("css.jl")
-include("paint.jl")
 include("widgets/container.jl")
 include("widgets/label.jl")
 include("widgets/button.jl")
@@ -78,11 +72,6 @@ include("widgets/tree.jl")
 include("widgets/popup.jl")
 include("widgets/dropdown.jl")
 include("widgets/form.jl")
-include("headless.jl")
-include("terminal.jl")
-include("app.jl")
-include("popup_ops.jl")
-include("backend.jl")
 include("precompile.jl")
 
 # core.jl
@@ -90,7 +79,7 @@ export Projection, CLI, TUI, WebTerminal, WebNative
 export Action, execute!, render
 
 # types.jl
-export Widget, Driver, AbstractApp, Event
+export Widget, Event
 
 # geometry.jl
 export Size, Offset, Region, Spacing
@@ -134,31 +123,6 @@ export BoxStyle, BOX_DEFAULT, BoxPatch, BOX_PATCH_NONE, apply
 export LayoutBox, LAYOUT_BOX_EMPTY, layout_box
 export box_overhead, outer_size
 
-# buffer.jl
-export Cell, CELL_BLANK, CELL_CONT, is_continuation
-export Buffer, BufferView, buffer_size, buffer_region
-export clear!, resize_buffer
-export set_cell!, write_text!, fill_region!, style_region!, blit!
-export ScrolledView, writable_region
-
-# diff.jl
-export Span, Patch, n_cells, diff, full_patch, apply!
-
-# ansi.jl
-export Ansi, AnsiEncoder, reset!, sgr!, encode!, encode
-
-# input.jl
-export parse_events, InputParser, feed!, flush_escape!, pending
-export pump_input!
-
-# driver.jl
-export DriverCaps, CAPS_MINIMAL, DriverInterfaceError
-export start!, stop!, restore!, emit!, flush!
-export display_size, capabilities, events
-export set_title!, notify_resize!
-export REQUIRED_DRIVER_METHODS, check_driver_interface
-export WEB_BRIDGE_SURFACE
-
 # widget.jl
 export Dirty, DirtyMask, DIRTY_ALL
 export has_dirty, set_dirty, clear_dirty
@@ -194,16 +158,6 @@ export Selector, Specificity, Rule, Stylesheet, STYLESHEET_EMPTY
 export CssParseError, specificity, matches, parse_css, matching_rules
 export cascade, apply_stylesheet!, recascade!, @css_str
 
-# paint.jl
-export render!, paint!, paint_border!
-
-# headless.jl
-export HeadlessDriver, push_event!, take_bytes!, output, clear_output!
-export press!, type!, click!, resize!, feed_bytes!
-
-# terminal.jl
-export TerminalDriver, detect_caps, set_raw!
-
 # widgets/
 export Container, Label, Static, Button
 export ScrollMode, ScrollAxis, Scrollpane, Scrollbar, viewport
@@ -213,7 +167,6 @@ export TextInput, TextArea, visible_scroll
 export insert_text!, backspace!, delete_forward!, move_by!, move_to!
 export insert_newline!, move_line!, set_text!, text, refresh_extent!
 export should_suspend, OVERLAY_MIN_SIZE, MinSizeOverlay
-export render_min_size_overlay!
 # widgets/tablecore.jl
 export SelectMode, SortDir, RowsWidget, Selection, Column, TableGrid
 export selection_of, row_count, view_count, view_source, view_rank
@@ -244,22 +197,13 @@ export add_tab!, select_tab!, tab_at
 export TreeNode, TreeRow, TreeView, is_leaf, is_expanded
 export expand_node!, collapse_node!, toggle_node!, expand_all!, collapse_all!
 export tree_rows, tree_cursor, node_at, set_roots!, refresh_tree!
-# widgets/popup.jl + popup_ops.jl
-export Popup, PopupPlacement, popup_region, on_popup_close!
-export popup_of, open_popup!, close_popup!
+# widgets/popup.jl
+export Popup, PopupPlacement, popup_region
 # widgets/dropdown.jl
 export DropDown, DropDownList, options, selected_item, is_open, set_open!
 # widgets/form.jl
 export Form, form_value, add_field!, field, submit!, form_values
 export sort_column, sort_direction, source_index, sort_indicator
 
-# app.jl
-export AppConfig, App, run!, quit!, exit!, post!
-export call_later!, set_interval!, invalidate!, pause!, resume!
-export handle!, frame!, refresh!
-export focused, focus!, focus_next!, focus_prev!, bind!, on_action
-
-# backend.jl
-export Backend, TerminalBackend, HeadlessBackend, make_driver, launch
 
 end # module

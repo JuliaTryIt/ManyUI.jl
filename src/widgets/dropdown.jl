@@ -219,16 +219,6 @@ Paint the caption, truncated to leave room for the arrow, and the arrow
 in the last column. Underlined while focused, and the arrow flips
 `v`/`^` with `open`.
 """
-function render!(w::DropDown, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    st = computed_style(w)
-    w.focused[] && (st = merge(st, DD_FOCUS))
-    _tc_slice!(buf, 1, 1, width - DD_ARROW_W, _dd_caption(w), st)
-    arrow = w.open[] ? DD_OPEN : DD_CLOSED
-    write_text!(buf, width, 1, arrow, st)
-    return nothing
-end
 
 # --- pure / read-only API ---------------------------------------------
 

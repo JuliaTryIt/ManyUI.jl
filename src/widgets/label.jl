@@ -56,18 +56,6 @@ Paint the wrapped text into the content box.
 so wrapping to `size(buf)[1]` wraps to the width layout actually
 granted -- which may be less than `measure` asked for.
 """
-function render!(w::Label, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    st = computed_style(w)
-    y = 1
-    for line in wrap_width(w.text[], width)
-        y > height && break
-        write_text!(buf, 1, y, line, st)
-        y += 1
-    end
-    return nothing
-end
 
 """
 Non-wrapping, single-line text; no wrap cost in `measure`.
@@ -108,9 +96,3 @@ Paint one line of text into the content box, truncated to its width.
 would straddle it, so the truncation is grapheme-exact and costs
 nothing extra here.
 """
-function render!(w::Static, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    write_text!(buf, 1, 1, w.text[], computed_style(w))
-    return nothing
-end

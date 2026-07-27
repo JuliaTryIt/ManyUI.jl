@@ -96,7 +96,7 @@ mutable struct WidgetNode
     "True makes the node part of the tab order."
     focusable::Bool
     "The owning App, once mounted."
-    app::Union{Nothing,AbstractApp}
+    app::Any
 end
 
 """
@@ -126,7 +126,7 @@ WidgetNode(id::Symbol, classes::Set{Symbol}, type_name::Symbol,
            inline_style::Style, inline_box::BoxPatch,
            computed_style::Style, box::BoxStyle, layout::LayoutBox,
            dirty::DirtyMask, visible::Bool, focusable::Bool,
-           app::Union{Nothing,AbstractApp})::WidgetNode =
+           app::Any)::WidgetNode =
     WidgetNode(id, classes, type_name, parent, children, inline_style,
                inline_box, computed_style, box, layout, ORIGIN, dirty,
                visible, focusable, app)
@@ -292,9 +292,9 @@ True when `w` takes part in the tab order. Pure.
 is_focusable(w::Widget)::Bool = node(w).focusable
 
 """
-The App owning `w`, or `nothing` when unmounted. Pure.
+The `App` this widget is mounted on, or `nothing`. Walks the tree.
 """
-app(w::Widget)::Union{Nothing,AbstractApp} = node(w).app
+app(w::Widget)::Any = node(w).app
 
 """
 Link `c` (and its whole subtree) into `p`'s tree: set the parent, bind

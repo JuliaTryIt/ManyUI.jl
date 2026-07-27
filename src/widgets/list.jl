@@ -325,31 +325,6 @@ MUTATING `widest` and `sel.n` inside `render!` is safe for the reason
 `Scrollpane.render!` gives at length (scroll.jl:389-415): neither is a
 `Reactive`, so this marks NOTHING and cannot loop, and it converges.
 """
-function render!(w::List, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    _tc_sync!(w)
-    st = computed_style(w)
-    off = scroll_of(w)
-    n = length(w.items)
-    foc = w.focused[]
-    for row in 1:height
-        i = off.y + row
-        # `1 <= i` and not just `i <= n`: `set_scroll!` clamps at zero
-        # but has NO upper bound (widget.jl:185), so a caller bypassing
-        # `scroll_to!` can over-scroll far enough to wrap `i` negative.
-        # An over-scroll is blank rows, NEVER a BoundsError.
-        (1 <= i <= n) || break
-        rst = _tc_row_style(w, st, i, foc)
-        reached = _tc_paint_slice!(buf, row, width, off.x,
-                                   w.format(w.items[i]), rst)
-        w.widest = max(w.widest, reached)
-        (is_selected(w.sel, i) || (foc && w.sel.cursor == i)) &&
-            style_region!(buf, Region(1, row, width, 1),
-                          _tc_bar_style(w.sel, i, foc))
-    end
-    return nothing
-end
 
 """
 Keys: see `_tc_key!`. Consumes only when something actually moved.

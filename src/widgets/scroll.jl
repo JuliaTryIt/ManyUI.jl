@@ -409,10 +409,6 @@ It is UNCONDITIONAL on purpose: caching the last window would miss the
 case where the CONTENT shrinks under a fixed window, which strands the
 offset past the end just as surely.
 """
-function render!(w::Scrollpane, ::AbstractMatrix{Cell})::Nothing
-    scroll_to!(w.canvas, scroll_of(w.canvas))
-    return nothing
-end
 
 """
 True while `d` is live and at or past its target.
@@ -633,14 +629,7 @@ function _sb_metrics(w::Scrollbar,
     return (track, view, total, clamp_scroll(off, view, total))
 end
 
-"""
-Write one cell of the bar, in the bar's own long-axis coordinate.
-Internal.
-"""
-_sb_put!(w::Scrollbar, buf::AbstractMatrix{Cell}, i::Int,
-         g::AbstractString, st::Style)::Int =
-    w.axis === ScrollAxis.VERTICAL ? set_cell!(buf, 1, i, g, st) :
-                                     set_cell!(buf, i, 1, g, st)
+
 
 """
 Draw the track, then the thumb over it.
@@ -650,30 +639,6 @@ reserved gutter blank -- the gutter is stable, the ink is not.
 `ScrollMode.ALWAYS` with nothing to scroll draws a FULL-LENGTH thumb,
 the honest picture of "all of it is visible".
 """
-function render!(w::Scrollbar, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    w.mode === ScrollMode.NEVER && return nothing
-    vert = w.axis === ScrollAxis.VERTICAL
-    track = vert ? height : width
-    st = computed_style(w)
-    (start, len) = thumb_span(_sb_metrics(w, track)...)
-    if len == 0
-        # Nothing to scroll. AUTO keeps the gutter and drops the ink;
-        # ALWAYS says so with a thumb that fills the track.
-        w.mode === ScrollMode.AUTO && return nothing
-        start, len = 1, track
-    else
-        g = vert ? SB_TRACK_V : SB_TRACK_H
-        for i in 1:track
-            _sb_put!(w, buf, i, g, st)
-        end
-    end
-    for i in start:(start + len - 1)
-        _sb_put!(w, buf, i, SB_THUMB, st)
-    end
-    return nothing
-end
 
 """
 Jump the viewport so the thumb centres on the pointer; drag continues

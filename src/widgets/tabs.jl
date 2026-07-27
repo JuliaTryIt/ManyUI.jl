@@ -251,22 +251,6 @@ Truncated at the right edge, never scrolled: a tab strip that scrolls is
 a strip with too many tabs. Captions abut with no separator and a wide
 cluster is never halved -- `_tc_slice!` steps by grapheme.
 """
-function render!(w::TabStrip, buf::AbstractMatrix{Cell})::Nothing
-    width, height = size(buf)
-    (width <= 0 || height <= 0) && return nothing
-    st = computed_style(w)
-    w.focused[] && (st = merge(st, TABS_FOCUS))
-    sel = w.selected[]
-    x = 1
-    for (i, title) in enumerate(w.titles)
-        cap = " "^TABS_PAD * title * " "^TABS_PAD
-        cst = i == sel ? merge(st, TABS_ACTIVE) : st
-        _tc_slice!(buf, x, 1, width, cap, cst)
-        x += text_width(title) + 2 * TABS_PAD
-        x > width && break
-    end
-    return nothing
-end
 
 """
 Panels are added with `add_tab!`, never `mount!`: mounting one directly

@@ -155,7 +155,6 @@ measure(w::Table, avail::Size)::Size = avail
 The pinned header, the optional rule, then the visible body rows in view
 order. O(visible rows x VISIBLE COLUMNS). See `_tc_render_table!`.
 """
-render!(w::Table, buf::AbstractMatrix{Cell})::Nothing =
     _tc_render_table!(w, buf)
 
 """
