@@ -34,9 +34,9 @@ price for a field that cannot go stale because it does not exist.
 """
 mutable struct TreeNode{T}
     "The payload."
-    value::T
+    value::Any
     "Children, in display order. EMPTY is a LEAF. ALIASED."
-    const kids::Vector{TreeNode{T}}
+    const kids::Any}
     """
     True when this node's children are part of the visible flattening.
     A LEAF is always collapsed and `toggle_node!` will not move it --
@@ -53,15 +53,15 @@ A tree node carrying `value`, with `kids` in display order.
 nothing beneath them, which is what "collapsed" means and what every
 file browser does.
 """
-TreeNode(v::T, kids::Vector{TreeNode{T}} = TreeNode{T}[];
+TreeNode(v::Any, kids::Any} = TreeNode{T}[];
          expanded::Bool = false) where {T} =
     TreeNode{T}(v, kids, expanded)
 
 "True when `n` has no children. Pure."
-is_leaf(n::TreeNode)::Bool = isempty(n.kids)
+is_leaf(n::Any)::Bool = isempty(n.kids)
 
 "True when `n` is a non-leaf whose children are visible. Pure."
-is_expanded(n::TreeNode)::Bool = n.expanded && !is_leaf(n)
+is_expanded(n::Any)::Bool = n.expanded && !is_leaf(n)
 
 """
 One DISPLAYED row: a node and its indentation depth. `isbits`-adjacent
@@ -70,7 +70,7 @@ to the widget's cache; never a user type.
 """
 struct TreeRow{T}
     "The node this row shows."
-    node::TreeNode{T}
+    node::Any
     "Indent level. A root is 0."
     depth::Int
 end
@@ -130,24 +130,24 @@ mutable struct TreeView{T,F,A} <: RowsWidget
     node::WidgetNode
     "The roots. ALIASED, mutated in place. A FOREST, not a tree: a file
      browser has N."
-    const roots::Vector{TreeNode{T}}
+    const roots::Any}
     "`format(value)::AbstractString`, no newline. CONCRETE: static."
-    const format::F
+    const format::Any
     "The flattened VISIBLE rows. Rebuilt by `_tv_flat!`; REUSED."
-    const rows::Vector{TreeRow{T}}
+    const rows::Any}
     "False when `rows` is stale. The memo bit of `_tv_flat!`."
     flattened::Bool
     "Bumped by every data, expansion OR cursor change. THE cell. PAINT."
-    version::Reactive{Int}
+    version::Any
     "Cursor and selected set, in FLAT ROW indices."
-    const sel::Selection
+    const sel::Any
     "Widest visible row in cells, INCLUDING indent and twisty. EXACT."
     widest::Int
     "True while focused. PAINT-reactive."
-    focused::Reactive{Bool}
+    focused::Any
     "Called as `on_activate(tree)` on ENTER. NAMED `on_activate` BY
      FORCE: `_tc_key!` reads `w.on_activate` (tablecore.jl:1080)."
-    on_activate::A
+    on_activate::Any
 end
 
 """
@@ -156,11 +156,11 @@ A tree over `roots`, calling `on_activate(tree)` on ENTER.
 Focusable by construction, so it appears in `focusable_widgets` and is
 reachable by TAB with no further wiring. `roots` is ALIASED, not copied.
 """
-function TreeView(roots::Vector{TreeNode{T}},
-                  on_activate::A = _tc_noop;
-                  format::F = _tc_show,
+function TreeView(roots::Any},
+                  on_activate::Any = _tc_noop;
+                  format::Any = _tc_show,
                   id::Symbol = gensym(:treeview),
-                  classes = Symbol[])::TreeView{T,F,A} where {T,F,A}
+                  classes = Symbol[])::Any where {T,F,A}
     w = TreeView{T,F,A}(
         WidgetNode(; id = id, classes = classes,
                    type_name = :TreeView, focusable = true),
@@ -176,12 +176,12 @@ function TreeView(roots::Vector{TreeNode{T}},
 end
 
 # --- the RowsWidget seam. FINAL: `tablecore.jl` dispatches on each. ----
-selection_of(w::TreeView)::Selection = w.sel
-row_count(w::TreeView)::Int = length(_tv_flat!(w))
-view_count(w::TreeView)::Int = length(_tv_flat!(w))
-view_source(::TreeView, k::Int)::Int = k
-view_rank(::TreeView, s::Int)::Int = s
-_tc_touch!(w::TreeView)::Nothing =
+selection_of(w::Any)::Any = w.sel
+row_count(w::Any)::Int = length(_tv_flat!(w))
+view_count(w::Any)::Int = length(_tv_flat!(w))
+view_source(::Any, k::Int)::Int = k
+view_rank(::Any, s::Int)::Int = s
+_tc_touch!(w::Any)::Nothing =
     (w.version[] = w.version[] + 1; nothing)
 
 """
@@ -191,7 +191,7 @@ which calls `grid_of(w)` -- a tree has no columns, so that default is a
 doing anyway; there is no `scanned` bit and no fixpoint to escape
 (list.jl:154). Internal.
 """
-_tc_extent_width(w::TreeView)::Int = (_tv_flat!(w); w.widest)
+_tc_extent_width(w::Any)::Int = (_tv_flat!(w); w.widest)
 
 """
 `Size(widest, n_visible)`. OVERRIDES the container default: a tree's
@@ -200,7 +200,7 @@ WITH `Scrollbar` -- `Scrollbar{TreeView{T,F,A}}` works with ZERO new
 code in `scroll.jl` (list.jl:212). O(1) on the memo hit; ON THE FRAME
 PATH several times per frame.
 """
-content_extent(w::TreeView)::Size = _tc_extent(w)
+content_extent(w::Any)::Any = _tc_extent(w)
 
 """
 `avail`. `List`'s argument verbatim (list.jl:239): a tree takes the
@@ -209,7 +209,7 @@ would be as tall as its data and would never scroll at all. Give it
 `height: 10` or a `grow: 1` parent. This is also what licenses
 `version`'s PAINT reactivity. Pure w.r.t. the tree.
 """
-measure(w::TreeView, avail::Size)::Size = avail
+measure(w::Any, avail::Any)::Any = avail
 
 # --- the flatten ------------------------------------------------------
 
@@ -227,7 +227,7 @@ know what is visible at all, so the width falls out of a walk that was
 happening anyway. One pass, exact answer, no memo to invalidate.
 Internal.
 """
-function _tv_flat!(w::TreeView{T})::Vector{TreeRow{T}} where {T}
+function _tv_flat!(w::Any)::Any} where {T}
     w.flattened && return w.rows
     empty!(w.rows)
     w.widest = 0
@@ -242,7 +242,7 @@ end
 Push `n` and, if it is expanded, its subtree, into `w.rows`; raise
 `widest` to fit each label. Internal.
 """
-function _tv_walk!(w::TreeView{T}, n::TreeNode{T},
+function _tv_walk!(w::Any, n::Any,
                    depth::Int)::Nothing where {T}
     push!(w.rows, TreeRow{T}(n, depth))
     w.widest = max(w.widest,
@@ -258,22 +258,22 @@ end
 """
 The `TreeNode` at flat row `k`, or `nothing` out of range. O(1). Pure.
 """
-function node_at(w::TreeView{T},
-                 k::Int)::Union{Nothing,TreeNode{T}} where {T}
+function node_at(w::Any,
+                 k::Int)::Any} where {T}
     rows = _tv_flat!(w)
     (1 <= k <= length(rows)) || return nothing
     return rows[k].node
 end
 
 "The node under the cursor, or `nothing`. Internal, pure w.r.t. tree."
-_tv_cursor_node(w::TreeView{T}) where {T} =
-    node_at(w, row_cursor(w))::Union{Nothing,TreeNode{T}}
+_tv_cursor_node(w::Any) where {T} =
+    node_at(w, row_cursor(w))::Any}
 
 """
 The flat row showing `n` by IDENTITY; `0` when `n` is not visible.
 O(visible), on a keystroke, never a frame. Internal.
 """
-function _tv_row_of(w::TreeView{T}, n::TreeNode{T})::Int where {T}
+function _tv_row_of(w::Any, n::Any)::Int where {T}
     rows = _tv_flat!(w)
     for k in eachindex(rows)
         rows[k].node === n && return k
@@ -296,10 +296,10 @@ ancestor -- one rule, testable, and unrepresentable as a bug.
 
 Re-clamps the scroll afterwards: this is the only call that can SHRINK
 the extent and strand an offset past the end
-(`refresh_extent!(::List)`, list.jl:299). Internal.
+(`refresh_extent!(::Any)`, list.jl:299). Internal.
 """
-function _tv_rebuild!(w::TreeView{T},
-                      fallback::Union{Nothing,TreeNode{T}} =
+function _tv_rebuild!(w::Any,
+                      fallback::Any} =
                           nothing)::Nothing where {T}
     keep = _tv_cursor_node(w)          # BEFORE: reads the OLD rows
     w.flattened = false
@@ -324,7 +324,7 @@ This is what `TreeNode` having no parent pointer costs, and it CANNOT BE
 STALE, which a field would be the first time someone `push!`ed a child.
 Internal.
 """
-function _tv_parent_row(w::TreeView, i::Int)::Int
+function _tv_parent_row(w::Any, i::Int)::Int
     rows = _tv_flat!(w)
     (1 <= i <= length(rows)) || return 0
     d0 = rows[i].depth
@@ -342,7 +342,7 @@ Set `n.expanded = v` and re-flatten, re-pinning the cursor. False for a
 leaf or an unchanged flag. THE single exit of every expand/collapse, so
 none of the four steps can be forgotten. Internal.
 """
-function _tv_set_expanded!(w::TreeView{T}, n::TreeNode{T},
+function _tv_set_expanded!(w::Any, n::Any,
                            v::Bool)::Bool where {T}
     is_leaf(n) && return false
     n.expanded === v && return false
@@ -352,20 +352,20 @@ function _tv_set_expanded!(w::TreeView{T}, n::TreeNode{T},
 end
 
 "Expand `n`. False for a leaf or an already-open node."
-expand_node!(w::TreeView{T}, n::TreeNode{T}) where {T} =
+expand_node!(w::Any, n::Any) where {T} =
     _tv_set_expanded!(w, n, true)
 
 """
 Collapse `n`. False for an already-shut node. Passes `n` as the
 rebuild's fallback, so a cursor inside the closing subtree lands on `n`.
 """
-collapse_node!(w::TreeView{T}, n::TreeNode{T}) where {T} =
+collapse_node!(w::Any, n::Any) where {T} =
     _tv_set_expanded!(w, n, false)
 
 """
 Flip the expansion of flat row `k`. False for a leaf or a bad row.
 """
-function toggle_node!(w::TreeView, k::Int)::Bool
+function toggle_node!(w::Any, k::Int)::Bool
     rows = _tv_flat!(w)
     (1 <= k <= length(rows)) || return false
     n = rows[k].node
@@ -374,7 +374,7 @@ function toggle_node!(w::TreeView, k::Int)::Bool
 end
 
 "Recursively set `expanded` on `n` and every non-leaf below it. Internal."
-function _tv_set_all!(n::TreeNode, v::Bool)::Nothing
+function _tv_set_all!(n::Any, v::Bool)::Nothing
     is_leaf(n) && return nothing
     n.expanded = v
     for k in n.kids
@@ -386,7 +386,7 @@ end
 """
 Expand EVERY node. O(nodes) -- on a user action, never a frame.
 """
-function expand_all!(w::TreeView)::Nothing
+function expand_all!(w::Any)::Nothing
     for r in w.roots
         _tv_set_all!(r, true)
     end
@@ -397,7 +397,7 @@ end
 """
 Collapse EVERY node. O(nodes) -- on a user action, never a frame.
 """
-function collapse_all!(w::TreeView)::Nothing
+function collapse_all!(w::Any)::Nothing
     for r in w.roots
         _tv_set_all!(r, false)
     end
@@ -408,18 +408,18 @@ end
 # --- data ops ---------------------------------------------------------
 
 "The flattened VISIBLE rows. ALIASED; do not mutate. Pure w.r.t. tree."
-tree_rows(w::TreeView) = _tv_flat!(w)
+tree_rows(w::Any) = _tv_flat!(w)
 
 "The node under the cursor, or `nothing`. Pure w.r.t. tree."
-tree_cursor(w::TreeView{T}) where {T} =
-    _tv_cursor_node(w)::Union{Nothing,TreeNode{T}}
+tree_cursor(w::Any) where {T} =
+    _tv_cursor_node(w)::Any}
 
 """
 Replace the roots. CLEARS the selection and rewinds the scroll: every
 flat index the selection held names a row that may no longer exist.
-`set_items!(::List)`'s argument (list.jl:394).
+`set_items!(::Any)`'s argument (list.jl:394).
 """
-function set_roots!(w::TreeView{T}, rs)::Nothing where {T}
+function set_roots!(w::Any, rs)::Nothing where {T}
     empty!(w.roots)
     append!(w.roots, rs)
     set_scroll!(w, ORIGIN)
@@ -430,10 +430,10 @@ end
 
 """
 Re-flatten from the current `roots`/`kids`. THE public escape hatch for
-"I mutated `roots`/`kids` myself" -- `refresh_rows!(::List)`'s contract
+"I mutated `roots`/`kids` myself" -- `refresh_rows!(::Any)`'s contract
 (list.jl:462), same meaning.
 """
-refresh_tree!(w::TreeView)::Nothing = _tv_rebuild!(w)
+refresh_tree!(w::Any)::Nothing = _tv_rebuild!(w)
 
 # --- painting ---------------------------------------------------------
 
@@ -448,7 +448,7 @@ ZERO STRING BUILDING PER ROW. The indent is NOT PAINTED AT ALL --
 ARE the indent -- and the label goes through `_tc_slice!` at an explicit
 start column rather than through a concatenation.
 """
-function render!(w::TreeView, buf::AbstractMatrix{Cell})::Nothing
+function render!(w::Any, buf::Any)::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     _tv_flat!(w)
@@ -491,7 +491,7 @@ UP/DOWN/PAGE/HOME/END/ENTER and shift-extend are DELEGATED unchanged.
 Consumes ONLY when something moved, so LEFT on a root leaf bubbles. TAB
 and ESCAPE fall through, which is what keeps the tab order alive.
 """
-function on_event!(w::TreeView, d::Dispatch{KeyEvent})::Nothing
+function on_event!(w::Any, d::Any)::Nothing
     _tc_acts(d) || return nothing
     e = event(d)
     if isempty(e.mods)
@@ -512,7 +512,7 @@ function on_event!(w::TreeView, d::Dispatch{KeyEvent})::Nothing
 end
 
 "SPACE: toggle the cursor node; consume iff it moved. Internal."
-function _tv_key_toggle!(w::TreeView, d::Dispatch{KeyEvent})::Nothing
+function _tv_key_toggle!(w::Any, d::Any)::Nothing
     _tc_sync!(w)
     toggle_node!(w, row_cursor(w)) || return nothing
     consume!(d)
@@ -520,7 +520,7 @@ function _tv_key_toggle!(w::TreeView, d::Dispatch{KeyEvent})::Nothing
 end
 
 "RIGHT: expand, or if already open move to the first child. Internal."
-function _tv_key_right!(w::TreeView, d::Dispatch{KeyEvent})::Nothing
+function _tv_key_right!(w::Any, d::Any)::Nothing
     _tc_sync!(w)
     k = row_cursor(w)
     n = node_at(w, k)
@@ -538,7 +538,7 @@ function _tv_key_right!(w::TreeView, d::Dispatch{KeyEvent})::Nothing
 end
 
 "LEFT: collapse, or if already shut / a leaf move to the parent."
-function _tv_key_left!(w::TreeView, d::Dispatch{KeyEvent})::Nothing
+function _tv_key_left!(w::Any, d::Any)::Nothing
     _tc_sync!(w)
     k = row_cursor(w)
     n = node_at(w, k)
@@ -562,7 +562,7 @@ DELEGATES to `_tc_mouse!` (cursor, drag, wheel). The twisty test uses
 the SAME arithmetic `render!` paints it at, so "click what you see" is
 true by construction. `_tc_local`, NEVER `local_offset`.
 """
-function on_event!(w::TreeView, d::Dispatch{MouseEvent})::Nothing
+function on_event!(w::Any, d::Any)::Nothing
     _tc_acts(d) || return nothing
     e = event(d)
     if e.button === MouseButton.LEFT &&
@@ -589,7 +589,7 @@ Show the cursor, and scroll every ancestor pane until this tree is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it (widget.jl:666).
 """
-on_focus!(w::TreeView)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::Any)::Nothing = (w.focused[] = true; reveal!(w))
 
 "Hide the cursor."
-on_blur!(w::TreeView)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::Any)::Nothing = (w.focused[] = false; nothing)

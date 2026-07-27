@@ -17,11 +17,11 @@ loop, viewed through an index PERMUTATION.
 
 WHAT IT ADDS OVER `Table`, EXHAUSTIVELY:
 
-    key::K                 `key(row, j)` -> something `isless` accepts
-    order::Vector{Int}     view -> source. THE sort.
-    rank::Vector{Int}      source -> view. The inverse.
+    key::Any                 `key(row, j)` -> something `isless` accepts
+    order::Any     view -> source. THE sort.
+    rank::Any      source -> view. The inverse.
     sort_col::Int          `0` == source order
-    sort_dir::SortDir.T
+    sort_dir::Any
     a sort indicator in the header, and a header click that sorts.
 
 Everything else -- the columns, the sizing, the header, the truncation,
@@ -64,21 +64,21 @@ mutable struct DataTable{R,F,K,A} <: RowsWidget
     "Per-widget state."
     node::WidgetNode
     "The column model. IDENTICAL in kind to `Table`'s."
-    const grid::TableGrid
+    const grid::Any
     "THE CALLER'S rows. ALIASED. NEVER reordered, never copied."
-    const rows::Vector{R}
+    const rows::Any
     "`cell(row, j)::AbstractString`. CONCRETE: dispatches statically."
-    const cell::F
+    const cell::Any
     """
     `key(row, j)`. CONCRETE. Called O(rows) ONCE per sort -- a user
     action -- and NEVER on the frame path.
     """
-    const key::K
+    const key::Any
     """
     View to source: `order[k]` is the source row of view row `k`.
     ALWAYS a permutation of `1:length(rows)`.
     """
-    const order::Vector{Int}
+    const order::Any
     """
     Source to view: `rank[order[k]] == k`. Rebuilt in ONE O(n) pass
     after every sort, off the frame path.
@@ -89,19 +89,19 @@ mutable struct DataTable{R,F,K,A} <: RowsWidget
     make a keystroke O(1) is the right trade; it is bounded; and it is
     stated.
     """
-    const rank::Vector{Int}
+    const rank::Any
     "The sorted column, or `0` for source order."
     sort_col::Int
     "The sort direction. `NONE` iff `sort_col == 0`."
-    sort_dir::SortDir.T
+    sort_dir::Any
     "Bumped by every data OR selection change. Dirty.PAINT."
-    version::Reactive{Int}
+    version::Any
     "Cursor and selected set, in SOURCE row indices."
-    const sel::Selection
+    const sel::Any
     "True while focused. PAINT-reactive."
-    focused::Reactive{Bool}
+    focused::Any
     "Called as `on_activate(table)` on ENTER."
-    on_activate::A
+    on_activate::Any
 end
 
 """
@@ -111,17 +111,17 @@ ENTER. Starts in SOURCE order.
 `key` is REQUIRED and has no default: see the type's docstring. `rows`
 and `cols` are both ALIASED, never copied.
 """
-function DataTable(rows::Vector{R}, cols::Vector{Column},
-                   on_activate::A = _tc_noop;
-                   key::K,                       # REQUIRED. No default.
-                   cell::F = _tc_cell_default,
-                   mode::SelectMode.T = SelectMode.SINGLE,
+function DataTable(rows::Any, cols::Any,
+                   on_activate::Any = _tc_noop;
+                   key::Any,                       # REQUIRED. No default.
+                   cell::Any = _tc_cell_default,
+                   mode::Any = SelectMode.SINGLE,
                    sep::AbstractString = " ", show_header::Bool = true,
                    rule::Bool = false,
                    rule_glyph::AbstractString = TC_RULE,
                    sample::Int = TC_AUTO_SAMPLE,
                    id::Symbol = gensym(:datatable),
-                   classes = Symbol[])::DataTable{R,F,K,A} where
+                   classes = Symbol[])::Any where
                   {R,F,K,A}
     n = length(rows)
     w = DataTable{R,F,K,A}(
@@ -145,20 +145,20 @@ function DataTable(rows::Vector{R}, cols::Vector{Column},
 end
 
 # --- the seam. The `order`/`rank` indirection IS the whole delta. -----
-selection_of(w::DataTable)::Selection = w.sel
-row_count(w::DataTable)::Int = length(w.rows)
-view_count(w::DataTable)::Int = length(w.order)
-view_source(w::DataTable, k::Int)::Int = @inbounds w.order[k]
-view_rank(w::DataTable, s::Int)::Int = @inbounds w.rank[s]
-grid_of(w::DataTable)::TableGrid = w.grid
-_tc_touch!(w::DataTable)::Nothing =
+selection_of(w::Any)::Any = w.sel
+row_count(w::Any)::Int = length(w.rows)
+view_count(w::Any)::Int = length(w.order)
+view_source(w::Any, k::Int)::Int = @inbounds w.order[k]
+view_rank(w::Any, s::Int)::Int = @inbounds w.rank[s]
+grid_of(w::Any)::Any = w.grid
+_tc_touch!(w::Any)::Nothing =
     (w.version[] = w.version[] + 1; nothing)
 
 """
 `(show_header ? 1 : 0) + (show_header && rule ? 1 : 0)`. The rows of the
 content box that are pinned CHROME. `0`, `1` or `2`. Internal.
 """
-function _tc_header_rows(w::DataTable)::Int
+function _tc_header_rows(w::Any)::Int
     w.grid.show_header || return 0
     return w.grid.rule ? 2 : 1
 end
@@ -169,26 +169,26 @@ default; THIS OVERRIDE IS THE WHOLE INTEGRATION WITH `Scrollbar` --
 `Scrollbar{DataTable{R,F,K,A}}` works with ZERO new code in `scroll.jl`.
 O(1) on the FRAME PATH.
 """
-content_extent(w::DataTable)::Size = _tc_extent(w)
+content_extent(w::Any)::Any = _tc_extent(w)
 
 """
 `avail`. A `DataTable` takes the space it is OFFERED and scrolls its
 content. Pure w.r.t. the tree.
 """
-measure(w::DataTable, avail::Size)::Size = avail
+measure(w::Any, avail::Any)::Any = avail
 
 """
 The pinned header, the optional rule, then the visible body rows IN VIEW
 ORDER -- `view_source(w, k)` inlines to `w.order[k]` and that is the
 whole of the sort's read side. See `_tc_render_table!`.
 """
-render!(w::DataTable, buf::AbstractMatrix{Cell})::Nothing =
+render!(w::Any, buf::Any)::Nothing =
     _tc_render_table!(w, buf)
 
 """
 Keys: see `_tc_key!`. Consumes only when something actually moved.
 """
-on_event!(w::DataTable, d::Dispatch{KeyEvent})::Nothing =
+on_event!(w::Any, d::Any)::Nothing =
     (_tc_key!(w, d); nothing)
 
 """
@@ -196,19 +196,19 @@ Show the cursor, and scroll every ancestor pane until this table is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it (widget.jl:666).
 """
-on_focus!(w::DataTable)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::Any)::Nothing = (w.focused[] = true; reveal!(w))
 
 """
 Hide the cursor.
 """
-on_blur!(w::DataTable)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::Any)::Nothing = (w.focused[] = false; nothing)
 
 """
 Reset and re-measure every AUTO mark over EVERY row, re-resolve, and
 return the new `content_extent`. THE OPT-IN EXACT RESCAN, and the ONLY
 thing that can make an AUTO column NARROWER.
 """
-function refresh_extent!(w::DataTable)::Size
+function refresh_extent!(w::Any)::Any
     _tc_auto_reset!(w)
     _tc_auto!(w, 1, row_count(w))
     e = content_extent(w)
@@ -223,14 +223,14 @@ end
 AUTO column sized to its header text alone would have nowhere to draw
 it. Internal.
 """
-_tc_header_reserve(w::DataTable, j::Int)::Int =
+_tc_header_reserve(w::Any, j::Int)::Int =
     grid_of(w).cols[j].sortable ? 1 : 0
 
 """
 `TC_SORT_ASC`, `TC_SORT_DESC`, or `""` when column `j` is not the sorted
 one.
 """
-function sort_indicator(w::DataTable, j::Int)::String
+function sort_indicator(w::Any, j::Int)::String
     (j >= 1 && j === w.sort_col) || return ""
     w.sort_dir === SortDir.ASCENDING && return TC_SORT_ASC
     w.sort_dir === SortDir.DESCENDING && return TC_SORT_DESC
@@ -258,7 +258,7 @@ would change the caption's width the moment you sort, so the caption
 would re-truncate and the header would twitch. `ScrollMode.AUTO`'s
 doctrine, quoted: THE GUTTER IS STABLE, THE INK IS NOT. Internal.
 """
-function _tc_header_text(w::DataTable, j::Int)::AbstractString
+function _tc_header_text(w::Any, j::Int)::AbstractString
     g = w.grid
     col = g.cols[j]
     # A column no indicator can ever land in gets EVERY cell for its
@@ -293,23 +293,23 @@ function _tc_header_text(w::DataTable, j::Int)::AbstractString
 end
 
 "The sorted column, or `0` for source order. Pure."
-sort_column(w::DataTable)::Int = w.sort_col
+sort_column(w::Any)::Int = w.sort_col
 
 "The sort direction. `NONE` iff `sort_column(w) == 0`. Pure."
-sort_direction(w::DataTable)::SortDir.T = w.sort_dir
+sort_direction(w::Any)::Any = w.sort_dir
 
 """
 The caller's row index behind VIEW row `k`. The map a selection needs --
 and `selected_rows(w)` is ALREADY in source indices, so this is for
 reading the view, not for repairing it. Pure.
 """
-source_index(w::DataTable, k::Int)::Int = w.order[k]
+source_index(w::Any, k::Int)::Int = w.order[k]
 
 """
 Rebuild `rank` from `order` in ONE pass: `rank[order[k]] = k`. O(n), off
 the frame path. Internal.
 """
-function _dt_rank!(w::DataTable)::Nothing
+function _dt_rank!(w::Any)::Nothing
     @inbounds for k in eachindex(w.order)
         w.rank[w.order[k]] = k
     end
@@ -321,7 +321,7 @@ Resize `order`/`rank` to `length(rows)`. True iff either was resized --
 in which case the grown slots are UNDEFINED and every caller must write
 `order` whole before `_dt_rank!` reads it. Internal.
 """
-function _dt_fit!(w::DataTable)::Bool
+function _dt_fit!(w::Any)::Bool
     n = length(w.rows)
     (length(w.order) === n && length(w.rank) === n) && return false
     resize!(w.order, n)
@@ -333,7 +333,7 @@ end
 Write `p` into `order`. True iff any entry moved. `p` is a permutation of
 `1:length(rows)` -- `sortperm`'s answer, or the identity. Internal.
 """
-function _dt_order!(w::DataTable, p::AbstractVector{Int})::Bool
+function _dt_order!(w::Any, p::Any)::Bool
     changed = false
     @inbounds for k in eachindex(p)
         w.order[k] === p[k] || (changed = true)
@@ -345,7 +345,7 @@ end
 """
 Restore SOURCE order: `order[k] = k`. True iff any entry moved. Internal.
 """
-function _dt_identity!(w::DataTable)::Bool
+function _dt_identity!(w::Any)::Bool
     changed = false
     @inbounds for k in eachindex(w.order)
         w.order[k] === k || (changed = true)
@@ -359,7 +359,7 @@ The permutation column `j` in direction `dir` puts `rows` in, WITHOUT
 touching `rows`. See `sort_by!` for why the keys are materialised first
 and why `MergeSort` is spelled. O(n) keys + O(n log n). Internal.
 """
-function _dt_perm(w::DataTable, j::Int, dir::SortDir.T)::Vector{Int}
+function _dt_perm(w::Any, j::Int, dir::Any)::Any
     n = length(w.rows)
     ks = [w.key(w.rows[i], j) for i in 1:n]
     return sortperm(ks; alg = MergeSort,
@@ -371,7 +371,7 @@ Rebuild `order`/`rank` from the CURRENT sort state: the identity when
 `sort_col == 0`, the permutation otherwise. THE reapply, and the whole of
 what a data change owes the sort. Internal.
 """
-function _dt_reapply!(w::DataTable)::Nothing
+function _dt_reapply!(w::Any)::Nothing
     _dt_fit!(w)
     if w.sort_col == 0 || w.sort_dir === SortDir.NONE
         _dt_identity!(w)
@@ -452,8 +452,8 @@ O(n) key materialisation + O(n log n) sortperm + O(n) `_dt_rank!`. ALL
 OF IT ON A USER ACTION, once per header click. The frame path is
 untouched.
 """
-function sort_by!(w::DataTable, j::Int;
-                  dir::SortDir.T = SortDir.ASCENDING)::Bool
+function sort_by!(w::Any, j::Int;
+                  dir::Any = SortDir.ASCENDING)::Bool
     g = w.grid
     (0 <= j <= length(g.cols)) || throw(BoundsError(g.cols, j))
     (j >= 1 && !g.cols[j].sortable) && throw(ArgumentError(
@@ -495,7 +495,7 @@ identical to "sorted by whatever it was before" is a state a user cannot
 see and therefore cannot want. `sort_by!(w, 0)` restores source order
 for a caller who means it. Clicking a NEW column sorts ASCENDING.
 """
-function toggle_sort!(w::DataTable, j::Int)::Bool
+function toggle_sort!(w::Any, j::Int)::Bool
     asc = w.sort_col === j && w.sort_dir === SortDir.ASCENDING
     return sort_by!(w, j;
                     dir = asc ? SortDir.DESCENDING : SortDir.ASCENDING)
@@ -510,7 +510,7 @@ counts and exactly the block `_tc_row_at` refuses to call a body row.
 `y = 3` the unshifted border box would call a BODY row a header and sort
 on a click that meant to select. Internal.
 """
-function _dt_on_header(w::DataTable, e::MouseEvent)::Bool
+function _dt_on_header(w::Any, e::Any)::Bool
     hh = _tc_header_rows(w)
     hh >= 1 || return false
     c = layout_of(w).content
@@ -531,7 +531,7 @@ header the user saw and clicked. Before the first paint they are zeros
 and a click does nothing, which is correct: there was no header to
 click.
 """
-function on_event!(w::DataTable, d::Dispatch{MouseEvent})::Nothing
+function on_event!(w::Any, d::Any)::Nothing
     _tc_acts(d) || return nothing
     e = event(d)
     # LEFT PRESS only, so a WHEEL notch over the header still reaches
@@ -560,8 +560,8 @@ end
 Replace the contents. CLEARS the selection and cursor, rewinds the
 scroll, re-seeds the AUTO marks and rebuilds `order`/`rank`.
 """
-function set_rows!(w::DataTable{R},
-                   rows::AbstractVector)::Nothing where {R}
+function set_rows!(w::Any,
+                   rows::Any)::Nothing where {R}
     empty!(w.rows)
     append!(w.rows, rows)
     s = w.sel
@@ -590,7 +590,7 @@ end
 Append `r`. Raises the AUTO marks from the new row alone, then
 REAPPLIES the current sort.
 """
-function push_row!(w::DataTable{R}, r::R)::Nothing where {R}
+function push_row!(w::Any, r::Any)::Nothing where {R}
     push!(w.rows, r)
     # The new row ALONE: the marks are MONOTONE, so nothing rescans the
     # sample and building a table by `push_row!` stays O(1) per row.
@@ -603,7 +603,7 @@ end
 Insert `r` at SOURCE index `i`, clamped. REINDEXES the selection via
 `reindex_insert!`, then REAPPLIES the current sort.
 """
-function insert_row!(w::DataTable{R}, i::Int, r::R)::Nothing where {R}
+function insert_row!(w::Any, i::Int, r::Any)::Nothing where {R}
     k = clamp(i, 1, length(w.rows) + 1)
     insert!(w.rows, k, r)
     # Source indices are structurally safe against REORDERING; they are
@@ -619,7 +619,7 @@ end
 Delete SOURCE row `i`. False when out of range. REINDEXES via
 `reindex_delete!` and rebuilds `order`/`rank`.
 """
-function delete_row!(w::DataTable, i::Int)::Bool
+function delete_row!(w::Any, i::Int)::Bool
     (1 <= i <= length(w.rows)) || return false
     deleteat!(w.rows, i)
     reindex_delete!(w.sel, i)
@@ -633,7 +633,7 @@ sort when `sort_col != 0`, bumps `version`, re-syncs the selection,
 re-clamps the scroll, follows the cursor. O(n log n) when sorted -- a
 data change, never a frame.
 """
-function refresh_rows!(w::DataTable)::Nothing
+function refresh_rows!(w::Any)::Nothing
     _dt_reapply!(w)
     _tc_touch!(w)
     _tc_sync!(w)
@@ -647,7 +647,7 @@ Replace the columns. Resizes `widths`/`xs`/`autos`, re-seeds the AUTO
 marks and invalidates the memo. Resets the sort when `sort_col` is no
 longer a valid column.
 """
-function set_columns!(w::DataTable, cols::Vector{Column})::Nothing
+function set_columns!(w::Any, cols::Any)::Nothing
     g = w.grid
     n = length(cols)
     resize!(g.cols, n)
@@ -689,7 +689,7 @@ The `Table` twin's `refresh_columns!` states the same rule, and this is
 what `DataTable` itself does at construction and at `set_rows!`. No
 data-change path (`push_row!`/`insert_row!`/`delete_row!`) rescans.
 """
-function refresh_columns!(w::DataTable)::Nothing
+function refresh_columns!(w::Any)::Nothing
     _dt_reseed!(w)                      # invalidates the memo
     _tc_touch!(w)
     return nothing
@@ -700,9 +700,9 @@ Reset every AUTO mark to its header seed and re-measure SOURCE rows
 `1 : min(sample, n)` -- the seeding pass, exactly as at construction.
 
 THE ONE PLACE the sample is re-scanned, and it is never a data change.
-Mirrors `_tb_reseed!(::Table)`. Internal.
+Mirrors `_tb_reseed!(::Any)`. Internal.
 """
-function _dt_reseed!(w::DataTable)::Nothing
+function _dt_reseed!(w::Any)::Nothing
     _tc_auto_reset!(w)
     _tc_auto!(w, 1, min(w.grid.sample, row_count(w)))
     return nothing

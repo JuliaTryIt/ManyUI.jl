@@ -13,11 +13,11 @@ mutable struct Button{F} <: Widget
     "Per-widget state."
     node::WidgetNode
     "The caption; writing it marks the button dirty."
-    label::Reactive{String}
+    label::Any
     "True while the button is held."
-    pressed::Reactive{Bool}
+    pressed::Any
     "Called as `on_press(button)` when activated."
-    on_press::F
+    on_press::Any
 end
 
 """
@@ -30,9 +30,9 @@ reachable by TAB with no further wiring.
 `label` is `Dirty.LAYOUT`-reactive (a new caption is a new extent);
 `pressed` is `Dirty.PAINT`-reactive (it cannot move a single cell).
 """
-function Button(label::AbstractString, on_press::F;
+function Button(label::AbstractString, on_press::Any;
                 id::Symbol = gensym(:button),
-                classes = Symbol[])::Button{F} where {F}
+                classes = Symbol[])::Any where {F}
     w = Button{F}(WidgetNode(; id = id, classes = classes,
                              type_name = :Button, focusable = true),
                   Reactive(String(label)),
@@ -50,7 +50,7 @@ This is a CONTENT extent, like every other `measure`. The box overhead
 -- margin, border, padding -- is added by the layout engine through
 `outer_size`; adding it here as well would count it twice.
 """
-measure(w::Button, avail::Size)::Size = Size(text_width(w.label[]), 1)
+measure(w::Any, avail::Any)::Any = Size(text_width(w.label[]), 1)
 
 """
 Paint the caption, centred in the content box, reversed while held.
@@ -58,7 +58,7 @@ Paint the caption, centred in the content box, reversed while held.
 Truncated at the content box's right edge; a wide cluster that would
 straddle it is dropped rather than halved.
 """
-function render!(w::Button, buf::AbstractMatrix{Cell})::Nothing
+function render!(w::Any, buf::Any)::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
@@ -79,13 +79,13 @@ want to intercept, and a button is never an interceptor. `AT_TARGET`
 counts because a childless button IS the target, and the bubble phase
 excludes the target, so bubble alone would never visit it.
 """
-_bt_activates(d::Dispatch)::Bool =
+_bt_activates(d::Any)::Bool =
     d.phase !== Phase.CAPTURE && !is_consumed(d)
 
 """
 Fire the handler and stop the event.
 """
-function _bt_fire!(w::Button, d::Dispatch)::Nothing
+function _bt_fire!(w::Any, d::Any)::Nothing
     w.on_press(w)
     consume!(d)
     return nothing
@@ -98,7 +98,7 @@ Unmodified keys only. `ctrl+enter` and friends belong to an
 application-level binding, and consuming them here would silently
 shadow it.
 """
-function on_event!(w::Button, d::Dispatch{KeyEvent})::Nothing
+function on_event!(w::Any, d::Any)::Nothing
     _bt_activates(d) || return nothing
     e = event(d)
     isempty(e.mods) || return nothing
@@ -116,7 +116,7 @@ The matching LEFT release clears `pressed` -- that is what makes "True
 while the button is held" true -- but activates nothing and consumes
 nothing: the press already did the work.
 """
-function on_event!(w::Button, d::Dispatch{MouseEvent})::Nothing
+function on_event!(w::Any, d::Any)::Nothing
     _bt_activates(d) || return nothing
     e = event(d)
     e.button === MouseButton.LEFT || return nothing

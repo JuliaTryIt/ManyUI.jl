@@ -100,16 +100,16 @@ const TC_SORT_ASC = "▲"
 const TC_SORT_DESC = "▼"
 
 "A selected row. MERGED onto the cells under it."
-const TC_SELECTED = Style(; reverse = true)
+const TC_SELECTED = (; reverse = true)
 
 """
 The cursor row, drawn only while FOCUSED. Merged, so it composes with
 `TC_SELECTED` on a row that is both.
 """
-const TC_CURSOR = Style(; underline = true)
+const TC_CURSOR = (; underline = true)
 
 "The header rows."
-const TC_HEADER = Style(; bold = true)
+const TC_HEADER = (; bold = true)
 
 "The modifier set that EXTENDS. See `_tc_key!`'s modifier policy."
 const TC_SHIFT = Modifiers(Modifier.SHIFT)
@@ -152,7 +152,7 @@ WHOLE untruncated string. `_uw_string_backed` (unicode.jl:123) returns a
 `String`/`SubString{String}` input UNCOPIED, so `t` shares `s`'s
 codeunits and the comparison is exact. Pure. Internal.
 """
-_tc_truncated(t::SubString{String}, s::AbstractString)::Bool =
+_tc_truncated(t::Any, s::AbstractString)::Bool =
     ncodeunits(t) < ncodeunits(s)
 
 # --- the type lattice -------------------------------------------------
@@ -164,7 +164,7 @@ THE SEAM, and it is functions, not fields -- `scroll.jl`'s own move
 ("the scrollable seam is three functions, not a type"), one layer up.
 Every subtype MUST define, each a one-liner:
 
-    selection_of(w)::Selection
+    selection_of(w)::Any
     row_count(w)::Int             # SOURCE rows. O(1). FRAME PATH.
     view_count(w)::Int            # rows in view order. O(1).
     view_source(w, k::Int)::Int   # view index -> source index
@@ -176,8 +176,8 @@ Every subtype MUST define, each a one-liner:
 and MUST carry these DIRECT fields:
 
     node::WidgetNode
-    version::Reactive{Int}        # Dirty.PAINT -- see below
-    focused::Reactive{Bool}
+    version::Any        # Dirty.PAINT -- see below
+    focused::Any
 
 `version`/`focused` MUST be direct fields of the widget and MUST NOT be
 moved into a held struct: `attach_reactives!` walks
@@ -194,7 +194,7 @@ scrollable seam stays the three functions `scroll.jl:57-66` names --
 NAVIGATION, which are identical across the three rather than merely
 similar.
 
-The seam methods take `::RowsWidget` and have NO default, so a subtype
+The seam methods take `::Any` and have NO default, so a subtype
 that forgets one gets a MethodError -- and a `Button` never answers them
 at all.
 """
@@ -238,7 +238,7 @@ mutable struct Selection
     Selection policy. `const`: a widget that needs another mode is a
     different widget -- build a new one.
     """
-    const mode::SelectMode.T
+    const mode::Any
     "Rows this selection is sized for. `resize_selection!` maintains it."
     n::Int
     "The cursor's SOURCE row, 1-based. `0` IFF `n == 0`."
@@ -246,7 +246,7 @@ mutable struct Selection
     "The fixed end of a shift-extend, a SOURCE row. `0` IFF `n == 0`."
     anchor::Int
     "The selected SOURCE rows. Unordered -- see `selected_rows`."
-    const rows::BitSet
+    const rows::Any
 end
 
 """
@@ -255,8 +255,8 @@ when `n == 0`). NOTHING is selected initially, in every mode --
 including `SINGLE`: a list that selects row 1 before the user has
 touched it has made a choice on their behalf.
 """
-function Selection(mode::SelectMode.T = SelectMode.SINGLE,
-                   n::Int = 0)::Selection
+function Selection(mode::Any = SelectMode.SINGLE,
+                   n::Int = 0)::Any
     m = max(0, n)
     c = m == 0 ? 0 : 1
     return Selection(mode, m, c, c, BitSet())
@@ -265,16 +265,16 @@ end
 # --- readers. PURE. ---------------------------------------------------
 
 "The selection policy of `s`. Pure."
-select_mode(s::Selection)::SelectMode.T = s.mode
+select_mode(s::Any)::Any = s.mode
 
 "The number of SOURCE rows `s` is sized for. Pure."
-n_rows(s::Selection)::Int = s.n
+n_rows(s::Any)::Int = s.n
 
 "The cursor's SOURCE row; `0` iff there is no row. Pure."
-row_cursor(s::Selection)::Int = s.cursor
+row_cursor(s::Any)::Int = s.cursor
 
 "The anchor's SOURCE row; `0` iff there is no row. Pure."
-row_anchor(s::Selection)::Int = s.anchor
+row_anchor(s::Any)::Int = s.anchor
 
 """
 True when SOURCE row `i` is selected.
@@ -282,19 +282,19 @@ True when SOURCE row `i` is selected.
 O(1), ZERO allocation (MEASURED). FRAME PATH: one call per VISIBLE row.
 Total for any `i`, including `i <= 0` and `i > n`. Pure.
 """
-is_selected(s::Selection, i::Int)::Bool = i in s.rows
+is_selected(s::Any, i::Int)::Bool = i in s.rows
 
 """
 How many rows are selected. O(1) in NONE/SINGLE; O(n/64) in MULTI. NEVER
 the frame path. Pure.
 """
-n_selected(s::Selection)::Int = length(s.rows)
+n_selected(s::Any)::Int = length(s.rows)
 
 """
 The selected SOURCE rows, ASCENDING. ALLOCATES. NEVER the frame path;
 this is what an application calls after ENTER. Pure.
 """
-selected_rows(s::Selection)::Vector{Int} = collect(s.rows)
+selected_rows(s::Any)::Any = collect(s.rows)
 
 # --- mutators. Each returns true IFF something changed. ---------------
 
@@ -302,7 +302,7 @@ selected_rows(s::Selection)::Vector{Int} = collect(s.rows)
 Select `i` and nothing else, without touching the cursor or the anchor.
 True iff the set changed. Internal.
 """
-function _tc_only!(s::Selection, i::Int)::Bool
+function _tc_only!(s::Any, i::Int)::Bool
     length(s.rows) == 1 && first(s.rows) == i && return false
     empty!(s.rows)
     push!(s.rows, i)
@@ -315,7 +315,7 @@ cursor and anchor into `1:n` (`0` when `n == 0`). O(1) -- ONE Int
 compare -- when `n` is unchanged, which is what lets `render!` call it
 every frame as a self-healing guard. See `_tc_sync!`.
 """
-function resize_selection!(s::Selection, n::Int)::Bool
+function resize_selection!(s::Any, n::Int)::Bool
     m = max(0, n)
     m === s.n && return false           # THE O(1) guard
     s.n = m
@@ -348,9 +348,9 @@ selection with `anchor:i` (MULTI), or moves the cursor alone
 NORMATIVE: `anchor:i` is a SOURCE range, which is the only thing a
 `Selection` can mean -- it has no view. A widget whose view is a
 PERMUTATION must extend over VIEW rows instead, and
-`set_cursor!(::RowsWidget, k; extend = true)` is where that happens.
+`set_cursor!(::Any, k; extend = true)` is where that happens.
 """
-function set_cursor!(s::Selection, i::Int; extend::Bool = false)::Bool
+function set_cursor!(s::Any, i::Int; extend::Bool = false)::Bool
     s.n == 0 && return false
     t = clamp(i, 1, s.n)
     if extend
@@ -372,7 +372,7 @@ end
 Replace the selection with the contiguous SOURCE range `lo:hi`, clipped
 to `1:n`. A bitmap range, not `hi - lo + 1` inserts. Internal.
 """
-function _tc_replace_range!(s::Selection, lo::Int, hi::Int)::Nothing
+function _tc_replace_range!(s::Any, lo::Int, hi::Int)::Nothing
     empty!(s.rows)
     a = max(1, lo)
     b = min(s.n, hi)
@@ -382,7 +382,7 @@ end
 
 "Select `i` and NOTHING else; re-pin the cursor and the anchor to it. A
  no-op under NONE."
-function select_only!(s::Selection, i::Int)::Bool
+function select_only!(s::Any, i::Int)::Bool
     s.mode === SelectMode.NONE && return false
     s.n == 0 && return false
     t = clamp(i, 1, s.n)
@@ -400,7 +400,7 @@ which is a contradiction. A no-op under NONE.
 
 `i` is NOT clamped: clamping a toggle would flip the WRONG row.
 """
-function toggle_row!(s::Selection, i::Int)::Bool
+function toggle_row!(s::Any, i::Int)::Bool
     s.mode === SelectMode.MULTI || return false
     (1 <= i <= s.n) || return false
     i in s.rows ? delete!(s.rows, i) : push!(s.rows, i)
@@ -426,7 +426,7 @@ NORMATIVE: an extend REPLACES, it does not union. Shift+click after a
 run of ctrl+clicks replaces the selection with the anchor range -- what
 every file manager does. `toggle_row!` is the documented escape.
 """
-function sel_extend_ids!(s::Selection, ids)::Bool
+function sel_extend_ids!(s::Any, ids)::Bool
     s.mode === SelectMode.NONE && return false
     s.n == 0 && return false
     if s.mode === SelectMode.SINGLE
@@ -448,14 +448,14 @@ function sel_extend_ids!(s::Selection, ids)::Bool
 end
 
 "Deselect everything; the CURSOR STAYS."
-function clear_selection!(s::Selection)::Bool
+function clear_selection!(s::Any)::Bool
     isempty(s.rows) && return false
     empty!(s.rows)
     return true
 end
 
 "Select `1:n`. MULTI only. O(n/64). A user gesture, NEVER a frame."
-function select_all!(s::Selection)::Bool
+function select_all!(s::Any)::Bool
     s.mode === SelectMode.MULTI || return false
     s.n == 0 && return false
     length(s.rows) == s.n && return false
@@ -472,7 +472,7 @@ they meant. Source indices are structurally safe against REORDERING;
 they are NOT safe against insertion, and this is the price, paid by the
 mutation rather than by the frame. O(n_selected).
 """
-function reindex_insert!(s::Selection, i::Int)::Bool
+function reindex_insert!(s::Any, i::Int)::Bool
     t = clamp(i, 1, s.n + 1)
     held = collect(s.rows)              # ascending; O(n_selected)
     for k in length(held):-1:1          # DESCENDING: no collisions
@@ -498,7 +498,7 @@ is dropped from the selection; everything above moves down one; `n`
 shrinks. The cursor, if it was ON `i`, stays at `i` and is re-clamped,
 so it lands on the row that took `i`'s place -- or on the new last row.
 """
-function reindex_delete!(s::Selection, i::Int)::Bool
+function reindex_delete!(s::Any, i::Int)::Bool
     (1 <= i <= s.n) || return false
     delete!(s.rows, i)
     held = collect(s.rows)              # ascending: no collisions
@@ -553,16 +553,16 @@ struct Column
     "Header caption. ONE row; a newline is undefined."
     header::String
     "Width policy. See `_tc_resolve!`."
-    width::Length
+    width::Any
     "How the cell text AND the header sit in the column."
-    align::Align.T
+    align::Any
     "Lower bound. AUTO is unbounded."
-    min_width::Length
+    min_width::Any
     """
     Upper bound. AUTO is unbounded. On an AUTO column this is ALSO the
     measurement cap -- see `_tc_measure`.
     """
-    max_width::Length
+    max_width::Any
     "`DataTable` only: may this column be sorted?"
     sortable::Bool
 end
@@ -571,9 +571,9 @@ end
 A column captioned `header`.
 """
 Column(header::AbstractString = "";
-       width::Length = AUTO, align::Align.T = Align.START,
-       min_width::Length = AUTO, max_width::Length = AUTO,
-       sortable::Bool = true)::Column =
+       width::Any = AUTO, align::Any = Align.START,
+       min_width::Any = AUTO, max_width::Any = AUTO,
+       sortable::Bool = true)::Any =
     Column(String(header), width, align, min_width, max_width, sortable)
 
 """
@@ -591,7 +591,7 @@ what `DataTable` sorts a permutation OVER.
 """
 mutable struct TableGrid
     "The columns, left to right."
-    const cols::Vector{Column}
+    const cols::Any
     "Cells painted BETWEEN columns."
     const sep::String
     "`text_width(sep)`, cached: it is read once per column per frame."
@@ -605,11 +605,11 @@ mutable struct TableGrid
     "Rows an AUTO column measures at a data change. See `_tc_auto!`."
     const sample::Int
     "Per-column AUTO measurement, in cells; `0` for a non-AUTO column."
-    const autos::Vector{Int}
+    const autos::Any
     "Resolved cell width per column. SCRATCH, refilled on a miss."
-    const widths::Vector{Int}
+    const widths::Any
     "0-based content-box x of each column, PRE-scroll. SCRATCH."
-    const xs::Vector{Int}
+    const xs::Any
     "The `version` the memo was resolved at; `-1` is never."
     cache_version::Int
     "The content-box width it was resolved for; `-1` is never."
@@ -623,13 +623,13 @@ A grid over `cols`. `cols` is ALIASED, never copied.
 
 Throws `ArgumentError` when `rule` is true and `rule_glyph` is not
 width-1, and when `sample < 0`. Throwing beats a quiet nothing:
-`mount!(::Scrollpane, ...)` throws for the same class of reason.
+`mount!(::Any, ...)` throws for the same class of reason.
 """
-function TableGrid(cols::Vector{Column};
+function TableGrid(cols::Any;
                    sep::AbstractString = " ",
                    show_header::Bool = true, rule::Bool = false,
                    rule_glyph::AbstractString = TC_RULE,
-                   sample::Int = TC_AUTO_SAMPLE)::TableGrid
+                   sample::Int = TC_AUTO_SAMPLE)::Any
     rule && text_width(rule_glyph) != 1 && throw(ArgumentError(
         "TableGrid: rule_glyph $(repr(rule_glyph)) is not width-1"))
     sample < 0 && throw(ArgumentError(
@@ -671,7 +671,7 @@ function _tc_touch! end
 Rows of the content box that are pinned CHROME rather than data. `0` by
 default -- a `List` has no header. Internal.
 """
-_tc_header_rows(w::RowsWidget)::Int = 0
+_tc_header_rows(w::Any)::Int = 0
 
 """
 The WIDTH `_tc_extent` reports, READ and never computed.
@@ -689,37 +689,37 @@ branch the contract names but never gives a name to. `grid_of` has no
 type-unstable `Union{Nothing,TableGrid}` probe on the FRAME PATH.
 Internal.
 """
-function _tc_extent_width(w::RowsWidget)::Int
+function _tc_extent_width(w::Any)::Int
     _tc_resolve!(w, max(0, layout_of(w).content.width))
     return grid_of(w).cache_total
 end
 
 "True while `w` holds the focus. Pure."
-is_focused(w::RowsWidget)::Bool = w.focused[]
+is_focused(w::Any)::Bool = w.focused[]
 
-# --- widget-level reader forwards. Defined ONCE on ::RowsWidget. ------
+# --- widget-level reader forwards. Defined ONCE on ::Any. ------
 
 "The cursor's SOURCE row of `w`; `0` when there is no row. Pure."
-row_cursor(w::RowsWidget)::Int = row_cursor(selection_of(w))
+row_cursor(w::Any)::Int = row_cursor(selection_of(w))
 
 "The anchor's SOURCE row of `w`; `0` when there is no row. Pure."
-row_anchor(w::RowsWidget)::Int = row_anchor(selection_of(w))
+row_anchor(w::Any)::Int = row_anchor(selection_of(w))
 
 "The selection policy of `w`. Pure."
-select_mode(w::RowsWidget)::SelectMode.T = select_mode(selection_of(w))
+select_mode(w::Any)::Any = select_mode(selection_of(w))
 
 "True when SOURCE row `i` of `w` is selected. O(1), 0 bytes. Pure."
-is_selected(w::RowsWidget, i::Int)::Bool =
+is_selected(w::Any, i::Int)::Bool =
     is_selected(selection_of(w), i)
 
 "How many rows of `w` are selected. NEVER the frame path. Pure."
-n_selected(w::RowsWidget)::Int = n_selected(selection_of(w))
+n_selected(w::Any)::Int = n_selected(selection_of(w))
 
 """
 The selected SOURCE rows of `w`, ASCENDING. ALLOCATES; this is what an
 application calls after ENTER, never what `render!` calls. Pure.
 """
-selected_rows(w::RowsWidget)::Vector{Int} =
+selected_rows(w::Any)::Any =
     selected_rows(selection_of(w))
 
 # --- widget-level MUTATOR forwards. THE single exit. ------------------
@@ -734,7 +734,7 @@ every cursor/selection change, so neither can be forgotten at a call
 site. `_ta_moved!` (textarea.jl:449) is the precedent, line for line.
 Returns `changed`. Internal.
 """
-function _tc_moved!(w::RowsWidget, changed::Bool)::Bool
+function _tc_moved!(w::Any, changed::Bool)::Bool
     changed || return false
     _tc_touch!(w)
     _tc_follow_cursor!(w)
@@ -742,7 +742,7 @@ function _tc_moved!(w::RowsWidget, changed::Bool)::Bool
 end
 
 "The cursor's VIEW row; `0` when there is none. Internal."
-function _tc_cursor_view(w::RowsWidget)::Int
+function _tc_cursor_view(w::Any)::Int
     c = row_cursor(w)
     c == 0 && return 0
     n = view_count(w)
@@ -760,13 +760,13 @@ translation. A no-op returning false when `view_count(w) == 0`.
 
 `extend = true` REPLACES the selection with the VIEW range from the
 anchor to `k`, mapped back through `view_source` -- and NOT with the
-SOURCE range `set_cursor!(::Selection, i; extend = true)` would use. On
+SOURCE range `set_cursor!(::Any, i; extend = true)` would use. On
 a `List` or a `Table` the two are identical, because `view_source` is
 the identity. On a `DataTable` they are NOT: the user shift-arrowing
 down the screen means the rows BETWEEN the two ON SCREEN, which is what
 the generator below says and what a source range would get wrong.
 """
-function set_cursor!(w::RowsWidget, k::Int; extend::Bool = false)::Bool
+function set_cursor!(w::Any, k::Int; extend::Bool = false)::Bool
     s = selection_of(w)
     n = view_count(w)
     n == 0 && return false
@@ -791,7 +791,7 @@ Move the cursor by `d` VIEW rows, clamped. `move_cursor!(w,
 typemax(Int) ÷ 2)` is End and cannot run off it -- `÷ 2` so that
 `rank + d` cannot overflow, which is `_sp_key_delta`'s trick.
 """
-function move_cursor!(w::RowsWidget, d::Int; extend::Bool = false)::Bool
+function move_cursor!(w::Any, d::Int; extend::Bool = false)::Bool
     n = view_count(w)
     n == 0 && return false
     r = _tc_cursor_view(w)
@@ -800,14 +800,14 @@ function move_cursor!(w::RowsWidget, d::Int; extend::Bool = false)::Bool
 end
 
 "Flip VIEW row `k`'s membership. MULTI only. See `toggle_row!`."
-function toggle_row!(w::RowsWidget, k::Int)::Bool
+function toggle_row!(w::Any, k::Int)::Bool
     (1 <= k <= view_count(w)) || return false
     return _tc_moved!(w, toggle_row!(selection_of(w),
                                     view_source(w, k)))
 end
 
 "Select VIEW row `k` and nothing else. A no-op under NONE."
-function select_only!(w::RowsWidget, k::Int)::Bool
+function select_only!(w::Any, k::Int)::Bool
     n = view_count(w)
     n == 0 && return false
     t = clamp(k, 1, n)
@@ -818,11 +818,11 @@ end
 """
 Select every row. MULTI only. `ctrl+a` is NOT bound to this: `bind!` it.
 """
-select_all!(w::RowsWidget)::Bool =
+select_all!(w::Any)::Bool =
     _tc_moved!(w, select_all!(selection_of(w)))
 
 "Deselect everything; the CURSOR STAYS."
-clear_selection!(w::RowsWidget)::Bool =
+clear_selection!(w::Any)::Bool =
     _tc_moved!(w, clear_selection!(selection_of(w)))
 
 # --- extent, sync, follow, page ---------------------------------------
@@ -843,7 +843,7 @@ Mutating state inside `render!` is licensed by `Scrollpane.render!`
 nothing here is a `Reactive`, so this marks NOTHING and cannot loop, and
 it converges. Internal.
 """
-function _tc_sync!(w::RowsWidget)::Nothing
+function _tc_sync!(w::Any)::Nothing
     resize_selection!(selection_of(w), row_count(w))
     return nothing
 end
@@ -877,11 +877,11 @@ seam for one row.
 
 O(1). ON THE FRAME PATH, several times -- see `_tc_resolve!`. Internal.
 """
-_tc_extent(w::RowsWidget)::Size =
+_tc_extent(w::Any)::Any =
     Size(_tc_extent_width(w), view_count(w) + _tc_header_rows(w))
 
 "Rows of the SCROLLING body: the content box less the header. Internal."
-_tc_body_height(w::RowsWidget)::Int =
+_tc_body_height(w::Any)::Int =
     max(0, layout_of(w).content.height - _tc_header_rows(w))
 
 """
@@ -890,7 +890,7 @@ the reader keeps a landmark. At least one, so an unlaid-out widget still
 moves. `_ta_page` and `_sp_key_delta` both say this; this is the third
 and last copy. Internal.
 """
-_tc_page(w::RowsWidget)::Int = max(1, _tc_body_height(w) - 1)
+_tc_page(w::Any)::Int = max(1, _tc_body_height(w) - 1)
 
 """
 Scroll the MINIMUM needed to bring the cursor's VIEW row into the BODY
@@ -911,7 +911,7 @@ The two halves of the header arithmetic MUST agree: `_tc_extent` says
 `n + hh`, this says the window is `H - hh`. The suite asserts the
 identity. Internal.
 """
-function _tc_follow_cursor!(w::RowsWidget)::Nothing
+function _tc_follow_cursor!(w::Any)::Nothing
     r = _tc_cursor_view(w)
     r == 0 && return nothing
     c = layout_of(w).content
@@ -941,7 +941,7 @@ must compare a pointer against" (widget.jl:262).
 
 O(depth), on a mouse event, NEVER on a frame. Pure. Internal.
 """
-function _tc_local(w::Widget, e::MouseEvent)::Offset
+function _tc_local(w::Widget, e::Any)::Any
     c = translate(layout_of(w).content, paint_offset(w))
     return Offset(e.x - c.x + 1, e.y - c.y + 1)
 end
@@ -955,7 +955,7 @@ widgets to hit-test, which is "a row is not a widget" seen from the
 mouse's side -- `hit_test` walks nodes, so widget-per-row would be O(n)
 on every POINTER MOVE, not merely every frame. Internal.
 """
-function _tc_row_at(w::RowsWidget, e::MouseEvent)::Int
+function _tc_row_at(w::Any, e::Any)::Int
     c = layout_of(w).content
     (c.width <= 0 || c.height <= 0) && return 0
     o = _tc_local(w, e)
@@ -972,7 +972,7 @@ The 1-based column index under mouse event `e`, from `grid_of(w).xs` and
 `widths` -- LAST frame's, which is exactly the header the user SAW and
 clicked. `0` for none, and `0` before the first paint. Internal.
 """
-function _tc_col_at(w::RowsWidget, e::MouseEvent)::Int
+function _tc_col_at(w::Any, e::Any)::Int
     c = layout_of(w).content
     (c.width <= 0 || c.height <= 0) && return 0
     o = _tc_local(w, e)
@@ -991,7 +991,7 @@ True while `d` is live and at or past its target. CAPTURE belongs to
 ancestors that want to intercept, and a list is never an interceptor.
 `_ta_acts`/`_sp_acts`, third copy. Pure. Internal.
 """
-_tc_acts(d::Dispatch)::Bool =
+_tc_acts(d::Any)::Bool =
     d.phase !== Phase.CAPTURE && !is_consumed(d)
 
 # --- the shared keyboard and mouse ------------------------------------
@@ -1000,7 +1000,7 @@ _tc_acts(d::Dispatch)::Bool =
 Scroll `w` horizontally by `d` cells. True iff the offset moved.
 Internal.
 """
-function _tc_scroll_x!(w::RowsWidget, d::Int)::Bool
+function _tc_scroll_x!(w::Any, d::Int)::Bool
     before = scroll_of(w)
     return scroll_to!(w, Offset(before.x + d, before.y)) !== before
 end
@@ -1013,7 +1013,7 @@ any movement key EXTENDS from the anchor. Returns true iff it consumed.
 
 Each of the three widgets is exactly:
 
-    on_event!(w::List, d::Dispatch{KeyEvent})::Nothing =
+    on_event!(w::Any, d::Any)::Nothing =
         (_tc_key!(w, d); nothing)
 
 CONSUMES ONLY WHEN SOMETHING ACTUALLY MOVED. That is `_sp_move!`'s rule
@@ -1038,7 +1038,7 @@ order alive.
 THERE IS NO CELL CURSOR. LEFT/RIGHT scroll; they do not walk columns.
 Internal.
 """
-function _tc_key!(w::RowsWidget, d::Dispatch{KeyEvent})::Bool
+function _tc_key!(w::Any, d::Any)::Bool
     _tc_acts(d) || return false
     e = event(d)
     bare = isempty(e.mods)
@@ -1087,8 +1087,8 @@ when the offset actually moved, so a list at its limit lets the notch
 bubble to the next pane out -- scroll chaining, out of the phase rule
 alone. Internal.
 """
-function _tc_wheel!(w::RowsWidget, d::Dispatch{MouseEvent},
-                    e::MouseEvent)::Bool
+function _tc_wheel!(w::Any, d::Any,
+                    e::Any)::Bool
     b = e.button
     back = b === MouseButton.WHEEL_UP || b === MouseButton.WHEEL_LEFT
     vert = b === MouseButton.WHEEL_UP || b === MouseButton.WHEEL_DOWN
@@ -1123,7 +1123,7 @@ onto is not browsable.
 
 `_tc_local`, NEVER `local_offset`. Internal.
 """
-function _tc_mouse!(w::RowsWidget, d::Dispatch{MouseEvent})::Bool
+function _tc_mouse!(w::Any, d::Any)::Bool
     _tc_acts(d) || return false
     e = event(d)
     _tc_sync!(w)
@@ -1158,8 +1158,8 @@ see which row ENTER will act on has no cursor at all. An unfocused list
 shows its selection and hides its cursor -- exactly as `TextInput` hides
 its caret on blur (textarea.jl:246). Internal.
 """
-function _tc_row_style(w::RowsWidget, st::Style, src::Int,
-                       foc::Bool)::Style
+function _tc_row_style(w::Any, st::Any, src::Int,
+                       foc::Bool)::Any
     s = selection_of(w)
     r = st
     is_selected(s, src) && (r = merge(r, TC_SELECTED))
@@ -1179,7 +1179,7 @@ continuation a continuation. `frame!` blanks the back buffer every frame
 blank IS the bar -- the full-width highlight costs one `style_region!`
 per highlighted VISIBLE row and no fill pass at all. Internal.
 """
-function _tc_bar_style(s::Selection, src::Int, foc::Bool)::Style
+function _tc_bar_style(s::Any, src::Int, foc::Bool)::Any
     sel = is_selected(s, src)
     cur = foc && s.cursor === src
     sel && cur && return merge(TC_SELECTED, TC_CURSOR)
@@ -1198,8 +1198,8 @@ refuses the mirror case at the right edge (buffer.jl:419).
 ONE pass over the graphemes, no `grapheme_cells`: it allocates a
 `Vector` per call and this is the frame path. Internal.
 """
-function _tc_slice!(buf::AbstractMatrix{Cell}, x::Int, y::Int,
-                    width::Int, s::AbstractString, st::Style)::Int
+function _tc_slice!(buf::Any, x::Int, y::Int,
+                    width::Int, s::AbstractString, st::Any)::Int
     cx = x
     for g in graphemes(s)
         cx > width && break
@@ -1225,8 +1225,8 @@ is `TextArea.render!`'s loop (textarea.jl:239) and `TextInput`'s
 `write_text!(buf, 1 - off, ...)` (textinput.jl:344); this is the third
 and last copy. Internal.
 """
-function _tc_paint_slice!(buf::AbstractMatrix{Cell}, y::Int, width::Int,
-                          skip::Int, s::AbstractString, st::Style)::Int
+function _tc_paint_slice!(buf::Any, y::Int, width::Int,
+                          skip::Int, s::AbstractString, st::Any)::Int
     cx = _tc_slice!(buf, 1 - skip, y, width, s, st)
     # `cx > width` means the loop broke early and the row was CUT: it
     # reached at least the right edge of the window. Understating a cut
@@ -1267,9 +1267,9 @@ layout.jl:163, REUSED. There is no `_tc_lead`.
 
 `Base.textwidth` appears NOWHERE. No byte indexes user text. Internal.
 """
-function _tc_put!(buf::AbstractMatrix{Cell}, x0::Int, y::Int, cw::Int,
-                  text::AbstractString, align::Align.T,
-                  st::Style)::Nothing
+function _tc_put!(buf::Any, x0::Int, y::Int, cw::Int,
+                  text::AbstractString, align::Any,
+                  st::Any)::Nothing
     cw <= 0 && return nothing
     width = size(buf, 1)
     t = truncate_width(text, cw)
@@ -1294,7 +1294,7 @@ The measurement cap for column `j` in an `avail`-cell content box:
 when `avail` is still `0` and there is no viewport for the rule to name.
 Pure. Internal.
 """
-function _tc_cap(col::Column, avail::Int)::Int
+function _tc_cap(col::Any, avail::Int)::Int
     base = avail > 0 ? avail : TC_MEASURE_CAP
     is_definite(col.max_width) || return base
     return min(base, max(0, definite_size(col.max_width, base)))
@@ -1305,7 +1305,7 @@ end
 `avail`. An AUTO bound is unbounded: `0` low, `typemax(Int)` high. Pure.
 Internal.
 """
-function _tc_bound(col::Column, wj::Int, avail::Int)::Int
+function _tc_bound(col::Any, wj::Int, avail::Int)::Int
     lo = is_definite(col.min_width) ?
          max(0, definite_size(col.min_width, avail)) : 0
     hi = is_definite(col.max_width) ?
@@ -1319,14 +1319,14 @@ mark. `0` by default. `DataTable` returns 1 for a `sortable` column, so
 a column sized to its header alone still has a cell for the indicator.
 Internal.
 """
-_tc_header_reserve(w::RowsWidget, j::Int)::Int = 0
+_tc_header_reserve(w::Any, j::Int)::Int = 0
 
 """
 Reset every AUTO mark to its SEED -- the header text plus
 `_tc_header_reserve` -- and invalidate the resolve memo. THE ONLY thing
 that can make a column NARROWER. Internal.
 """
-function _tc_auto_reset!(w::RowsWidget)::Nothing
+function _tc_auto_reset!(w::Any)::Nothing
     g = grid_of(w)
     avail = max(0, layout_of(w).content.width)
     for j in eachindex(g.cols)
@@ -1354,7 +1354,7 @@ Every measurement is CAPPED via `_tc_measure(s, cap)` with
 `cap = min(definite max_width, content-box width)`. O(cap) per cell,
 never O(length). Internal.
 """
-function _tc_auto!(w::RowsWidget, first::Int, last::Int)::Bool
+function _tc_auto!(w::Any, first::Int, last::Int)::Bool
     g = grid_of(w)
     lo = max(1, first)
     hi = min(last, row_count(w))
@@ -1402,7 +1402,7 @@ horizontal scroll range. `flex_distribute` is NOT called: with no shrink
 and no grow factor it is provably the identity (layout.jl:73), so
 calling it to claim reuse would be ceremony. Internal.
 """
-function _tc_resolve_now!(g::TableGrid, avail::Int)::Nothing
+function _tc_resolve_now!(g::Any, avail::Int)::Nothing
     n = length(g.cols)
     if n == 0
         g.cache_total = 0
@@ -1479,7 +1479,7 @@ ON A HIT: O(1) to decide, ZERO allocation, and the scratch comes back.
 ON A MISS: `_apportion` allocates -- once per edit or resize, never per
 frame. Internal.
 """
-function _tc_resolve!(w::RowsWidget, avail::Int)::Vector{Int}
+function _tc_resolve!(w::Any, avail::Int)::Any
     g = grid_of(w)
     v = w.version[]
     (g.cache_version === v && g.cache_width === avail) && return g.widths
@@ -1494,8 +1494,8 @@ end
 O(ncols) scan per frame, so the per-row loop runs only over visible
 columns. `(1, 0)` when none. Pure. Internal.
 """
-function _tc_visible_cols(g::TableGrid, off_x::Int,
-                          width::Int)::Tuple{Int,Int}
+function _tc_visible_cols(g::Any, off_x::Int,
+                          width::Int)::Any
     n = length(g.cols)
     n == 0 && return (1, 0)
     lo = 0
@@ -1524,14 +1524,14 @@ needs it for the selection anyway), so this is IDENTICAL for `Table` and
 `w.cell` is a CONCRETE field of a parametric struct, so this is a STATIC
 dispatch. Internal.
 """
-_tc_cell_text(w::RowsWidget, src::Int, j::Int)::AbstractString =
+_tc_cell_text(w::Any, src::Int, j::Int)::AbstractString =
     w.cell(w.rows[src], j)
 
 """
 The header text of column `j`. `grid_of(w).cols[j].header` by default;
 `DataTable` overrides to add its indicator. Internal.
 """
-_tc_header_text(w::RowsWidget, j::Int)::AbstractString =
+_tc_header_text(w::Any, j::Int)::AbstractString =
     grid_of(w).cols[j].header
 
 """
@@ -1547,8 +1547,8 @@ Takes the glyph rather than reading `TC_RULE`: the grid OWNS
 `rule_glyph`, and a painter that ignored it would make the field a lie.
 Internal.
 """
-function _tc_rule!(buf::AbstractMatrix{Cell}, y::Int, width::Int,
-                   glyph::AbstractString, st::Style)::Nothing
+function _tc_rule!(buf::Any, y::Int, width::Int,
+                   glyph::AbstractString, st::Any)::Nothing
     for x in 1:width
         set_cell!(buf, x, y, Cell(glyph, st))
     end
@@ -1558,9 +1558,9 @@ end
 """
 Draw the separators between visible columns, on row `y`. Internal.
 """
-function _tc_seps!(buf::AbstractMatrix{Cell}, g::TableGrid,
-                   ws::Vector{Int}, lo::Int, hi::Int, off_x::Int,
-                   y::Int, st::Style, width::Int)::Nothing
+function _tc_seps!(buf::Any, g::Any,
+                   ws::Any, lo::Int, hi::Int, off_x::Int,
+                   y::Int, st::Any, width::Int)::Nothing
     g.sep_w > 0 || return nothing
     n = length(g.cols)
     # `lo - 1`: the separator to the LEFT of the first visible column can
@@ -1579,7 +1579,7 @@ VISIBLE COLUMNS), never O(rows) and never O(ncols).
 Generic over `W<:RowsWidget`, so this ONE loop paints both a `Table`
 (where `view_source(w, k)` inlines to `k`) and a `DataTable` (where it
 inlines to `w.order[k]`). `where {W<:RowsWidget}` and NOT
-`::Union{Table,DataTable}`: neither type exists when this file is
+`::Any`: neither type exists when this file is
 included, and a Union would deoptimise the very indirection this
 specialises away.
 
@@ -1595,13 +1595,13 @@ buffer, no second node, no second `Scrollbar`. They cannot drift because
 there is only one arithmetic.
 
 `Base.view` per column is NOT used -- not because it is unavailable (it
-IS: `Base.view(::ScrolledView, ::Region)` at buffer.jl:281) but because
+IS: `Base.view(::Any, ::Any)` at buffer.jl:281) but because
 raw arithmetic on the frame is `TextArea.render!`'s established
 precedent and carving a view per column per row would allocate per cell.
 Internal.
 """
-function _tc_render_table!(w::W,
-                           buf::AbstractMatrix{Cell})::Nothing where
+function _tc_render_table!(w::Any,
+                           buf::Any)::Nothing where
                           {W<:RowsWidget}
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
