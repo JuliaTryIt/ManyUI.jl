@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every backend; target settings live on the backend.
 - `TerminalBackend` and `HeadlessBackend`, plus `make_driver`, the single
   method a new backend implements. A backend defined in another package
-  joins by dispatch alone -- `DualUIWeb.WebBackend` is the worked example.
+  joins by dispatch alone -- `ManyUIWeb.WebBackend` is the worked example.
 - `Base.close(::App)`, forwarding to `quit!`. Every `launch` handle now
   answers the same three verbs -- `isopen`, `close`, `wait` -- whichever
   backend produced it.

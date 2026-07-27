@@ -1,4 +1,4 @@
-# events_tests.jl -- @testitem blocks for DualUI/src/events.jl.
+# events_tests.jl -- @testitem blocks for ManyUI/src/events.jl.
 # Written BEFORE the implementation (TDD). Each block is self-contained:
 # TestItemRunner evaluates it in its own fresh module.
 #
@@ -7,7 +7,7 @@
 # built out of. The walk itself (`propagate!`) lives in dispatch.jl.
 
 @testitem "events: Modifiers bitset operations" begin
-    using DualUI
+    using ManyUI
 
     @test MOD_NONE === Modifiers(0x00)
     @test Modifiers() === MOD_NONE
@@ -52,7 +52,7 @@
 end
 
 @testitem "events: enum modules are module-scoped and ordered" begin
-    using DualUI
+    using ManyUI
 
     # Finite value sets are module-scoped enums named `T`.
     @test Key.CHAR isa Key.T
@@ -87,7 +87,7 @@ end
 end
 
 @testitem "events: event structs form the Event hierarchy" begin
-    using DualUI
+    using ManyUI
 
     @test KeyEvent <: Event
     @test MouseEvent <: Event
@@ -134,7 +134,7 @@ end
 end
 
 @testitem "events: key builds a KeyEvent from a Char or a Key.T" begin
-    using DualUI
+    using ManyUI
 
     @test key('q') === KeyEvent(Key.CHAR, 'q', MOD_NONE)
     @test key('c'; ctrl = true) ===
@@ -164,7 +164,7 @@ end
 end
 
 @testitem "events: is_scroll is true for the wheel buttons only" begin
-    using DualUI
+    using ManyUI
 
     mk(b) = MouseEvent(MouseAction.PRESS, b, 1, 1, MOD_NONE)
     @test is_scroll(mk(MouseButton.WHEEL_UP))
@@ -186,7 +186,7 @@ end
 end
 
 @testitem "events: parse KeyEvent accepts documented forms" begin
-    using DualUI
+    using ManyUI
 
     # Every form named in the contract, verbatim.
     @test parse(KeyEvent, "q") === key('q')
@@ -231,7 +231,7 @@ end
 end
 
 @testitem "events: parse KeyEvent throws where tryparse says no" begin
-    using DualUI
+    using ManyUI
 
     bad = ("", "+ctrl", "ctrl+", "nope+q", "ctrl+nope", "qq", "f13",
            "ctrl shift left", "ctrl+ +c", "ctrl++c", "++", "ctrl", "f0")
@@ -250,9 +250,9 @@ end
 end
 
 @testitem "events: Dispatch starts at the target in the capture phase" begin
-    using DualUI
+    using ManyUI
 
-    struct DNode <: DualUI.Widget
+    struct DNode <: ManyUI.Widget
         name::Symbol
     end
 
@@ -300,9 +300,9 @@ end
 end
 
 @testitem "events: Dispatch consume! is one-way" begin
-    using DualUI
+    using ManyUI
 
-    struct CNode <: DualUI.Widget end
+    struct CNode <: ManyUI.Widget end
 
     d = Dispatch(key('x'), CNode())
     @test !is_consumed(d)
@@ -313,8 +313,8 @@ end
     # Idempotent, and there is no un-consume anywhere in the API.
     consume!(d)
     @test is_consumed(d)
-    @test !isdefined(DualUI, :unconsume!)
-    @test !isdefined(DualUI, :release!)
+    @test !isdefined(ManyUI, :unconsume!)
+    @test !isdefined(ManyUI, :release!)
 
     # Consumption lives on the ENVELOPE, not on the event, so the same
     # immutable event replays on a fresh envelope uncontaminated.
@@ -328,7 +328,7 @@ end
 end
 
 @testitem "events: Dispatch drives a capture then bubble walk" begin
-    using DualUI
+    using ManyUI
 
     # EARS 2.2 / E3 at the envelope level, on a plain node chain: no
     # terminal, no driver, no layout, no App. `propagate!` itself is
@@ -338,7 +338,7 @@ end
     # the instant the event is consumed. The walk below mirrors the
     # contract's `propagate!` algorithm step for step.
 
-    mutable struct Probe <: DualUI.Widget
+    mutable struct Probe <: ManyUI.Widget
         name::Symbol
         consume_on::Union{Nothing,Phase.T}
     end
@@ -346,7 +346,7 @@ end
 
     const LOG = Tuple{Symbol,Phase.T}[]
 
-    function DualUI.on_event!(w::Probe, d::Dispatch{KeyEvent})
+    function ManyUI.on_event!(w::Probe, d::Dispatch{KeyEvent})
         push!(LOG, (w.name, d.phase))
         w.consume_on === d.phase && consume!(d)
         return nothing
@@ -376,7 +376,7 @@ end
 
     root, mid, leaf = Probe(:root), Probe(:mid), Probe(:leaf)
     path = [root, mid, leaf]
-    # `reset!` is a DualUI export, so the local helper is renamed.
+    # `reset!` is a ManyUI export, so the local helper is renamed.
     rearm!() = (foreach(p -> p.consume_on = nothing, path);
                 empty!(LOG))
 
@@ -453,9 +453,9 @@ end
 end
 
 @testitem "events: on_event! default fallback is a no-op" begin
-    using DualUI
+    using ManyUI
 
-    struct Silent <: DualUI.Widget end
+    struct Silent <: ManyUI.Widget end
 
     # E3: a widget that handles nothing is a widget that defines
     # nothing. Every event type falls through the same fallback
@@ -475,12 +475,12 @@ end
 end
 
 @testitem "events: local_offset is widget-local 1-based" begin
-    using DualUI
+    using ManyUI
 
-    struct Boxed <: DualUI.Widget
+    struct Boxed <: ManyUI.Widget
         r::Region
     end
-    DualUI.region(w::Boxed) = w.r
+    ManyUI.region(w::Boxed) = w.r
 
     w = Boxed(Region(10, 5, 20, 8))     # x in 10:29, y in 5:12
     mouse(x, y) = MouseEvent(MouseAction.PRESS, MouseButton.LEFT,

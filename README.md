@@ -1,14 +1,14 @@
-# DualUI
+# ManyUI
 
 A terminal-first UI framework for Julia: a hierarchical widget tree, a
 CSS-like box model with a flex layout engine, declarative styling, an
 asynchronous event loop, and a diffing renderer that emits the minimal
 stream of ANSI escape sequences.
 
-DualUI has **no** web, HTTP or socket dependency, and never will. Its
+ManyUI has **no** web, HTTP or socket dependency, and never will. Its
 only extension point is the nine-method `Driver` seam; the companion
-package [`DualUIWeb`](https://github.com/s-celles/DualUIWeb.jl) plugs a browser into that seam from
-the outside without DualUI knowing the web exists.
+package [`ManyUIWeb`](https://github.com/s-celles/ManyUIWeb.jl) plugs a browser into that seam from
+the outside without ManyUI knowing the web exists.
 
 ## Status
 
@@ -18,7 +18,7 @@ be expected to move before `1.0`.
 ## Quickstart
 
 ```julia
-using DualUI
+using ManyUI
 
 clicks = Ref(0)
 readout = Label("Count: 0"; id = :count)
@@ -41,7 +41,7 @@ frame repaints it, and the diff sends only the one cell that changed.
 Full documentation:
 
 ```julia
-julia --project=DualUI/docs DualUI/docs/make.jl   # then open docs/build/index.html
+julia --project=ManyUI/docs ManyUI/docs/make.jl   # then open docs/build/index.html
 ```
 
 ## The render pipeline
@@ -91,7 +91,7 @@ A `Driver` never sees a `Buffer`, `Patch`, `Widget`, `Region` or
 ## Tests
 
 ```julia
-julia --project=DualUI -e 'using Pkg; Pkg.test()'
+julia --project=ManyUI -e 'using Pkg; Pkg.test()'
 ```
 
 Tests are `@testitem` blocks run by

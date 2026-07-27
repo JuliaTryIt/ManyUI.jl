@@ -1,9 +1,9 @@
 # headless.jl -- layer 6. May reference: driver, input, events, ansi,
 # color, geometry.
 #
-# THE proof the seam is right. It ships in DualUI, and every DualUI test
-# and every DualUIWeb test uses it. If `HeadlessDriver` needs nothing
-# from DualUI internals, neither does `WebSocketDriver`. No test in
+# THE proof the seam is right. It ships in ManyUI, and every ManyUI test
+# and every ManyUIWeb test uses it. If `HeadlessDriver` needs nothing
+# from ManyUI internals, neither does `WebSocketDriver`. No test in
 # either suite requires a TTY.
 
 """

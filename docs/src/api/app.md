@@ -1,6 +1,6 @@
 # App and event loop
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["app.jl", "precompile.jl"]
 ```

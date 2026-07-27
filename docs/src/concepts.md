@@ -1,17 +1,17 @@
 # Concepts
 
 ```@meta
-CurrentModule = DualUI
+CurrentModule = ManyUI
 ```
 
-DualUI borrows the browser's ideas and applies them to a grid of
+ManyUI borrows the browser's ideas and applies them to a grid of
 characters. If you know the DOM, CSS and `addEventListener`, you
 already know the shape of this framework.
 
 ## The render pipeline
 
 Every frame runs the same five stages. Each is a plain function over
-plain data, which is why almost all of DualUI can be tested without a
+plain data, which is why almost all of ManyUI can be tested without a
 terminal:
 
 ```
@@ -34,7 +34,7 @@ The diff is what keeps rendering cheap. An unchanged frame costs
 nothing at all:
 
 ```@example pipeline
-using DualUI
+using ManyUI
 
 before = Buffer(Size(10, 2))
 after = Buffer(Size(10, 2))
@@ -65,7 +65,7 @@ thing that knows what a rendering target is, and it has exactly nine
 required methods:
 
 ```@example seam
-using DualUI
+using ManyUI
 REQUIRED_DRIVER_METHODS
 ```
 
@@ -78,14 +78,14 @@ Three drivers exist today:
 
 | Driver | Target | Lives in |
 |:--|:--|:--|
-| `TerminalDriver` | the host tty | `DualUI` |
-| `HeadlessDriver` | an in-memory buffer | `DualUI` |
-| `WebSocketDriver` | a browser | `DualUIWeb` |
+| `TerminalDriver` | the host tty | `ManyUI` |
+| `HeadlessDriver` | an in-memory buffer | `ManyUI` |
+| `WebSocketDriver` | a browser | `ManyUIWeb` |
 
-`DualUIWeb` implements those nine methods over a WebSocket and adds
-nothing else. That is why `DualUI` has no HTTP dependency: a pure
+`ManyUIWeb` implements those nine methods over a WebSocket and adds
+nothing else. That is why `ManyUI` has no HTTP dependency: a pure
 terminal application never pays for the web bridge. A driver can check
-its own conformance without reading DualUI's source, which is how the
+its own conformance without reading ManyUI's source, which is how the
 bridge package proves it implements the interface:
 
 ```@example seam
@@ -95,7 +95,7 @@ check_driver_interface(HeadlessDriver)   # empty means conformant
 `HeadlessDriver` is the proof the seam is honest. It renders into an
 `IOBuffer`, so the whole framework — including the event loop — is
 testable with no tty and no network. If a headless driver needs nothing
-from DualUI's internals, neither does a web one.
+from ManyUI's internals, neither does a web one.
 
 ## Reactivity and dirty flagging
 
@@ -123,11 +123,11 @@ stays statically dispatched.
 
 A terminal grid is not a string. An emoji or a CJK ideograph occupies
 two cells, and getting this wrong corrupts every column to its right.
-DualUI measures by grapheme cluster, never by codepoint, and never
+ManyUI measures by grapheme cluster, never by codepoint, and never
 trusts `Base.textwidth`:
 
 ```@example width
-using DualUI
+using ManyUI
 [(s, grapheme_width(s), textwidth(s)) for s in ("a", "漢", "❤️", "👨‍👩‍👧‍👦")]
 ```
 

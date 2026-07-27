@@ -1,6 +1,6 @@
 # Scrolling widgets
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/scroll.jl"]
 ```

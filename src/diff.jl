@@ -186,7 +186,7 @@ test of `diff`:
 
     apply!(copy(a), diff(a, b)) == b
 
-Ships in `src` (not `test`) so DualUIWeb can use it too.
+Ships in `src` (not `test`) so ManyUIWeb can use it too.
 """
 function apply!(b::Buffer, p::Patch)::Buffer
     w, h = size(b)

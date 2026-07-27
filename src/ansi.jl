@@ -11,7 +11,7 @@ Raw escape-sequence vocabulary. Constants and pure builders only.
 module Ansi
 
 using DocStringExtensions
-using ..DualUI: Color, ColorKind, ColorDepth, degrade
+using ..ManyUI: Color, ColorKind, ColorDepth, degrade
 
 @template (FUNCTIONS, METHODS) = """
     $(TYPEDSIGNATURES)

@@ -1,6 +1,6 @@
 # widgets_textarea_tests.jl -- multi-line text entry (layer 7).
 #
-# Every testitem is self-contained, starts `using DualUI`, needs no tty,
+# Every testitem is self-contained, starts `using ManyUI`, needs no tty,
 # never sleeps and bounds every wait.
 #
 # The grapheme discipline asserted here is the SAME one `TextInput`
@@ -8,7 +8,7 @@
 # cells, and `Base.textwidth` appears nowhere.
 
 @testitem "textarea: lines is never empty" begin
-    using DualUI
+    using ManyUI
     a = TextArea()
     @test a isa Widget
     @test a.lines == [""]
@@ -33,12 +33,12 @@
 end
 
 @testitem "textarea: ids are unique by default" begin
-    using DualUI
+    using ManyUI
     @test id(TextArea("x")) !== id(TextArea("x"))
 end
 
 @testitem "textarea: measure takes the space it is offered" begin
-    using DualUI
+    using ManyUI
     @test measure(TextArea("x"), Size(20, 7)) == Size(20, 7)
     tall = TextArea(join(fill("y", 100), "\n"))
     @test measure(tall, Size(4, 3)) == Size(4, 3)
@@ -46,7 +46,7 @@ end
 end
 
 @testitem "textarea: insert_text! inserts at the caret" begin
-    using DualUI
+    using ManyUI
     a = TextArea("ac")
     move_by!(a, 1)
     insert_text!(a, "b")
@@ -75,7 +75,7 @@ end
 end
 
 @testitem "textarea: ENTER splits the line at the caret" begin
-    using DualUI
+    using ManyUI
     a = TextArea("hello")
     move_by!(a, 2)
     insert_newline!(a)
@@ -100,7 +100,7 @@ end
 end
 
 @testitem "textarea: backspace at column 0 joins the previous line" begin
-    using DualUI
+    using ManyUI
     a = TextArea("ab\ncd")
     move_line!(a, 1)
     @test a.line == 2
@@ -120,7 +120,7 @@ end
 end
 
 @testitem "textarea: delete at end of line joins the next line" begin
-    using DualUI
+    using ManyUI
     a = TextArea("ab\ncd")
     move_by!(a, 2)
     @test (a.line, a.col) == (1, 2)
@@ -144,7 +144,7 @@ end
 end
 
 @testitem "textarea: backspace at (1, 0) is a no-op returning false" begin
-    using DualUI
+    using ManyUI
     a = TextArea("abc")
     v = a.version[]
     @test backspace!(a) === false
@@ -159,7 +159,7 @@ end
 end
 
 @testitem "textarea: left and right cross line boundaries" begin
-    using DualUI
+    using ManyUI
     a = TextArea("ab\ncd")
     move_by!(a, 3)
     @test (a.line, a.col) == (2, 0)
@@ -180,7 +180,7 @@ end
 end
 
 @testitem "textarea: goal survives UP/DOWN through a short line" begin
-    using DualUI
+    using ManyUI
     a = TextArea("abcdefgh\nxy\nijklmnop")
     move_by!(a, 6)
     @test (a.line, a.col) == (1, 6)
@@ -200,7 +200,7 @@ end
 end
 
 @testitem "textarea: a horizontal move resets goal" begin
-    using DualUI
+    using ManyUI
     a = TextArea("abcdefgh\nxy\nijklmnop")
     move_by!(a, 6)
     @test a.goal == 6
@@ -225,7 +225,7 @@ end
 end
 
 @testitem "textarea: UP/DOWN never land inside a wide cluster" begin
-    using DualUI
+    using ManyUI
     # Line 2 is three CJK clusters, ENDING at cells 2, 4 and 6.
     a = TextArea("abcde\n世世世")
     move_by!(a, 3)
@@ -249,7 +249,7 @@ end
 end
 
 @testitem "textarea: goal is in CELLS, not graphemes" begin
-    using DualUI
+    using ManyUI
     a = TextArea("世界ab\nabcdef")
     move_by!(a, 2)                  # after TWO clusters == FOUR cells
     @test a.col == 2
@@ -261,7 +261,7 @@ end
 end
 
 @testitem "textarea: content_extent is (widest, line count)" begin
-    using DualUI
+    using ManyUI
     a = TextArea("ab\n世界世\nx")
     @test content_extent(a) == Size(6, 3)
     @test content_extent(TextArea()) == Size(0, 1)
@@ -278,7 +278,7 @@ end
 end
 
 @testitem "textarea: refresh_extent! lowers the high-water mark" begin
-    using DualUI
+    using ManyUI
     a = TextArea("abcdef\nx")
     @test content_extent(a) == Size(6, 2)
     move_by!(a, 6)
@@ -293,7 +293,7 @@ end
 end
 
 @testitem "textarea: version bumps exactly once per edit" begin
-    using DualUI
+    using ManyUI
     changes = Ref(0)
     a = TextArea("ab", _ -> (changes[] += 1; nothing))
     v = a.version[]
@@ -324,7 +324,7 @@ end
 end
 
 @testitem "textarea: paste splits on newlines into real lines" begin
-    using DualUI
+    using ManyUI
     a = TextArea("ab")
     move_by!(a, 1)
     d = Dispatch(PasteEvent("X\nY\nZ"), a)
@@ -356,7 +356,7 @@ end
 end
 
 @testitem "textarea: set_text! resets the caret, scroll and extent" begin
-    using DualUI
+    using ManyUI
     a = TextArea("aaaaaaaaaaaa\nbbb")
     move_line!(a, 1)
     move_by!(a, 2)
@@ -373,20 +373,20 @@ end
 end
 
 @testitem "textarea: text round-trips the document" begin
-    using DualUI
-    @test DualUI.text(TextArea("a\nb\nc")) == "a\nb\nc"
-    @test DualUI.text(TextArea("")) == ""
-    @test DualUI.text(TextArea()) == ""
-    @test DualUI.text(TextArea("solo")) == "solo"
+    using ManyUI
+    @test ManyUI.text(TextArea("a\nb\nc")) == "a\nb\nc"
+    @test ManyUI.text(TextArea("")) == ""
+    @test ManyUI.text(TextArea()) == ""
+    @test ManyUI.text(TextArea("solo")) == "solo"
 
     a = TextArea("ab")
     move_by!(a, 1)
     insert_newline!(a)
-    @test DualUI.text(a) == "a\nb"
+    @test ManyUI.text(a) == "a\nb"
 end
 
 @testitem "textarea: a single line paints into the content box" begin
-    using DualUI
+    using ManyUI
     a = TextArea("hi")
     buf = Buffer(4, 3)
     clear!(buf)
@@ -395,7 +395,7 @@ end
 end
 
 @testitem "textarea: an empty area paints nothing but the caret" begin
-    using DualUI
+    using ManyUI
     a = TextArea()
     buf = Buffer(3, 2)
     clear!(buf)
@@ -411,7 +411,7 @@ end
 end
 
 @testitem "textarea: the caret cell is reversed only when focused" begin
-    using DualUI
+    using ManyUI
     a = TextArea("ab")
     move_by!(a, 1)
     buf = Buffer(4, 1)
@@ -428,7 +428,7 @@ end
 end
 
 @testitem "textarea: the caret over a wide cluster reverses the HEAD" begin
-    using DualUI
+    using ManyUI
     a = TextArea("世界")
     a.focused[] = true
     buf = Buffer(6, 1)
@@ -444,7 +444,7 @@ end
 end
 
 @testitem "textarea: render! is O(viewport) on a 10 000-line doc" begin
-    using DualUI
+    using ManyUI
     doc = fill("line", 10_000)
     # A monster line that is NEVER visible: any per-line work at all --
     # a `text_width`, a `graphemes`, a slice -- shows up as allocation
@@ -473,7 +473,7 @@ end
 end
 
 @testitem "textarea: the vertical window follows the caret" begin
-    using DualUI
+    using ManyUI
     a = TextArea(join(["L$i" for i in 1:20], "\n"))
     apply_stylesheet!(STYLESHEET_EMPTY, a)
     layout!(a, Region(1, 1, 10, 5))
@@ -509,7 +509,7 @@ end
 end
 
 @testitem "textarea: the horizontal window follows the caret" begin
-    using DualUI
+    using ManyUI
     a = TextArea("abcdefghijklmnop")
     apply_stylesheet!(STYLESHEET_EMPTY, a)
     layout!(a, Region(1, 1, 5, 1))
@@ -539,7 +539,7 @@ end
 end
 
 @testitem "textarea: a wide cluster at the LEFT edge is dropped whole" begin
-    using DualUI
+    using ManyUI
     a = TextArea("世界世界")
     @test set_scroll!(a, Offset(1, 0))
     buf = Buffer(6, 1)
@@ -584,7 +584,7 @@ end
 end
 
 @testitem "textarea: a wide cluster at the RIGHT edge is dropped whole" begin
-    using DualUI
+    using ManyUI
     a = TextArea("世界世")
     buf = Buffer(5, 1)
     clear!(buf)
@@ -598,7 +598,7 @@ end
 end
 
 @testitem "textarea: Home and End go to the extremes of the line" begin
-    using DualUI
+    using ManyUI
     a = TextArea("abc\ndef")
     d1 = Dispatch(key(Key.END), a)
     d1.phase = Phase.AT_TARGET
@@ -623,7 +623,7 @@ end
 end
 
 @testitem "textarea: PageUp and PageDown move by a viewport" begin
-    using DualUI
+    using ManyUI
     a = TextArea(join(["L$i" for i in 1:30], "\n"))
     apply_stylesheet!(STYLESHEET_EMPTY, a)
     layout!(a, Region(1, 1, 10, 5))
@@ -647,7 +647,7 @@ end
 end
 
 @testitem "textarea: keys insert, split, delete and move" begin
-    using DualUI
+    using ManyUI
     a = TextArea()
     function send!(w, e)
         d = Dispatch(e, w)
@@ -689,7 +689,7 @@ end
 end
 
 @testitem "textarea: TAB ESCAPE and modified keys are NOT consumed" begin
-    using DualUI
+    using ManyUI
     a = TextArea("x")
     for e in (key(Key.TAB), key(Key.ESCAPE), key(Key.BACK_TAB),
               key('a'; ctrl = true), key(Key.LEFT; shift = true),
@@ -710,7 +710,7 @@ end
 end
 
 @testitem "textarea: on_focus! shows the caret and reveals" begin
-    using DualUI
+    using ManyUI
     a = TextArea("x")
     @test a.focused[] === false
     on_focus!(a)
@@ -726,7 +726,7 @@ end
 end
 
 @testitem "textarea: a scroll is a PAINT mark and nothing else" begin
-    using DualUI
+    using ManyUI
     a = TextArea("ab")
     root = Container(a; id = :root)
     apply_stylesheet!(STYLESHEET_EMPTY, root)
@@ -739,7 +739,7 @@ end
 end
 
 @testitem "textarea: a Scrollbar observes a TextArea" begin
-    using DualUI
+    using ManyUI
     a = TextArea(join(["L$i" for i in 1:20], "\n"))
     apply_stylesheet!(STYLESHEET_EMPTY, a)
     layout!(a, Region(1, 1, 10, 5))
@@ -756,7 +756,7 @@ end
 end
 
 @testitem "textarea: scrolling past the end clamps" begin
-    using DualUI
+    using ManyUI
     a = TextArea(join(["L$i" for i in 1:20], "\n"))
     apply_stylesheet!(STYLESHEET_EMPTY, a)
     layout!(a, Region(1, 1, 10, 5))
@@ -780,7 +780,7 @@ end
 end
 
 @testitem "textarea: deleting the last grapheme of the last line" begin
-    using DualUI
+    using ManyUI
     a = TextArea("👨‍👩‍👧‍👦")
     move_by!(a, 1)
     @test a.col == 1
@@ -801,7 +801,7 @@ end
 end
 
 @testitem "textarea: every grapheme test vector round-trips" begin
-    using DualUI
+    using ManyUI
     # (text, cells, clusters) -- the contract's normative table.
     vectors = [("abc", 3, 3),
                ("世界", 4, 2),
@@ -825,12 +825,12 @@ end
         move_by!(a, -1000)
         @test a.col == 0
         @test a.goal == 0
-        @test DualUI.text(a) == s
+        @test ManyUI.text(a) == s
     end
 end
 
 @testitem "textarea: the ZWJ family is ONE cursor step and TWO cells" begin
-    using DualUI
+    using ManyUI
     a = TextArea("👨‍👩‍👧‍👦")
     move_by!(a, 1)
     @test a.col == 1
@@ -840,7 +840,7 @@ end
 end
 
 @testitem "textarea: backspace deletes a cluster, not a codepoint" begin
-    using DualUI
+    using ManyUI
     a = TextArea("a👍🏽b")
     move_by!(a, 2)                  # the caret sits after the emoji
     @test backspace!(a)
@@ -849,7 +849,7 @@ end
 end
 
 @testitem "textarea: a combining mark merges and the caret is recomputed" begin
-    using DualUI
+    using ManyUI
     a = TextArea("e")
     move_by!(a, 1)
     @test a.col == 1
@@ -864,7 +864,7 @@ end
 end
 
 @testitem "textarea: delete_forward! deletes one cluster" begin
-    using DualUI
+    using ManyUI
     a = TextArea("a👍🏽b")
     move_by!(a, 1)
     @test delete_forward!(a)

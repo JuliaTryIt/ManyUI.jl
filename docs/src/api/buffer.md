@@ -1,6 +1,6 @@
 # Buffer, diff and ANSI
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["buffer.jl", "diff.jl", "ansi.jl"]
 ```

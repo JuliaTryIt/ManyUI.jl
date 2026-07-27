@@ -1,6 +1,6 @@
 # Table and DataTable
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/table.jl", "widgets/datatable.jl"]
 ```

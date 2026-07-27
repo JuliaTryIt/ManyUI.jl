@@ -1,7 +1,7 @@
 # Text entry
 
 ```@meta
-CurrentModule = DualUI
+CurrentModule = ManyUI
 ```
 
 Two widgets: `TextInput` for one line, `TextArea` for many. They share a
@@ -14,7 +14,7 @@ break makes them differ.
 A single-line field with a placeholder, a submit handler and a caret:
 
 ```@example textentry
-using DualUI
+using ManyUI
 
 submitted = String[]
 field = TextInput("", i -> push!(submitted, i.text[]);
@@ -104,7 +104,7 @@ integration with the scrolling machinery. A `Scrollbar` reports on a
 `TextArea` with no new code at all:
 
 ```@example textarea
-using DualUI
+using ManyUI
 
 area = TextArea(join(["line $i" for i in 1:20], "\n"); id = :area)
 bar = Scrollbar(area, ScrollAxis.VERTICAL; id = :bar)
@@ -263,7 +263,7 @@ codepoints. Take a ZWJ family emoji — man, zero-width joiner, woman,
 zero-width joiner, girl:
 
 ```@example graphemes
-using DualUI
+using ManyUI
 
 fam = "👨‍👩‍👧"
 (codepoints = length(collect(fam)),
@@ -274,7 +274,7 @@ fam = "👨‍👩‍👧"
 
 Five codepoints, eighteen bytes, **two cells** — and `Base.textwidth`
 says six, because it sums codepoints and knows nothing about clustering.
-It is forbidden throughout DualUI's text handling for exactly that
+It is forbidden throughout ManyUI's text handling for exactly that
 reason. (`textwidth("❤️")` is 1, for a cluster that renders in two: the
 error goes both ways.)
 

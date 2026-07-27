@@ -1,10 +1,10 @@
 # Widgets
 
 ```@meta
-CurrentModule = DualUI
+CurrentModule = ManyUI
 ```
 
-DualUI ships a small library of built-in widgets. They are ordinary
+ManyUI ships a small library of built-in widgets. They are ordinary
 widgets with no privileged access: anything they do, your own widget
 types can do too.
 
@@ -16,9 +16,9 @@ would straddle the right edge moves to the next line rather than being
 cut in half.
 
 ```@example widgets
-using DualUI
+using ManyUI
 
-l = Label("Hello, DualUI!")
+l = Label("Hello, ManyUI!")
 measure(l, Size(40, 4))
 ```
 
@@ -212,9 +212,9 @@ A widget is a mutable struct holding a `WidgetNode`, plus whatever
 state it needs:
 
 ```@example custom
-using DualUI
+using ManyUI
 
-mutable struct Spinner <: DualUI.Widget
+mutable struct Spinner <: ManyUI.Widget
     node::WidgetNode
     frame::Int
 end
@@ -222,9 +222,9 @@ Spinner() = Spinner(WidgetNode(; type_name = :Spinner), 1)
 
 const FRAMES = ('|', '/', '-', '\\')
 
-DualUI.measure(w::Spinner, avail::Size) = Size(1, 1)
+ManyUI.measure(w::Spinner, avail::Size) = Size(1, 1)
 
-function DualUI.render!(w::Spinner, buf::AbstractMatrix{Cell})
+function ManyUI.render!(w::Spinner, buf::AbstractMatrix{Cell})
     write_text!(buf, 1, 1, string(FRAMES[w.frame]), STYLE_NONE)
     nothing
 end

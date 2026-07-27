@@ -4,9 +4,9 @@ diffing renderer and an ANSI encoder, behind a nine-method `Driver`
 seam.
 
 This package has NO web, HTTP or socket dependency and never will;
-`DualUIWeb` plugs into the `Driver` seam from the outside.
+`ManyUIWeb` plugs into the `Driver` seam from the outside.
 """
-module DualUI
+module ManyUI
 
 using Unicode
 using InlineStrings
@@ -30,6 +30,7 @@ import Base: parent, diff, resize!
     $(TYPEDFIELDS)
     """
 
+include("core.jl")
 include("types.jl")
 include("geometry.jl")
 include("unicode.jl")
@@ -83,6 +84,10 @@ include("app.jl")
 include("popup_ops.jl")
 include("backend.jl")
 include("precompile.jl")
+
+# core.jl
+export Projection, CLI, TUI, WebTerminal, WebNative
+export Action, execute!, render
 
 # types.jl
 export Widget, Driver, AbstractApp, Event

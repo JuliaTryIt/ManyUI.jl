@@ -1,13 +1,13 @@
-# DualUI.jl
+# ManyUI.jl
 
 ```@meta
-CurrentModule = DualUI
+CurrentModule = ManyUI
 ```
 
 A user interface framework for Julia that targets the terminal *and*
 the web browser, without rewriting the application or the interface.
 
-Inspired by Python's [Textual](https://textual.textualize.io/), DualUI
+Inspired by Python's [Textual](https://textual.textualize.io/), ManyUI
 does not compile your interface into HTML. It applies web development
 paradigms — a virtual DOM, a CSS-like box model, an asynchronous
 reactive event loop — directly onto a 2D character grid. The output is
@@ -15,22 +15,22 @@ a stream of ANSI escape sequences.
 
 Targeting the browser does not change the nature of the application. It
 only offloads the final step, drawing those ANSI bytes, to a terminal
-emulator running in the browser. That is what `DualUIWeb` does, and it
+emulator running in the browser. That is what `ManyUIWeb` does, and it
 is why this package has no HTTP dependency:
 
 ```@docs
-DualUI
+ManyUI
 ```
 
 ## Installation
 
 ```julia
 using Pkg
-Pkg.develop(path = "path/to/DualUI")
+Pkg.develop(path = "path/to/ManyUI")
 ```
 
-To also serve your application in a browser, add `DualUIWeb`. It
-depends on `DualUI`, so a pure terminal application never pays for
+To also serve your application in a browser, add `ManyUIWeb`. It
+depends on `ManyUI`, so a pure terminal application never pays for
 `HTTP.jl` or WebSocket handling.
 
 ## Quickstart
@@ -39,7 +39,7 @@ A counter: a label, a button, and a click that updates what the label
 says.
 
 ```@example quickstart
-using DualUI
+using ManyUI
 
 clicks = Ref(0)
 readout = Label("Count: 0"; id = :count)
@@ -56,11 +56,11 @@ ui = Container(
 # `HeadlessDriver` renders into memory instead of a terminal, which is
 # what makes the examples on this page runnable. Swap it for
 # `TerminalDriver()` to draw on a real tty, or hand the same tree to
-# `DualUIWeb.serve` to draw it in a browser.
+# `ManyUIWeb.serve` to draw it in a browser.
 driver = HeadlessDriver(Size(40, 8))
 app = App(ui, driver)
 
-DualUI.start!(driver, Size(40, 8))
+ManyUI.start!(driver, Size(40, 8))
 handle!(app, ResizeEvent(Size(40, 8)))
 frame!(app)
 
@@ -105,7 +105,7 @@ screen buffer, so an application never overwrites the user's shell
 history, and restores both even if the application throws:
 
 ```julia
-using DualUI
+using ManyUI
 
 app = App(my_ui(), TerminalDriver())
 run!(app)   # blocks until quit!(app)

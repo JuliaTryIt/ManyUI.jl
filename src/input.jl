@@ -584,9 +584,9 @@ pending(p::InputParser)::Int = length(p.tail)
 
 """
 THE shared pump. `TerminalDriver._reader_loop!` and
-`DualUIWeb.feed_bytes!` BOTH call this and nothing else -- the loop that
+`ManyUIWeb.feed_bytes!` BOTH call this and nothing else -- the loop that
 must not drop a CSI split across a chunk boundary is implemented and
-tested ONCE, here, in DualUI.
+tested ONCE, here, in ManyUI.
 
 Returns the number of events put. Never blocks indefinitely: if `ch` is
 closed, returns 0 without throwing.

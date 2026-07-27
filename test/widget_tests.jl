@@ -7,7 +7,7 @@
 # the SUBTREE breadcrumb and nothing that counts as dirt.
 
 @testitem "widget: fresh node defaults" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -41,7 +41,7 @@
 end
 
 @testitem "widget: tree mount and query" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -85,7 +85,7 @@ end
 end
 
 @testitem "widget: query_one typed returns the concrete type" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TA <: Widget
         node::WidgetNode
@@ -106,7 +106,7 @@ end
 end
 
 @testitem "widget: mount! binds the app and fires the hooks" begin
-    using DualUI
+    using ManyUI
 
     const LOG = Symbol[]
 
@@ -117,8 +117,8 @@ end
 
     struct FakeApp <: AbstractApp end
 
-    DualUI.on_mount!(w::TW) = (push!(LOG, id(w)); nothing)
-    DualUI.on_unmount!(w::TW) = (push!(LOG, Symbol(:un_, id(w))); nothing)
+    ManyUI.on_mount!(w::TW) = (push!(LOG, id(w)); nothing)
+    ManyUI.on_unmount!(w::TW) = (push!(LOG, Symbol(:un_, id(w))); nothing)
 
     root = TW(:root)
     node(root).app = FakeApp()
@@ -147,7 +147,7 @@ end
 end
 
 @testitem "widget: insert_child! and replace_child! keep order" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -170,7 +170,7 @@ end
 end
 
 @testitem "widget: tree walking ancestors descendants path" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -199,7 +199,7 @@ end
 end
 
 @testitem "widget: walk_visible skips invisible subtrees" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -230,7 +230,7 @@ end
 end
 
 @testitem "widget: dirty mask helpers are pure" begin
-    using DualUI
+    using ManyUI
 
     m = DirtyMask(0)
     @test !has_dirty(m, Dirty.PAINT)
@@ -265,7 +265,7 @@ end
 end
 
 @testitem "widget: mark! PAINT touches only the widget" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -302,7 +302,7 @@ end
 end
 
 @testitem "widget: mark! LAYOUT marks all descendants" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -331,7 +331,7 @@ end
 end
 
 @testitem "widget: mark! never dirties siblings" begin
-    using DualUI
+    using ManyUI
 
     # THE headline E1 test.
     #
@@ -393,7 +393,7 @@ end
 end
 
 @testitem "widget: ancestors get SUBTREE only never LAYOUT" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -437,7 +437,7 @@ end
 end
 
 @testitem "widget: SUBTREE is a breadcrumb not dirt" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -461,7 +461,7 @@ end
 end
 
 @testitem "widget: escalate_auto! promotes only AUTO ancestors" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -503,7 +503,7 @@ end
 end
 
 @testitem "widget: escalate_auto! stops at a definite ancestor" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -568,7 +568,7 @@ end
 end
 
 @testitem "widget: dirty_root is the highest LAYOUT node" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -616,7 +616,7 @@ end
 end
 
 @testitem "widget: dirty_root forks at the common ancestor" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -649,14 +649,14 @@ end
 end
 
 @testitem "widget: dirty_root is O(depth) via breadcrumbs" begin
-    using DualUI
+    using ManyUI
 
     const NODE_CALLS = Ref(0)
 
     mutable struct CW <: Widget
         n::WidgetNode
     end
-    DualUI.node(w::CW) = (NODE_CALLS[] += 1; w.n)
+    ManyUI.node(w::CW) = (NODE_CALLS[] += 1; w.n)
 
     fixed = BoxStyle(Display.BLOCK, Direction.COLUMN, Justify.START,
                      Align.STRETCH, AUTO, Length(Dimension.CELLS, 10f0),
@@ -702,7 +702,7 @@ end
 end
 
 @testitem "widget: mount and unmount dirty the parent not the siblings" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -738,7 +738,7 @@ end
 end
 
 @testitem "widget: class mutation marks STYLE" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -783,7 +783,7 @@ end
 end
 
 @testitem "widget: set_visible! marks LAYOUT" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode
@@ -816,7 +816,7 @@ end
 end
 
 @testitem "widget: mark_dirty! and mark_subtree_dirty! are surgical" begin
-    using DualUI
+    using ManyUI
 
     mutable struct TW <: Widget
         node::WidgetNode

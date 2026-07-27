@@ -1,7 +1,7 @@
 # Events
 
 ```@meta
-CurrentModule = DualUI
+CurrentModule = ManyUI
 ```
 
 Input propagates through the widget tree in two phases, exactly as it
@@ -14,7 +14,7 @@ Handlers are methods on `on_event!`, dispatched on both the widget type
 and the event type. There is no callback registry and no closures:
 
 ```julia
-DualUI.on_event!(w::MyButton, d::Dispatch{KeyEvent}) = begin
+ManyUI.on_event!(w::MyButton, d::Dispatch{KeyEvent}) = begin
     if d.event.code === Key.ENTER
         activate!(w)
         consume!(d)      # stop here; nobody above sees this key
@@ -31,16 +31,16 @@ events it cares about.
 `propagate!` walks the path from the root to the target and back:
 
 ```@example events
-using DualUI
+using ManyUI
 
-mutable struct Trace <: DualUI.Widget
+mutable struct Trace <: ManyUI.Widget
     node::WidgetNode
     log::Vector{Tuple{Symbol,Phase.T}}
 end
 Trace(name::Symbol, log) = Trace(WidgetNode(; id = name), log)
 
-function DualUI.on_event!(w::Trace, d::Dispatch{KeyEvent})
-    push!(w.log, (DualUI.id(w), d.phase))
+function ManyUI.on_event!(w::Trace, d::Dispatch{KeyEvent})
+    push!(w.log, (ManyUI.id(w), d.phase))
     nothing
 end
 
@@ -66,9 +66,9 @@ swallows a keystroke a global binding would otherwise act on.
 ```@example events
 empty!(log)
 
-function DualUI.on_event!(w::Trace, d::Dispatch{KeyEvent})
-    push!(w.log, (DualUI.id(w), d.phase))
-    DualUI.id(w) === :mid && consume!(d)
+function ManyUI.on_event!(w::Trace, d::Dispatch{KeyEvent})
+    push!(w.log, (ManyUI.id(w), d.phase))
+    ManyUI.id(w) === :mid && consume!(d)
     nothing
 end
 
@@ -96,7 +96,7 @@ order, a later sibling covers an earlier one — and `hit_test` honours
 that, so a click always reaches what the user can actually see.
 
 ```@example events
-using DualUI
+using ManyUI
 
 ui = Container(Label("title"; id = :t), Button("OK", identity; id = :ok))
 layout!(ui, Region(1, 1, 20, 4))
@@ -113,7 +113,7 @@ in pre-order. Hiding a subtree removes it from the order entirely.
 ```@example events
 app = App(ui, HeadlessDriver(Size(20, 4)))
 focus_next!(app)
-DualUI.id(focused(app))
+ManyUI.id(focused(app))
 ```
 
 ## Where events come from
@@ -127,7 +127,7 @@ The parser is incremental and keeps partial state, so a sequence split
 across two reads parses the same as one delivered whole:
 
 ```@example input
-using DualUI
+using ManyUI
 
 whole = InputParser()
 split = InputParser()
@@ -138,5 +138,5 @@ byte_at_a_time = vcat((feed!(split, [b]) for b in Vector{UInt8}("\e[A"))...)
 all_at_once == byte_at_a_time
 ```
 
-That property is what makes the web target possible without DualUI
+That property is what makes the web target possible without ManyUI
 knowing the web exists.

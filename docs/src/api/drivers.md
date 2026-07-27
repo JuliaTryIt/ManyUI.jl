@@ -1,6 +1,6 @@
 # Drivers
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["driver.jl", "terminal.jl", "headless.jl"]
 ```

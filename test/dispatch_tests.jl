@@ -1,7 +1,7 @@
-# dispatch_tests.jl -- @testitem blocks for DualUI/src/dispatch.jl.
+# dispatch_tests.jl -- @testitem blocks for ManyUI/src/dispatch.jl.
 #
 # E3 / EARS 2.2: "When a user input event (keyboard stroke, mouse click,
-# or scroll) occurs, the DualUI framework shall propagate the event
+# or scroll) occurs, the ManyUI framework shall propagate the event
 # through the component tree using capture and bubble phases until the
 # event is consumed."
 #
@@ -12,7 +12,7 @@
 # truncates the walk at every phase.
 
 @testitem "dispatch: propagation_path is root to target inclusive" begin
-    using DualUI
+    using ManyUI
     leaf = Label("leaf"; id = :leaf)
     mid = Container(leaf; id = :mid)
     root = Container(mid; id = :root)
@@ -23,12 +23,12 @@
 end
 
 @testitem "dispatch: propagate! captures then bubbles" begin
-    using DualUI
+    using ManyUI
 
     # All three probes share ONE log, so what is asserted below is the
     # chronological visit order across the whole walk rather than each
     # widget's private view of it.
-    mutable struct PathProbe <: DualUI.Widget
+    mutable struct PathProbe <: ManyUI.Widget
         node::WidgetNode
         log::Vector{Tuple{Symbol,Phase.T}}
         consume_on::Union{Nothing,Phase.T}
@@ -37,8 +37,8 @@ end
         PathProbe(WidgetNode(; id = name, type_name = :PathProbe),
                   log, nothing)
 
-    function DualUI.on_event!(w::PathProbe, d::Dispatch{KeyEvent})
-        push!(w.log, (DualUI.id(w), d.phase))
+    function ManyUI.on_event!(w::PathProbe, d::Dispatch{KeyEvent})
+        push!(w.log, (ManyUI.id(w), d.phase))
         w.consume_on === d.phase && consume!(d)
         return nothing
     end
@@ -66,19 +66,19 @@ end
 end
 
 @testitem "dispatch: consuming truncates the walk at every phase" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct StopProbe <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct StopProbe <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         log::Vector{Tuple{Symbol,Phase.T}}
         consume_on::Union{Nothing,Phase.T}
     end
     StopProbe(name::Symbol) =
-        StopProbe(DualUI.WidgetNode(; id = name, type_name = :StopProbe),
+        StopProbe(ManyUI.WidgetNode(; id = name, type_name = :StopProbe),
                   Tuple{Symbol,Phase.T}[], nothing)
 
-    function DualUI.on_event!(w::StopProbe, d::Dispatch{KeyEvent})
-        push!(w.log, (DualUI.id(w), d.phase))
+    function ManyUI.on_event!(w::StopProbe, d::Dispatch{KeyEvent})
+        push!(w.log, (ManyUI.id(w), d.phase))
         w.consume_on === d.phase && consume!(d)
         return nothing
     end
@@ -116,7 +116,7 @@ end
 end
 
 @testitem "dispatch: hit_test finds the deepest widget" begin
-    using DualUI
+    using ManyUI
     leaf = Label("x"; id = :leaf)
     mid = Container(leaf; id = :mid)
     root = Container(mid; id = :root)
@@ -133,7 +133,7 @@ end
 end
 
 @testitem "dispatch: hit_test skips invisible subtrees" begin
-    using DualUI
+    using ManyUI
     leaf = Label("x"; id = :leaf)
     mid = Container(leaf; id = :mid)
     root = Container(mid; id = :root)
@@ -151,7 +151,7 @@ end
 end
 
 @testitem "dispatch: a later sibling covers an earlier one" begin
-    using DualUI
+    using ManyUI
     # Paint order IS document order (paint.jl), so where two siblings
     # overlap the LATER one is what the user sees and therefore what a
     # click must reach. Descending in document order would return the
@@ -168,20 +168,20 @@ end
 end
 
 @testitem "dispatch: dispatch_event! routes by event class" begin
-    using DualUI
+    using ManyUI
 
     # A probe type of its own: adding `on_event!` methods for Container
-    # or Label would install them into DualUI for every other testitem
+    # or Label would install them into ManyUI for every other testitem
     # sharing this process.
-    mutable struct RouteProbe <: DualUI.Widget
+    mutable struct RouteProbe <: ManyUI.Widget
         node::WidgetNode
-        seen::Vector{DualUI.Widget}
+        seen::Vector{ManyUI.Widget}
     end
     RouteProbe(name::Symbol) =
         RouteProbe(WidgetNode(; id = name, type_name = :RouteProbe),
-                   DualUI.Widget[])
+                   ManyUI.Widget[])
 
-    function DualUI.on_event!(w::RouteProbe, d::Dispatch)
+    function ManyUI.on_event!(w::RouteProbe, d::Dispatch)
         d.phase === Phase.AT_TARGET && push!(w.seen, d.target)
         return nothing
     end
@@ -221,7 +221,7 @@ end
 end
 
 @testitem "dispatch: RefreshEvent and QuitEvent are not routed" begin
-    using DualUI
+    using ManyUI
     leaf = Label("x"; id = :leaf)
     root = Container(leaf; id = :root)
     layout!(root, Region(1, 1, 20, 6))
@@ -233,7 +233,7 @@ end
 end
 
 @testitem "dispatch: focusable_widgets is visible pre-order" begin
-    using DualUI
+    using ManyUI
     b1 = Button("one", identity; id = :b1)
     b2 = Button("two", identity; id = :b2)
     plain = Label("not focusable"; id = :plain)
@@ -248,7 +248,7 @@ end
 end
 
 @testitem "dispatch: hit_test targets the PAINTED box under scroll" begin
-    using DualUI
+    using ManyUI
     # Layout computes ABSOLUTE boxes and never sees scroll, so inside a
     # scrolled subtree `region(w)` is where `w` WOULD sit at scroll
     # zero. The pointer names a cell on the SCREEN, so the hit test has
@@ -282,7 +282,7 @@ end
 end
 
 @testitem "dispatch: a click in a Scrollpane hits the visible row" begin
-    using DualUI
+    using ManyUI
     # The end-to-end shape of the bug: the pane displays L4 on its first
     # row, and that is the widget the click must reach.
     labels = [Label("L$i"; id = Symbol("l", i)) for i in 1:8]

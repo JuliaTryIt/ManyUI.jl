@@ -1,6 +1,6 @@
 # widgets_tabs_tests.jl -- the tab strip plus panels (layer 7).
 #
-# Every testitem is self-contained, starts `using DualUI`, needs no tty
+# Every testitem is self-contained, starts `using ManyUI`, needs no tty
 # and never sleeps.
 #
 # A CAPTION IS NOT A WIDGET: captions are `String`s and panels are
@@ -13,7 +13,7 @@
 # boundary through `_tc_slice!`, never by halving a wide cluster.
 
 @testitem "tabs: construction, aliasing and focus wiring" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"))
     @test t isa Widget
     @test type_name(t) === :Tabs
@@ -33,7 +33,7 @@
 end
 
 @testitem "tabs: add_tab! selects the FIRST tab and no other" begin
-    using DualUI
+    using ManyUI
     t = Tabs()
     @test selected(t) == 0
     i = add_tab!(t, "One", Static("A"))
@@ -49,7 +49,7 @@ end
 end
 
 @testitem "tabs: an empty Tabs has selected == 0 and does not throw" begin
-    using DualUI
+    using ManyUI
     t = Tabs()
     @test n_tabs(t) == 0
     @test selected(t) == 0
@@ -73,19 +73,19 @@ end
 end
 
 @testitem "tabs: measure is NOT avail" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"))
     m = measure(t.strip, Size(80, 24))
     # A strip that returned `avail` would demand the whole viewport and
     # shrink its neighbours to zero. It is exactly as wide as its
     # captions and exactly one row tall.
     @test m.width < 80
-    @test m.width == (3 + 2 * DualUI.TABS_PAD) * 2   # " One " + " Two "
+    @test m.width == (3 + 2 * ManyUI.TABS_PAD) * 2   # " One " + " Two "
     @test m.height == 1
 end
 
 @testitem "tabs: tab_at is pure over titles" begin
-    using DualUI
+    using ManyUI
     # A table test: a `Vector{String}` and an `Int`, no widget, no
     # layout, no buffer. Captions abut with no separator; " One " is
     # columns 1-5, " Two " is 6-10.
@@ -108,7 +108,7 @@ end
 end
 
 @testitem "tabs: the active caption is REVERSED and the others are not" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"))
     apply_stylesheet!(STYLESHEET_EMPTY, t.strip)
     layout!(t.strip, Region(1, 1, 10, 1))
@@ -130,7 +130,7 @@ end
 end
 
 @testitem "tabs: the focused strip underlines" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"))
     apply_stylesheet!(STYLESHEET_EMPTY, t.strip)
     layout!(t.strip, Region(1, 1, 10, 1))
@@ -143,7 +143,7 @@ end
 end
 
 @testitem "tabs: '2' selects tab 2" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"),
              "Three" => Static("C"))
     # `key('2')` is `Key.CHAR`, not a `Key.TWO` -- there is no such key.
@@ -163,7 +163,7 @@ end
 end
 
 @testitem "tabs: LEFT/RIGHT/HOME/END move and clamp" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"),
              "Three" => Static("C"))
     key(k) = (d = Dispatch(parse(KeyEvent, k), t.strip);
@@ -181,7 +181,7 @@ end
 end
 
 @testitem "tabs: RIGHT on the LAST tab does NOT consume" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"))
     @test select_tab!(t, 2)
     d = Dispatch(parse(KeyEvent, "right"), t.strip)
@@ -194,7 +194,7 @@ end
 end
 
 @testitem "tabs: LEFT on the FIRST tab does NOT consume" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"))
     @test selected(t) == 1
     d = Dispatch(parse(KeyEvent, "left"), t.strip)
@@ -205,7 +205,7 @@ end
 end
 
 @testitem "tabs: a TabStrip does not consume tab" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"))
     for k in ("tab", "shift+tab", "escape", "ctrl+right", "a")
         d = Dispatch(parse(KeyEvent, k), t.strip)
@@ -219,7 +219,7 @@ end
 end
 
 @testitem "tabs: clicking a caption selects it" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"))
     apply_stylesheet!(STYLESHEET_EMPTY, t)
     layout!(t, Region(1, 1, 10, 4))
@@ -243,7 +243,7 @@ end
 end
 
 @testitem "tabs: a scrolled Scrollpane clicks the RIGHT caption" begin
-    using DualUI
+    using ManyUI
     # The `_tc_local`-vs-`local_offset` bug, as a test: with the strip
     # scrolled down, a click's ABSOLUTE row must map back to the strip's
     # OWN row through `paint_offset`, not the unshifted border box.
@@ -271,7 +271,7 @@ end
 end
 
 @testitem "tabs: an inactive panel paints NOTHING" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"))
     node(t).inline_box = BoxPatch(; display = Display.FLEX,
                                   direction = Direction.COLUMN)
@@ -291,7 +291,7 @@ end
 end
 
 @testitem "tabs: an inactive panel's TextInput is NOT in the tab order" begin
-    using DualUI
+    using ManyUI
     a = TextInput("a")
     b = TextInput("b")
     t = Tabs("One" => a, "Two" => b)
@@ -312,7 +312,7 @@ end
 end
 
 @testitem "tabs: hit_test cannot reach an inactive panel" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("AAAA"), "Two" => Static("BBBB"))
     node(t).inline_box = BoxPatch(; display = Display.FLEX,
                                   direction = Direction.COLUMN)
@@ -333,7 +333,7 @@ end
 end
 
 @testitem "tabs: a Tabs beside a one-row Label leaves the Label ONE row" begin
-    using DualUI
+    using ManyUI
     # Browser-lesson 2: a greedy `measure` would shrink the Label to a
     # ZERO-row label and make it vanish. `Tabs` sizes to content.
     lbl = Label("ZZ")
@@ -350,7 +350,7 @@ end
 end
 
 @testitem "tabs: mount! on a Tabs throws" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"))
     # A panel is added with `add_tab!`, never `mount!` -- the latter
     # would leave the strip's titles and the children out of step.
@@ -358,7 +358,7 @@ end
 end
 
 @testitem "tabs: a bare TabStrip with no Tabs parent is INERT" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"))
     strip = t.strip
     # Detach the strip so it has no `Tabs` parent, then drive it: a
@@ -375,7 +375,7 @@ end
 end
 
 @testitem "tabs: select_tab! clamps and reports movement" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"),
              "Three" => Static("C"))
     @test !select_tab!(t, 1)            # already there
@@ -392,7 +392,7 @@ end
 end
 
 @testitem "tabs: a strip too narrow truncates its captions, never scrolls" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"), "Two" => Static("B"))
     apply_stylesheet!(STYLESHEET_EMPTY, t.strip)
     layout!(t.strip, Region(1, 1, 6, 1))
@@ -405,7 +405,7 @@ end
 end
 
 @testitem "tabs: tab_title throws on a bad index" begin
-    using DualUI
+    using ManyUI
     t = Tabs("One" => Static("A"))
     # A caller naming a tab that does not exist has a bug.
     @test_throws BoundsError tab_title(t, 2)

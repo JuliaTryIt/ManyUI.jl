@@ -1,7 +1,7 @@
 # widgets_table_tests.jl -- Table: columns, headers, and the column
 # sizing kernel (layer 7).
 #
-# Every testitem is self-contained, starts `using DualUI`, needs no tty
+# Every testitem is self-contained, starts `using ManyUI`, needs no tty
 # and never sleeps.
 #
 # THE TWO THINGS THIS FILE EXISTS TO PIN DOWN:
@@ -21,7 +21,7 @@
 # edge.
 
 @testitem "table: ids are unique and it is focusable by construction" begin
-    using DualUI
+    using ManyUI
     a = Table([1], [Column("N")]; cell = (r, j) -> "x")
     b = Table([1], [Column("N")]; cell = (r, j) -> "x")
     @test node(a).id !== node(b).id
@@ -43,7 +43,7 @@
 end
 
 @testitem "table: measure takes the space it is offered" begin
-    using DualUI
+    using ManyUI
     t = Table(collect(1:100), [Column("N"; width = cells(4))];
               cell = (r, j) -> string(r))
     # A `Table` takes the space it is OFFERED and scrolls its content: an
@@ -56,7 +56,7 @@ end
 end
 
 @testitem "table: version and focused are DIRECT PAINT-reactive fields" begin
-    using DualUI
+    using ManyUI
     t = Table([1, 2], [Column("N")]; cell = (r, j) -> "x")
     # `attach_reactives!` walks `fieldnames(typeof(w))` ONE level and
     # binds only DIRECT `Reactive` fields (reactive.jl:100). A `Reactive`
@@ -84,7 +84,7 @@ end
 end
 
 @testitem "table: width resolution for all four Length kinds" begin
-    using DualUI
+    using ManyUI
     t = Table([("ab", "cd", "ef", "gh")],
               [Column("A"; width = cells(6)),
                Column("B"; width = pct(25)),
@@ -92,7 +92,7 @@ end
                Column("D"; width = fr(1))]; sep = " ")
     layout!(t, Region(1, 1, 40, 6))
     g = grid_of(t)
-    ws = DualUI._tc_resolve!(t, 40)
+    ws = ManyUI._tc_resolve!(t, 40)
     @test ws[1] == 6                    # cells(6): exact, O(1)
     @test ws[2] == 10                   # pct(25) of the CONTENT BOX
     @test ws[3] == 2                    # AUTO: max("C" = 1, "ef" = 2)
@@ -107,14 +107,14 @@ end
 end
 
 @testitem "table: pct resolves against the content box" begin
-    using DualUI
+    using ManyUI
     t = Table([("a", "b")],
               [Column("A"; width = pct(25)), Column("B"; width = pct(50))];
               cell = (r, j) -> r[j], sep = "")
     # "25% of the box you can SEE", so it re-resolves with the box.
-    @test DualUI._tc_resolve!(t, 40) == [10, 20]
-    @test DualUI._tc_resolve!(t, 20) == [5, 10]
-    @test DualUI._tc_resolve!(t, 0) == [0, 0]
+    @test ManyUI._tc_resolve!(t, 40) == [10, 20]
+    @test ManyUI._tc_resolve!(t, 20) == [5, 10]
+    @test ManyUI._tc_resolve!(t, 0) == [0, 0]
     # And through a real layout, with no paint in sight.
     layout!(t, Region(1, 1, 16, 3))
     @test content_extent(t).width == 4 + 8
@@ -123,7 +123,7 @@ end
 end
 
 @testitem "table: fr fills the window exactly" begin
-    using DualUI
+    using ManyUI
     # `_apportion` -- the SAME largest-remainder-first kernel `_arrange!`
     # step 3 uses (layout.jl:417) -- is what makes `sum == leftover`
     # EXACTLY. A column lost to a rounding error is what it prevents, and
@@ -134,7 +134,7 @@ end
                Column("C"; width = fr(2)),
                Column("D"; width = fr(1))]; sep = " ")
     for avail in 20:40
-        ws = DualUI._tc_resolve!(t, avail)
+        ws = ManyUI._tc_resolve!(t, avail)
         inner = avail - 3               # sep_w * (ncols - 1)
         @test sum(ws) == inner          # EXACTLY, at every width
         @test grid_of(t).cache_total == avail
@@ -149,7 +149,7 @@ end
 end
 
 @testitem "table: mixed fixed, AUTO and fr columns lose no cell" begin
-    using DualUI
+    using ManyUI
     # The adversarial width: `inner - fixed` not divisible by the weights.
     t = Table([("xx", "yy", "zz")],
               [Column("A"; width = cells(3)),
@@ -158,7 +158,7 @@ end
               sep = "|")
     g = grid_of(t)
     for avail in 8:60
-        ws = DualUI._tc_resolve!(t, avail)
+        ws = ManyUI._tc_resolve!(t, avail)
         @test sum(ws) + g.sep_w * 2 == avail
         @test g.cache_total == avail
         @test ws[1] == 3
@@ -172,7 +172,7 @@ end
 end
 
 @testitem "table: columns do NOT shrink when they overflow" begin
-    using DualUI
+    using ManyUI
     # NORMATIVE: `sum(widths) + sep_w * (ncols - 1)` MAY EXCEED `avail`,
     # and that excess IS the horizontal scroll range. A table that shrank
     # its columns to fit would have nothing left to scroll and no reason
@@ -183,29 +183,29 @@ end
                Column("B"; width = cells(20)),
                Column("C"; width = cells(20))]; cell = (r, j) -> r[j])
     layout!(t, Region(1, 1, 10, 3))
-    @test DualUI._tc_resolve!(t, 10) == [20, 20, 20]
+    @test ManyUI._tc_resolve!(t, 10) == [20, 20, 20]
     @test grid_of(t).cache_total == 62       # 60 + 2 separators
     @test content_extent(t).width == 62
     @test max_scroll(t).x == 52              # THE scroll range
 end
 
 @testitem "table: max_width caps the AUTO measurement, not just the width" begin
-    using DualUI
+    using ManyUI
     # On an AUTO column `max_width` is ALSO the measurement cap
     # (`_tc_cap`): work per cell is O(cap), NEVER O(length(s)).
     long = repeat("w", 10_000)
     t = Table([long], [Column("H"; width = AUTO, max_width = cells(6))];
               cell = (r, j) -> r, show_header = false)
     @test grid_of(t).autos[1] == 6           # CAPPED, not 10 000
-    @test DualUI._tc_resolve!(t, 40)[1] == 6
+    @test ManyUI._tc_resolve!(t, 40)[1] == 6
     # `min_width` is the floor, and an AUTO bound is unbounded.
     u = Table(["a"], [Column("H"; width = AUTO, min_width = cells(9))];
               cell = (r, j) -> r)
-    @test DualUI._tc_resolve!(u, 40)[1] == 9
+    @test ManyUI._tc_resolve!(u, 40)[1] == 9
 end
 
 @testitem "table: fixed columns never call cell outside the paint" begin
-    using DualUI
+    using ManyUI
     hits = Ref(0)
     t = Table([(i, i * 2) for i in 1:1000],
               [Column("A"; width = cells(6)), Column("B"; width = fr(1))];
@@ -230,7 +230,7 @@ end
 end
 
 @testitem "table: AUTO measures header + sample rows, and nothing else" begin
-    using DualUI
+    using ManyUI
     hits = Ref(0)
     seen = Int[]
     t = Table(collect(1:1000), [Column("Header"; width = AUTO)];
@@ -251,7 +251,7 @@ end
 end
 
 @testitem "table: AUTO does NOT change when you scroll" begin
-    using DualUI
+    using ManyUI
     # NORMATIVE. Measuring the SCROLL WINDOW is REFUSED: it is O(1) and
     # it is worse than measuring nothing, because every column changes
     # width as you scroll. A table that reflows under the reader's eyes
@@ -280,21 +280,21 @@ end
 end
 
 @testitem "table: AUTO seeds the header reserve" begin
-    using DualUI
+    using ManyUI
     t = Table([("x",)], [Column("LongHeader"; width = AUTO)])
     # `_tc_header_reserve(::Table, j)` is 0: the reserve is `DataTable`'s
     # sort-indicator gutter and a `Table` never sorts.
-    @test DualUI._tc_header_reserve(t, 1) == 0
+    @test ManyUI._tc_header_reserve(t, 1) == 0
     @test grid_of(t).autos[1] == text_width("LongHeader")
-    @test DualUI._tc_resolve!(t, 40)[1] == 10
+    @test ManyUI._tc_resolve!(t, 40)[1] == 10
     # A non-AUTO column has NO mark at all -- `0`, never a measurement.
     u = Table([("x",)], [Column("LongHeader"; width = cells(3))])
     @test grid_of(u).autos[1] == 0
-    @test DualUI._tc_resolve!(u, 40)[1] == 3
+    @test ManyUI._tc_resolve!(u, 40)[1] == 3
 end
 
 @testitem "table: row sample+1 wider than the sample gets an ellipsis" begin
-    using DualUI
+    using ManyUI
     # THE PRICE OF SAMPLING, stated so nobody discovers it: above
     # `sample`, a wider cell is TRUNCATED. That failure is VISIBLE, it is
     # LOCAL to the cell, it does not reflow and it does not oscillate.
@@ -310,7 +310,7 @@ end
 end
 
 @testitem "table: sample = typemax(Int) is exact at construction" begin
-    using DualUI
+    using ManyUI
     hits = Ref(0)
     rows = ["a", "bb", "ccc", "dddd", "eeeee"]
     t = Table(rows, [Column("H"; width = AUTO)];
@@ -332,7 +332,7 @@ end
 end
 
 @testitem "table: refresh_extent! is the exact rescan and can NARROW" begin
-    using DualUI
+    using ManyUI
     t = Table(["aa", "bb", "wwwwwwww"], [Column("H"; width = AUTO)];
               cell = (r, j) -> r, sample = 2, show_header = false)
     layout!(t, Region(1, 1, 20, 6))
@@ -356,7 +356,7 @@ end
 end
 
 @testitem "table: refresh_extent! re-clamps a stranded offset" begin
-    using DualUI
+    using ManyUI
     t = Table([repeat("w", 40), "a", "b"], [Column("H"; width = AUTO)];
               cell = (r, j) -> r, show_header = false)
     layout!(t, Region(1, 1, 10, 3))
@@ -372,7 +372,7 @@ end
 end
 
 @testitem "table: push_row! raises the mark in O(1) and rescans nothing" begin
-    using DualUI
+    using ManyUI
     # THE SCALE DEFECT THIS PREVENTS: a `version`-keyed AUTO cache
     # re-scans `1:min(sample, n)` on EVERY data change, so building a
     # 100 000-row table by push would be 20M cell calls. The marks are
@@ -407,7 +407,7 @@ end
 end
 
 @testitem "table: insert_row! measures the new row alone" begin
-    using DualUI
+    using ManyUI
     hits = Ref(0)
     seen = Int[]
     t = Table(collect(1:50), [Column("N"; width = AUTO)];
@@ -429,7 +429,7 @@ end
 end
 
 @testitem "table: the header does NOT scroll vertically" begin
-    using DualUI
+    using ManyUI
     t = Table(["r$(i)" for i in 1:100], [Column("Name"; width = cells(6))];
               cell = (r, j) -> r, show_header = true, rule = false)
     layout!(t, Region(1, 1, 6, 4))
@@ -453,7 +453,7 @@ end
 end
 
 @testitem "table: the header DOES follow scroll.x" begin
-    using DualUI
+    using ManyUI
     # THE ASYMMETRY IS THE WHOLE POINT OF A TABLE HEADER: pinned
     # vertically, following horizontally. Get it wrong and the header
     # lies about which column you are looking at. It is one expression
@@ -480,13 +480,13 @@ end
 end
 
 @testitem "table: content_extent.height == view_count + header_rows" begin
-    using DualUI
+    using ManyUI
     for (sh, ru, hh) in ((false, false, 0), (false, true, 0),
                          (true, false, 1), (true, true, 2))
         t = Table(collect(1:50), [Column("N"; width = cells(4))];
                   cell = (r, j) -> string(r), show_header = sh, rule = ru)
         layout!(t, Region(1, 1, 10, 8))
-        @test DualUI._tc_header_rows(t) == hh
+        @test ManyUI._tc_header_rows(t) == hh
         @test content_extent(t).height == view_count(t) + hh
         @test content_extent(t).height == 50 + hh
         # THE PRICE, stated rather than discovered: the extent's height
@@ -494,12 +494,12 @@ end
         # public.
         @test row_count(t) == 50
         @test max_scroll(t).y == 50 + hh - 8
-        @test DualUI._tc_body_height(t) == 8 - hh
+        @test ManyUI._tc_body_height(t) == 8 - hh
     end
 end
 
 @testitem "table: the LAST row is reachable with a header" begin
-    using DualUI
+    using ManyUI
     # THE `+ hh` REGRESSION. `_sb_metrics` reads `content_extent`
     # DIRECTLY and never calls `max_scroll`, so there is NO seam that can
     # tell a bar the body is `hh` rows shorter than the box. Drop the
@@ -507,7 +507,7 @@ end
     t = Table(["r$(i)" for i in 1:100], [Column("Name"; width = cells(5))];
               cell = (r, j) -> r, show_header = true, rule = true)
     layout!(t, Region(1, 1, 5, 6))
-    @test DualUI._tc_header_rows(t) == 2
+    @test ManyUI._tc_header_rows(t) == 2
     @test content_extent(t).height == 102
     @test max_scroll(t).y == 96
     scroll_to!(t, Offset(0, 96))
@@ -518,7 +518,7 @@ end
 end
 
 @testitem "table: END lands the last row on the last window row" begin
-    using DualUI
+    using ManyUI
     # `content_extent`'s `+ hh` and `_tc_follow_cursor!`'s `- hh` are the
     # same fact stated twice. If they ever drift, this fails: END either
     # overshoots into blank rows or stops short of the last row.
@@ -540,7 +540,7 @@ end
 end
 
 @testitem "table: max_scroll.x is correct BEFORE the first paint" begin
-    using DualUI
+    using ManyUI
     # BOTH `render!` AND `_tc_extent` resolve the columns, and that is
     # what makes this right with no frame yet. Reading a `widths` field
     # that only `render!` writes would answer `0` -- "cannot scroll" when
@@ -562,33 +562,33 @@ end
 end
 
 @testitem "table: the resolve memo hits on (version, width)" begin
-    using DualUI
+    using ManyUI
     t = Table([("a", "b")],
               [Column("A"; width = fr(1)), Column("B"; width = fr(1))];
               cell = (r, j) -> r[j])
-    DualUI._tc_resolve!(t, 21)
+    ManyUI._tc_resolve!(t, 21)
     g = grid_of(t)
     @test g.cache_version == t.version[]
     @test g.cache_width == 21
     # ON A HIT: O(1) to decide, ZERO allocation. `_apportion` allocates
     # only on a MISS -- once per edit or resize, never per frame.
-    DualUI._tc_resolve!(t, 21)
-    @test @allocated(DualUI._tc_resolve!(t, 21)) == 0
+    ManyUI._tc_resolve!(t, 21)
+    @test @allocated(ManyUI._tc_resolve!(t, 21)) == 0
     # The scroll offset is NOT part of the key, and cannot be: the extent
     # is independent of the offset, which is what makes the memo safe.
     layout!(t, Region(1, 1, 21, 3))
     before = copy(g.widths)
     scroll_to!(t, Offset(3, 1))
-    @test DualUI._tc_resolve!(t, 21) == before
+    @test ManyUI._tc_resolve!(t, 21) == before
     # A data change invalidates it.
     push_row!(t, ("c", "d"))
     @test g.cache_version != t.version[] || g.cache_version == t.version[]
-    DualUI._tc_resolve!(t, 21)
+    ManyUI._tc_resolve!(t, 21)
     @test g.cache_version == t.version[]
 end
 
 @testitem "table: the column cull skips off-screen columns entirely" begin
-    using DualUI
+    using ManyUI
     seen = Set{Int}()
     t = Table([("x",)], [Column("C$(j)"; width = cells(4)) for j in 1:20];
               cell = (r, j) -> (push!(seen, j); "c$(j)"))
@@ -598,19 +598,19 @@ end
     paint!(buf, t)
     # `for j in lo:hi`, NEVER `eachindex(cols)`: that axis is O(ncols)
     # per ROW and is the reason a 500-column table would crawl.
-    @test DualUI._tc_visible_cols(grid_of(t), 0, 10) === (1, 2)
+    @test ManyUI._tc_visible_cols(grid_of(t), 0, 10) === (1, 2)
     @test seen == Set([1, 2])
 
     empty!(seen)
     scroll_to!(t, Offset(20, 0))
     clear!(buf)
     paint!(buf, t)
-    @test DualUI._tc_visible_cols(grid_of(t), 20, 10) === (5, 6)
+    @test ManyUI._tc_visible_cols(grid_of(t), 20, 10) === (5, 6)
     @test seen == Set([5, 6])
 end
 
 @testitem "table: a 100 000 x 500 table costs one 20 x 6 frame" begin
-    using DualUI
+    using ManyUI
     # O(window). NOT a timing test: a deterministic, unfoolable COUNT.
     big_hits = Ref(0)
     big = Table(collect(1:100_000),
@@ -649,7 +649,7 @@ end
 end
 
 @testitem "table: a row is not a widget, at ANY size" begin
-    using DualUI
+    using ManyUI
     # THE RULE THE WHOLE TIER RESTS ON, MEASURED rather than assumed: a
     # row is an element of a Vector and ZERO WidgetNodes. A `Table` has
     # a header AND a grid painter -- both are paint, neither is a child
@@ -698,7 +698,7 @@ end
 end
 
 @testitem "table: a cell too wide for its column is cut on a cluster" begin
-    using DualUI
+    using ManyUI
     t = Table([("Alice Smith", "x")],
               [Column("A"; width = cells(5)), Column("B"; width = cells(1))];
               show_header = false, sep = " ")
@@ -713,7 +713,7 @@ end
 end
 
 @testitem "table: a truncated cell is left-anchored under every align" begin
-    using DualUI
+    using ManyUI
     # A right-aligned truncated number ("…234") reads as a DIFFERENT
     # NUMBER, which is worse than a visibly clipped one. `align` applies
     # ONLY when the text fits.
@@ -741,7 +741,7 @@ end
 end
 
 @testitem "table: a cell never bleeds into the next column" begin
-    using DualUI
+    using ManyUI
     t = Table([(repeat("w", 24), "B")],
               [Column("A"; width = cells(4)), Column("B"; width = cells(3))];
               show_header = false, sep = " ")
@@ -757,7 +757,7 @@ end
 end
 
 @testitem "table: a wide grapheme at a column edge is dropped, not halved" begin
-    using DualUI
+    using ManyUI
     # `truncate_width("世界a", 3) == "世"`: a width-2 cluster that
     # would straddle the cap is DROPPED. A CLUSTER THEREFORE CANNOT
     # STRADDLE A COLUMN EDGE BY CONSTRUCTION, and there is no second
@@ -786,7 +786,7 @@ end
 end
 
 @testitem "table: every test vector paints whole clusters or none" begin
-    using DualUI
+    using ManyUI
     # `Base.textwidth` reports 1 for the VS16 heart occupying 2 cells and
     # 6 for the ZWJ family occupying 2. It appears NOWHERE, and this is
     # what would catch it.
@@ -818,7 +818,7 @@ end
 end
 
 @testitem "table: empty table paints the header and no rows" begin
-    using DualUI
+    using ManyUI
     t = Table(String[], [Column("Name"; width = cells(6))];
               cell = (r, j) -> r, rule = true)
     layout!(t, Region(1, 1, 6, 4))
@@ -843,7 +843,7 @@ end
 end
 
 @testitem "table: one row" begin
-    using DualUI
+    using ManyUI
     t = Table(["only"], [Column("H"; width = cells(6))]; cell = (r, j) -> r)
     layout!(t, Region(1, 1, 6, 4))
     @test content_extent(t) === Size(6, 2)
@@ -863,7 +863,7 @@ end
 end
 
 @testitem "table: one column" begin
-    using DualUI
+    using ManyUI
     # One column: NO separator is ever drawn -- `max(1, lo-1):min(hi, 0)`
     # is empty -- and `cache_total` is the column itself, with no gap.
     t = Table(["aa", "bb"], [Column("H"; width = cells(4))];
@@ -881,12 +881,12 @@ end
 end
 
 @testitem "table: zero columns does not throw" begin
-    using DualUI
+    using ManyUI
     t = Table([1, 2, 3], Column[]; cell = (r, j) -> "x")
     layout!(t, Region(1, 1, 6, 4))
     @test grid_of(t).cache_total == 0
     @test content_extent(t) === Size(0, 4)      # 3 rows + hh
-    @test DualUI._tc_visible_cols(grid_of(t), 0, 6) === (1, 0)
+    @test ManyUI._tc_visible_cols(grid_of(t), 0, 6) === (1, 0)
     buf = Buffer(6, 4)
     clear!(buf)
     paint!(buf, t)
@@ -898,7 +898,7 @@ end
 end
 
 @testitem "table: over-scroll paints blanks, never a BoundsError" begin
-    using DualUI
+    using ManyUI
     t = Table(["a", "b"], [Column("H"; width = cells(3))];
               cell = (r, j) -> r, show_header = false)
     layout!(t, Region(1, 1, 3, 3))
@@ -917,7 +917,7 @@ end
 end
 
 @testitem "table: cell is called once per visible cell per frame" begin
-    using DualUI
+    using ManyUI
     calls = Tuple{Int,Int}[]
     t = Table(collect(1:1000),
               [Column("A"; width = cells(4)), Column("B"; width = cells(4))];
@@ -937,7 +937,7 @@ end
 end
 
 @testitem "table: Scrollbar{Table} works with ZERO new code in scroll.jl" begin
-    using DualUI
+    using ManyUI
     hits = Ref(0)
     t = Table(collect(1:100), [Column("N"; width = cells(4))];
               cell = (r, j) -> (hits[] += 1; string(r)))
@@ -954,28 +954,28 @@ end
     layout!(bar, Region(1, 1, 1, 11))
 
     hits[] = 0
-    @test DualUI._sb_metrics(bar, 11) === (11, 11, 101, 0)
+    @test ManyUI._sb_metrics(bar, 11) === (11, 11, 101, 0)
     @test hits[] == 0                   # the bar NEVER touches a row
     scroll_to!(t, Offset(0, 90))
-    @test DualUI._sb_metrics(bar, 11)[4] == 90
+    @test ManyUI._sb_metrics(bar, 11)[4] == 90
     @test hits[] == 0
 
     buf = Buffer(1, 11)
     clear!(buf)
     paint!(buf, bar)
     @test hits[] == 0
-    @test occursin(DualUI.SB_THUMB, string(buf))
+    @test occursin(ManyUI.SB_THUMB, string(buf))
     # At the bottom the thumb is pinned to the LAST cell of the track --
     # `thumb_span`'s two verifiable ends, over a `Table`, unchanged.
-    @test buf[1, 11].content == DualUI.SB_THUMB
+    @test buf[1, 11].content == ManyUI.SB_THUMB
 
     # The HORIZONTAL bar reports on the same seam, from `cache_total`.
     h = Scrollbar(t, ScrollAxis.HORIZONTAL)
-    @test DualUI._sb_metrics(h, 6) === (6, 6, 4, 0)
+    @test ManyUI._sb_metrics(h, 6) === (6, 6, 4, 0)
 end
 
 @testitem "table: Scrollpane(Table) is legal and composes" begin
-    using DualUI
+    using ManyUI
     t = Table(collect(1:100), [Column("N"; width = cells(4))];
               cell = (r, j) -> string(r))
     pane = Scrollpane(t)
@@ -995,7 +995,7 @@ end
 end
 
 @testitem "table: the rule spans the content width with one glyph" begin
-    using DualUI
+    using ManyUI
     t = Table([("a", "b")],
               [Column("A"; width = cells(2)), Column("B"; width = cells(2))];
               rule = true, rule_glyph = "=", sep = "|")
@@ -1028,7 +1028,7 @@ end
 end
 
 @testitem "table: selection survives push_row! and delete_row!" begin
-    using DualUI
+    using ManyUI
     t = Table(collect(1:10), [Column("N"; width = cells(4))];
               cell = (r, j) -> string(r), mode = SelectMode.MULTI)
     layout!(t, Region(1, 1, 6, 12))
@@ -1059,7 +1059,7 @@ end
 end
 
 @testitem "table: delete_row! leaves the cursor in range" begin
-    using DualUI
+    using ManyUI
     t = Table(collect(1:3), [Column("N"; width = cells(4))];
               cell = (r, j) -> string(r))
     layout!(t, Region(1, 1, 6, 8))
@@ -1078,7 +1078,7 @@ end
 end
 
 @testitem "table: set_rows! clears the selection and re-seeds the marks" begin
-    using DualUI
+    using ManyUI
     t = Table(["aa", "bb", "wwwwwwww"], [Column("H"; width = AUTO)];
               cell = (r, j) -> r, mode = SelectMode.MULTI,
               show_header = false)
@@ -1110,7 +1110,7 @@ end
 end
 
 @testitem "table: refresh_rows! is the escape hatch for a direct mutation" begin
-    using DualUI
+    using ManyUI
     rows = collect(1:5)
     t = Table(rows, [Column("N"; width = cells(4))];
               cell = (r, j) -> string(r))
@@ -1142,7 +1142,7 @@ end
 end
 
 @testitem "table: set_columns! resizes the grid and re-seeds the marks" begin
-    using DualUI
+    using ManyUI
     t = Table([("alpha", "beta", "gamma")], [Column("A"; width = AUTO)])
     layout!(t, Region(1, 1, 30, 3))
     @test grid_of(t).autos == [5]            # "alpha"
@@ -1159,7 +1159,7 @@ end
     # Re-seeded from the headers AND the sample, exactly as at
     # construction: a column model REPLACED is a column model MEASURED.
     @test g.autos == [5, 4, 0]               # "alpha", "beta", non-AUTO
-    @test DualUI._tc_resolve!(t, 30) == [5, 4, 4]
+    @test ManyUI._tc_resolve!(t, 30) == [5, 4, 4]
     @test g.xs == [0, 6, 11]
 
     # An in-place edit plus `refresh_columns!` is the documented
@@ -1167,11 +1167,11 @@ end
     g.cols[1] = Column("LongerHeader"; width = AUTO)
     refresh_columns!(t)
     @test g.autos[1] == 12
-    @test DualUI._tc_resolve!(t, 30)[1] == 12
+    @test ManyUI._tc_resolve!(t, 30)[1] == 12
 end
 
 @testitem "table: the default cell reads row[j]" begin
-    using DualUI
+    using ManyUI
     # The three shapes a table's rows actually arrive in -- and nothing
     # else, which is exactly what the `cell` keyword is for.
     cols = [Column("A"; width = cells(3)), Column("B"; width = cells(3))]
@@ -1185,11 +1185,11 @@ end
     end
     # `_tc_show` returns a String UNCOPIED, so a String cell allocates
     # nothing to format.
-    @test DualUI._tc_cell_default(("s", 2), 1) === "s"
+    @test ManyUI._tc_cell_default(("s", 2), 1) === "s"
 end
 
 @testitem "table: a data change is a PAINT mark and dirty_root stays put" begin
-    using DualUI
+    using ManyUI
     root = Container()
     t = Table(collect(1:100), [Column("N"; width = cells(4))];
               cell = (r, j) -> string(r))

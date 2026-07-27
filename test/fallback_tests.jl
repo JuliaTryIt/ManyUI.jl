@@ -12,16 +12,16 @@
 # path, and that growing back resumes cleanly.
 
 @testitem "app: suspends below min_size and recovers" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Leaf1 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Leaf1 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         text::String
     end
     Leaf1(t::AbstractString) =
-        Leaf1(DualUI.WidgetNode(type_name = :Leaf1), String(t))
-    DualUI.measure(w::Leaf1, avail::Size) = Size(text_width(w.text), 1)
-    function DualUI.render!(w::Leaf1, buf::AbstractMatrix{Cell})
+        Leaf1(ManyUI.WidgetNode(type_name = :Leaf1), String(t))
+    ManyUI.measure(w::Leaf1, avail::Size) = Size(text_width(w.text), 1)
+    function ManyUI.render!(w::Leaf1, buf::AbstractMatrix{Cell})
         write_text!(buf, 1, 1, w.text)
         nothing
     end
@@ -61,21 +61,21 @@
 end
 
 @testitem "fallback: suspended frames never lay out the root" begin
-    using DualUI
+    using ManyUI
 
     # X2 says SUSPEND standard rendering. Not "paint it anyway and cover
     # it up": the root must not be measured, laid out or painted at all.
-    mutable struct Spy2 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Spy2 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         measured::Ref{Int}
         painted::Ref{Int}
     end
-    Spy2() = Spy2(DualUI.WidgetNode(type_name = :Spy2), Ref(0), Ref(0))
-    function DualUI.measure(w::Spy2, avail::Size)
+    Spy2() = Spy2(ManyUI.WidgetNode(type_name = :Spy2), Ref(0), Ref(0))
+    function ManyUI.measure(w::Spy2, avail::Size)
         w.measured[] += 1
         Size(7, 1)
     end
-    function DualUI.render!(w::Spy2, buf::AbstractMatrix{Cell})
+    function ManyUI.render!(w::Spy2, buf::AbstractMatrix{Cell})
         w.painted[] += 1
         write_text!(buf, 1, 1, "CONTENT")
         nothing
@@ -104,12 +104,12 @@ end
 end
 
 @testitem "fallback: overlay reaches the driver through the diff" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Leaf3 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Leaf3 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Leaf3() = Leaf3(DualUI.WidgetNode(type_name = :Leaf3))
+    Leaf3() = Leaf3(ManyUI.WidgetNode(type_name = :Leaf3))
 
     dr = HeadlessDriver(Size(40, 6))
     ap = App(Leaf3(), dr, config = AppConfig(min_size = Size(20, 5)))
@@ -130,12 +130,12 @@ end
 end
 
 @testitem "fallback: tiny areas take the tree-free painter" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Leaf4 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Leaf4 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Leaf4() = Leaf4(DualUI.WidgetNode(type_name = :Leaf4))
+    Leaf4() = Leaf4(ManyUI.WidgetNode(type_name = :Leaf4))
 
     # Below OVERLAY_MIN_SIZE the layout engine is by definition
     # unusable, so the overlay widget must NOT be driven at all.
@@ -161,12 +161,12 @@ end
 end
 
 @testitem "fallback: should_suspend drives app.suspended on resize" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Leaf5 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Leaf5 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Leaf5() = Leaf5(DualUI.WidgetNode(type_name = :Leaf5))
+    Leaf5() = Leaf5(ManyUI.WidgetNode(type_name = :Leaf5))
 
     mn = Size(20, 5)
     dr = HeadlessDriver(Size(80, 24))
@@ -185,16 +185,16 @@ end
 end
 
 @testitem "fallback: suspension survives the async loop" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Leaf6 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Leaf6 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         text::String
     end
     Leaf6(t::AbstractString) =
-        Leaf6(DualUI.WidgetNode(type_name = :Leaf6), String(t))
-    DualUI.measure(w::Leaf6, avail::Size) = Size(text_width(w.text), 1)
-    function DualUI.render!(w::Leaf6, buf::AbstractMatrix{Cell})
+        Leaf6(ManyUI.WidgetNode(type_name = :Leaf6), String(t))
+    ManyUI.measure(w::Leaf6, avail::Size) = Size(text_width(w.text), 1)
+    function ManyUI.render!(w::Leaf6, buf::AbstractMatrix{Cell})
         write_text!(buf, 1, 1, w.text)
         nothing
     end

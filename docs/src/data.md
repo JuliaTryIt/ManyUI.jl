@@ -1,7 +1,7 @@
 # Data widgets
 
 ```@meta
-CurrentModule = DualUI
+CurrentModule = ManyUI
 ```
 
 `List`, `Table` and `DataTable` display collections. Reach for `List`
@@ -20,7 +20,7 @@ Instead these widgets hold their rows as plain data, override
 [`content_extent`](@ref), and paint only the rows you can actually see.
 
 ```@example data
-using DualUI
+using ManyUI
 
 small = List(["a", "b", "c"])
 big = List(["item $i" for i in 1:100_000])
@@ -43,7 +43,7 @@ A scrollable, focusable list. Items are whatever you like; `format`
 turns one into a string.
 
 ```@example data
-using DualUI
+using ManyUI
 
 l = List(["alpha", "beta", "gamma", "delta"])
 apply_stylesheet!(STYLESHEET_EMPTY, l)
@@ -78,7 +78,7 @@ Columns with headers. Each [`Column`](@ref) carries its caption, width
 and alignment:
 
 ```@example data
-using DualUI
+using ManyUI
 
 rows = [("alice", 55), ("bob", 31), ("carol", 31)]
 cols = [Column("name"; width = cells(6)),
@@ -125,7 +125,7 @@ A `Table` that sorts. It needs a `key` telling it how to extract a
 sortable value from a row and a column index:
 
 ```@example data
-using DualUI
+using ManyUI
 
 rows = [("carol", 31), ("alice", 55), ("bob", 31)]
 cols = [Column("name"; width = cells(6)), Column("age"; width = cells(4))]
@@ -182,7 +182,7 @@ than sliced in half — a halved cluster would corrupt every column to its
 right.
 
 ```@example data
-using DualUI
+using ManyUI
 (truncate_width("漢字テキスト", 5), text_width("漢字"))
 ```
 

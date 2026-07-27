@@ -3,6 +3,6 @@
 The machinery `List`, `Table` and `DataTable` share.
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/tablecore.jl"]
 ```

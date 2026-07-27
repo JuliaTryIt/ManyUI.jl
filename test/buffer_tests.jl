@@ -1,7 +1,7 @@
 # buffer_tests.jl -- tests for src/buffer.jl (E2 grids, S3 wide chars).
 
 @testitem "buffer: Cell is isbits" begin
-    using DualUI
+    using ManyUI
 
     @test isbitstype(Cell)
     @test isbits(CELL_BLANK)
@@ -18,7 +18,7 @@
 end
 
 @testitem "buffer: Cell truncates clusters over 31 bytes" begin
-    using DualUI
+    using ManyUI
 
     long = "\U1F468‍\U1F469‍\U1F467‍\U1F466‍\U1F466"
     @test ncodeunits(long) > 31          # premise of the rule
@@ -35,7 +35,7 @@ end
 end
 
 @testitem "buffer: Base.size returns a Tuple not a Size" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(Size(4, 3))
     @test size(b) === (4, 3)
@@ -55,7 +55,7 @@ end
 end
 
 @testitem "buffer: wide grapheme writes head plus continuation" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(6, 1)
     @test set_cell!(b, 2, 1, "世", STYLE_NONE) == 2
@@ -73,7 +73,7 @@ end
 end
 
 @testitem "buffer: straddling wide grapheme is refused not halved" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(3, 1)
     @test set_cell!(b, 3, 1, "世", STYLE_NONE) == 0
@@ -89,7 +89,7 @@ end
 end
 
 @testitem "buffer: overwriting a head clears its continuation" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(4, 1)
     set_cell!(b, 1, 1, "世", STYLE_NONE)
@@ -102,7 +102,7 @@ end
 end
 
 @testitem "buffer: overwriting a continuation clears its head" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(4, 1)
     set_cell!(b, 1, 1, "世", STYLE_NONE)
@@ -124,7 +124,7 @@ end
 end
 
 @testitem "buffer: writes outside bounds are clipped not thrown" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(3, 2)
     @test set_cell!(b, 0, 1, "a", STYLE_NONE) == 0
@@ -146,7 +146,7 @@ end
 end
 
 @testitem "buffer: BufferView translates and clips" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(10, 5)
     v = view(b, Region(3, 2, 4, 3))
@@ -181,7 +181,7 @@ end
 end
 
 @testitem "buffer: nested view stays two-level" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(10, 5)
     v = view(b, Region(3, 2, 6, 3))
@@ -204,7 +204,7 @@ end
 end
 
 @testitem "buffer: string dump skips continuations" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(4, 2)
     write_text!(b, 1, 1, "世")
@@ -219,7 +219,7 @@ end
 end
 
 @testitem "buffer: write_text! advances by text width" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(10, 1)
     @test write_text!(b, 1, 1, "ab世") == 4
@@ -241,7 +241,7 @@ end
 end
 
 @testitem "buffer: fill_region! clips and blanks split wide glyphs" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(6, 2)
     write_text!(b, 1, 1, "世界")     # 1=世 2=cont 3=界 4=cont
@@ -271,7 +271,7 @@ end
 end
 
 @testitem "buffer: style_region! merges and keeps content" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(4, 1)
     write_text!(b, 1, 1, "a世")
@@ -289,7 +289,7 @@ end
 end
 
 @testitem "buffer: blit! copies clipped at an offset" begin
-    using DualUI
+    using ManyUI
 
     src = Buffer(3, 2)
     write_text!(src, 1, 1, "abc")
@@ -327,7 +327,7 @@ end
 end
 
 @testitem "buffer: clear! fill! copy and resize_buffer" begin
-    using DualUI
+    using ManyUI
 
     b = Buffer(3, 2)
     write_text!(b, 1, 1, "ab")

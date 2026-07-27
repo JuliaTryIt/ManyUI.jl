@@ -8,7 +8,7 @@ swappable *without editing the call*.
 [`launch`](@ref) runs an app on any target:
 
 ```julia
-using DualUI
+using ManyUI
 
 ui() = Container(Label("hello"))
 
@@ -16,11 +16,11 @@ launch(ui)                                   # this terminal
 launch(ui; backend = HeadlessBackend())      # nothing attached
 ```
 
-With `DualUIWeb` loaded, the same app runs in a browser and the *only*
+With `ManyUIWeb` loaded, the same app runs in a browser and the *only*
 thing that changes is the backend argument:
 
 ```julia
-using DualUI, DualUIWeb
+using ManyUI, ManyUIWeb
 
 launch(ui; backend = WebBackend(port = 8000))
 ```
@@ -74,8 +74,8 @@ line and a `close` cannot race the loop into existence.
 Two things, and nothing else:
 
 ```julia
-struct MyBackend <: DualUI.Backend end
-DualUI.make_driver(::MyBackend) = MyDriver()
+struct MyBackend <: ManyUI.Backend end
+ManyUI.make_driver(::MyBackend) = MyDriver()
 ```
 
 That is the whole contract for a target with one driver. There is no
@@ -85,9 +85,9 @@ writing to somebody's terminal.
 
 A backend whose target **multiplexes** — one app per client, as the web
 does — has no single driver to make, so it defines its own `launch` method
-instead and never implements `make_driver`. `DualUIWeb.WebBackend` is the
+instead and never implements `make_driver`. `ManyUIWeb.WebBackend` is the
 worked example, and it lives in another package entirely: a backend joins
-by dispatch, with no cooperation from DualUI beyond the abstract type.
+by dispatch, with no cooperation from ManyUI beyond the abstract type.
 
 ## The old entry points still work
 

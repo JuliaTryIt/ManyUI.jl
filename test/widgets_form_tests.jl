@@ -1,4 +1,4 @@
-# widgets_form_tests.jl -- @testitem blocks for DualUI/src/widgets/form.jl.
+# widgets_form_tests.jl -- @testitem blocks for ManyUI/src/widgets/form.jl.
 #
 # A Form is a Container that can be submitted and read. These tests pin
 # exactly the three things it adds -- `submit!`, the `form_value`
@@ -7,7 +7,7 @@
 # never traps it).
 
 @testitem "form: form_value reads text fields through the protocol" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("Alice")
     ta = TextArea("hi\nthere")
     @test form_value(ti) == "Alice"
@@ -17,7 +17,7 @@
 end
 
 @testitem "form: form_value on a valueless widget throws" begin
-    using DualUI
+    using ManyUI
     # A `Label` has no value. The default MUST be a MethodError, never a
     # silent `nothing`, or a form SAVES A BLANK for a field the author
     # meant to read.
@@ -26,7 +26,7 @@ end
 end
 
 @testitem "form: add_field! names, mounts and keeps order" begin
-    using DualUI
+    using ManyUI
     f = Form()
     a = TextInput("a")
     b = TextInput("b")
@@ -43,7 +43,7 @@ end
 end
 
 @testitem "form: form_values reads a form of MIXED field types" begin
-    using DualUI
+    using ManyUI
     f = Form()
     add_field!(f, :name, TextInput("Alice"))
     add_field!(f, :bio, TextArea("hi\nthere"))
@@ -67,7 +67,7 @@ end
 end
 
 @testitem "form: an UNNAMED field stays out of form_values" begin
-    using DualUI
+    using ManyUI
     f = Form()
     add_field!(f, :name, TextInput("Alice"))
     save = Button("Save", identity)
@@ -84,7 +84,7 @@ end
 end
 
 @testitem "form: submit! validates THEN submits and reports true" begin
-    using DualUI
+    using ManyUI
     order = String[]
     validated = Ref(false)
     f = Form(_ -> push!(order, "submit");
@@ -97,7 +97,7 @@ end
 end
 
 @testitem "form: a validation failure VETOES the submit" begin
-    using DualUI
+    using ManyUI
     submitted = Ref(0)
     f = Form(_ -> (submitted[] += 1; nothing);
              on_validate = _ -> false)      # the veto
@@ -107,7 +107,7 @@ end
 end
 
 @testitem "form: the on_validate closure sees the form and its values" begin
-    using DualUI
+    using ManyUI
     saved = Ref{Any}(nothing)
     f = Form(g -> (saved[] = form_values(g); nothing);
              on_validate = g -> form_value(field(g, :name)) != "")
@@ -125,7 +125,7 @@ end
 end
 
 @testitem "form: focus traversal reaches every field IN ORDER" begin
-    using DualUI
+    using ManyUI
     f = Form()
     n = TextInput("n")
     r = RadioGroup(["a", "b"])
@@ -140,7 +140,7 @@ end
 end
 
 @testitem "form: a hidden field drops OUT of the tab order" begin
-    using DualUI
+    using ManyUI
     # Browser-lesson 3, inverted: the way to take a field out of TAB is
     # `set_visible!`/`focusable = false`, not a Form feature. A hidden
     # field's node leaves `focusable_widgets` because it uses
@@ -163,7 +163,7 @@ end
 end
 
 @testitem "form: does NOT trap the TAB key -- focus advances through it" begin
-    using DualUI
+    using ManyUI
     # A Form defines no `on_event!`, so TAB is never consumed inside it.
     # End to end: a TAB delivered to a focused field leaves it unconsumed,
     # reaches `app.bindings`, and `:focus_next` advances to the next
@@ -181,16 +181,16 @@ end
 
     focus!(ap, a)
     @test focused(ap) === a
-    DualUI.handle!(ap, parse(KeyEvent, "tab"))
+    ManyUI.handle!(ap, parse(KeyEvent, "tab"))
     @test focused(ap) === b                 # TAB reached :focus_next
-    DualUI.handle!(ap, parse(KeyEvent, "tab"))
+    ManyUI.handle!(ap, parse(KeyEvent, "tab"))
     @test focused(ap) === a                 # wraps -- still not trapped
-    DualUI.handle!(ap, parse(KeyEvent, "shift+tab"))
+    ManyUI.handle!(ap, parse(KeyEvent, "shift+tab"))
     @test focused(ap) === b                 # BACK_TAB works too
 end
 
 @testitem "form: TAB delivered to a field inside a form is NOT consumed" begin
-    using DualUI
+    using ManyUI
     # The mechanism behind the App-level test: no widget on the path from
     # the Form down to the focused field consumes TAB.
     f = Form()
@@ -214,7 +214,7 @@ end
 end
 
 @testitem "form: it lays its fields out and PAINTS them -- assert cells" begin
-    using DualUI
+    using ManyUI
     # Browser-lesson 4: building a Form and asserting no throw proves
     # nothing. Paint into a headless Buffer and assert the CELLS the
     # fields actually put on screen.
@@ -238,7 +238,7 @@ end
 end
 
 @testitem "form: reading a field's value after a real key press" begin
-    using DualUI
+    using ManyUI
     # The value protocol end to end: type into a field, read it back
     # through `form_values`. `key(Key.SPACE)` toggles a Checkbox field,
     # so its value flips -- both space forms, per browser-lesson 1.

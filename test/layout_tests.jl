@@ -2,7 +2,7 @@
 # E4 (full reflow on resize). Written BEFORE src/layout.jl per CLAUDE.md.
 
 @testitem "layout: flex_distribute sums exactly to available" begin
-    using DualUI
+    using ManyUI
     g3 = Float32[1, 1, 1]
     s3 = Float32[1, 1, 1]
     r = flex_distribute([0, 0, 0], g3, s3, 10)
@@ -21,7 +21,7 @@
 end
 
 @testitem "layout: flex_distribute largest remainder first" begin
-    using DualUI
+    using ManyUI
     r = flex_distribute([0, 0, 0], Float32[1, 2, 3], Float32[1, 1, 1], 10)
     # exact shares 1.667 / 3.333 / 5.0 -> floors 1/3/5 = 9, the single
     # leftover cell goes to the LARGEST remainder (index 1), not to the
@@ -45,7 +45,7 @@ end
 end
 
 @testitem "layout: flex_distribute ties go to lower index" begin
-    using DualUI
+    using ManyUI
     @test flex_distribute([0, 0], Float32[1, 1], Float32[1, 1], 5) ==
           [3, 2]
     @test flex_distribute([0, 0, 0, 0], Float32[1, 1, 1, 1],
@@ -53,7 +53,7 @@ end
 end
 
 @testitem "layout: flex_distribute shrinks on overflow" begin
-    using DualUI
+    using ManyUI
     z = Float32[0, 0]
     @test flex_distribute([10, 10], z, Float32[1, 1], 10) == [5, 5]
     # Shrink is weighted by shrink factor * base size (CSS scaled
@@ -71,7 +71,7 @@ end
 end
 
 @testitem "layout: flex_distribute is pure" begin
-    using DualUI
+    using ManyUI
     base = [10, 20]
     g = Float32[1, 1]
     s = Float32[1, 1]
@@ -83,7 +83,7 @@ end
 end
 
 @testitem "layout: justify_offsets for all six modes" begin
-    using DualUI
+    using ManyUI
     sizes = [2, 2]
     # available 10, content 4, gap 0 -> free 6
     @test justify_offsets(sizes, Justify.START, 0, 10) == [0, 2]
@@ -101,7 +101,7 @@ end
 end
 
 @testitem "layout: justify_offsets degrades to START on overflow" begin
-    using DualUI
+    using ManyUI
     # free space is negative; every mode clamps it to zero so no item is
     # ever placed at a negative offset.
     for j in (Justify.START, Justify.CENTER, Justify.END,
@@ -112,13 +112,13 @@ end
 end
 
 @testitem "layout: cross_align STRETCH fills" begin
-    using DualUI
+    using ManyUI
     @test cross_align(3, Align.STRETCH, 10) == (0, 10)
     @test cross_align(0, Align.STRETCH, 24) == (0, 24)
 end
 
 @testitem "layout: cross_align START CENTER END" begin
-    using DualUI
+    using ManyUI
     @test cross_align(3, Align.START, 10) == (0, 3)
     @test cross_align(3, Align.CENTER, 10) == (3, 3)
     @test cross_align(3, Align.END, 10) == (7, 3)
@@ -128,7 +128,7 @@ end
 end
 
 @testitem "layout: box model four regions nest" begin
-    using DualUI
+    using ManyUI
     mutable struct NestBox <: Widget
         node::WidgetNode
     end
@@ -150,7 +150,7 @@ end
 end
 
 @testitem "layout: margin border padding shrink content on 4 sides" begin
-    using DualUI
+    using ManyUI
     mutable struct SideBox <: Widget
         node::WidgetNode
     end
@@ -188,7 +188,7 @@ end
 end
 
 @testitem "layout: compute_layout is pure" begin
-    using DualUI
+    using ManyUI
     mutable struct PureBox <: Widget
         node::WidgetNode
     end
@@ -213,7 +213,7 @@ end
 end
 
 @testitem "layout: compute_layout omits Display.NONE subtrees" begin
-    using DualUI
+    using ManyUI
     mutable struct NoneBox <: Widget
         node::WidgetNode
     end
@@ -236,7 +236,7 @@ end
 end
 
 @testitem "layout: compute_layout omits invisible subtrees" begin
-    using DualUI
+    using ManyUI
     mutable struct HidBox <: Widget
         node::WidgetNode
     end
@@ -258,7 +258,7 @@ end
 end
 
 @testitem "layout: percent resolves against parent content box" begin
-    using DualUI
+    using ManyUI
     mutable struct PctBox <: Widget
         node::WidgetNode
     end
@@ -278,7 +278,7 @@ end
 end
 
 @testitem "layout: AUTO calls measure" begin
-    using DualUI
+    using ManyUI
     mutable struct MeasBox <: Widget
         node::WidgetNode
     end
@@ -287,7 +287,7 @@ end
         w::Int
         h::Int
     end
-    DualUI.measure(l::MeasLeaf, ::Size) = Size(l.w, l.h)
+    ManyUI.measure(l::MeasLeaf, ::Size) = Size(l.w, l.h)
     root = MeasBox(WidgetNode(; type_name = :MeasBox))
     leaf = MeasLeaf(WidgetNode(; type_name = :MeasLeaf), 7, 3)
     mount!(root, leaf)
@@ -305,7 +305,7 @@ end
 end
 
 @testitem "layout: fixed and fractional siblings fill the row exactly" begin
-    using DualUI
+    using ManyUI
     mutable struct MixBox <: Widget
         node::WidgetNode
     end
@@ -332,7 +332,7 @@ end
 end
 
 @testitem "layout: fractional split never loses a column" begin
-    using DualUI
+    using ManyUI
     mutable struct FrBox <: Widget
         node::WidgetNode
     end
@@ -359,7 +359,7 @@ end
 end
 
 @testitem "layout: grow distributes the residual by weight" begin
-    using DualUI
+    using ManyUI
     mutable struct GrowBox <: Widget
         node::WidgetNode
     end
@@ -378,7 +378,7 @@ end
 end
 
 @testitem "layout: min and max clamp the resolved size" begin
-    using DualUI
+    using ManyUI
     mutable struct ClampBox <: Widget
         node::WidgetNode
     end
@@ -402,7 +402,7 @@ end
 end
 
 @testitem "layout: cross axis aligns and stretches" begin
-    using DualUI
+    using ManyUI
     mutable struct CrossBox <: Widget
         node::WidgetNode
     end
@@ -425,7 +425,7 @@ end
 end
 
 @testitem "layout: STRETCH does not override a definite cross size" begin
-    using DualUI
+    using ManyUI
     mutable struct DefBox <: Widget
         node::WidgetNode
     end
@@ -441,7 +441,7 @@ end
 end
 
 @testitem "layout: gap separates siblings without eating a column" begin
-    using DualUI
+    using ManyUI
     mutable struct GapBox <: Widget
         node::WidgetNode
     end
@@ -464,7 +464,7 @@ end
 end
 
 @testitem "layout: COLUMN is the main axis for BLOCK display" begin
-    using DualUI
+    using ManyUI
     mutable struct ColBox <: Widget
         node::WidgetNode
     end
@@ -482,7 +482,7 @@ end
 end
 
 @testitem "layout: reverse direction mirrors the main axis" begin
-    using DualUI
+    using ManyUI
     mutable struct RevBox <: Widget
         node::WidgetNode
     end
@@ -501,7 +501,7 @@ end
 end
 
 @testitem "layout: nested three levels deep computes exact regions" begin
-    using DualUI
+    using ManyUI
     mutable struct DeepBox <: Widget
         node::WidgetNode
     end
@@ -544,7 +544,7 @@ end
 end
 
 @testitem "layout: overflow leaves regions unclipped" begin
-    using DualUI
+    using ManyUI
     mutable struct OvBox <: Widget
         node::WidgetNode
     end
@@ -564,7 +564,7 @@ end
 end
 
 @testitem "layout: layout! is unconditional and full" begin
-    using DualUI
+    using ManyUI
     mutable struct FullBox <: Widget
         node::WidgetNode
     end
@@ -593,7 +593,7 @@ end
 end
 
 @testitem "layout: resize reflows the entire tree" begin
-    using DualUI
+    using ManyUI
     mutable struct RszBox <: Widget
         node::WidgetNode
     end
@@ -641,7 +641,7 @@ end
 end
 
 @testitem "layout: apply_layout! writes boxes and clears LAYOUT" begin
-    using DualUI
+    using ManyUI
     mutable struct ApplyBox <: Widget
         node::WidgetNode
     end
@@ -671,7 +671,7 @@ end
 end
 
 @testitem "layout: relayout! is a no-op on a clean tree" begin
-    using DualUI
+    using ManyUI
     mutable struct CleanBox <: Widget
         node::WidgetNode
     end
@@ -694,7 +694,7 @@ end
 end
 
 @testitem "layout: relayout! touches only the dirty subtree" begin
-    using DualUI
+    using ManyUI
     mutable struct SubBox <: Widget
         node::WidgetNode
     end
@@ -744,7 +744,7 @@ end
 end
 
 @testitem "layout: relayout! falls back to layout! at the root" begin
-    using DualUI
+    using ManyUI
     mutable struct RootBox <: Widget
         node::WidgetNode
     end
@@ -769,7 +769,7 @@ end
 end
 
 @testitem "layout: measure defaults to the union of children" begin
-    using DualUI
+    using ManyUI
     mutable struct UnionBox <: Widget
         node::WidgetNode
     end
@@ -778,7 +778,7 @@ end
         w::Int
         h::Int
     end
-    DualUI.measure(l::UnionLeaf, ::Size) = Size(l.w, l.h)
+    ManyUI.measure(l::UnionLeaf, ::Size) = Size(l.w, l.h)
     ub() = UnionBox(WidgetNode(; type_name = :UnionBox))
     # a leaf with no children measures zero
     @test measure(ub(), Size(40, 10)) == Size(0, 0)

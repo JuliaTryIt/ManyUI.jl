@@ -1,6 +1,6 @@
 # widgets_dropdown_tests.jl -- @testitem tests for src/widgets/dropdown.jl.
 #
-# Each block is self-contained and starts `using DualUI`. No test needs a
+# Each block is self-contained and starts `using ManyUI`. No test needs a
 # tty and none sleeps. Cell-level assertions PAINT into a headless Buffer
 # (or the App's back buffer) and read the CELLS -- a test that only
 # asserts "it did not throw" proves nothing.
@@ -10,7 +10,7 @@
 # tests drive that real API.
 
 @testitem "dropdown: closed, not greedy, panel unparented" begin
-    using DualUI
+    using ManyUI
     dd = DropDown(["Small", "Medium", "Large"])
     @test !is_open(dd)
     @test selected(dd) == 0
@@ -22,31 +22,31 @@
     # measure sizes to the WIDEST option plus the arrow, NEVER `avail`:
     # a greedy measure would shrink a Label beside it to zero rows.
     m = measure(dd, Size(80, 24))
-    @test m == Size(text_width("Medium") + DualUI.DD_ARROW_W, 1)
+    @test m == Size(text_width("Medium") + ManyUI.DD_ARROW_W, 1)
     @test m != Size(80, 24)
 
     # The panel is NOT a child of the DropDown and NOT in the tab order;
     # the inner list is machinery, not a tab stop.
     @test isempty(children(dd))
     @test length(focusable_widgets(dd)) == 1
-    @test !DualUI.node(dd.panel.list).focusable
+    @test !ManyUI.node(dd.panel.list).focusable
     # The knot: panel points back at its owner, and it is UNPARENTED so
     # `open_popup!` will accept it as a second root.
     @test dd.panel.owner === dd
-    @test DualUI.parent(dd.panel) === nothing
+    @test ManyUI.parent(dd.panel) === nothing
 end
 
 @testitem "dropdown: DD_CLOSED and DD_OPEN are each width 1" begin
-    using DualUI
+    using ManyUI
     # This is what licenses `open`'s PAINT reactivity: the arrow flips a
     # single cell and can never move the box.
-    @test text_width(DualUI.DD_CLOSED) == 1
-    @test text_width(DualUI.DD_OPEN) == 1
-    @test DualUI.DD_ARROW_W == 2
+    @test text_width(ManyUI.DD_CLOSED) == 1
+    @test text_width(ManyUI.DD_OPEN) == 1
+    @test ManyUI.DD_ARROW_W == 2
 end
 
 @testitem "dropdown: the closed head paints caption then arrow" begin
-    using DualUI
+    using ManyUI
     dd = DropDown(["Small", "Medium", "Large"]; placeholder = "pick")
     apply_stylesheet!(STYLESHEET_EMPTY, dd)
     layout!(dd, Region(1, 1, 8, 1))
@@ -57,16 +57,16 @@ end
     @test string(buf) == "pick   v"
 
     # A committed selection replaces the placeholder; the arrow stays.
-    @test DualUI._dd_select!(dd, 2)
+    @test ManyUI._dd_select!(dd, 2)
     clear!(buf)
     render!(dd, buf)
     @test string(buf) == "Medium v"
 end
 
 @testitem "dropdown: an empty option list paints an arrow and cannot open" begin
-    using DualUI
+    using ManyUI
     dd = DropDown(String[])
-    @test measure(dd, Size(20, 4)) == Size(DualUI.DD_ARROW_W, 1)
+    @test measure(dd, Size(20, 4)) == Size(ManyUI.DD_ARROW_W, 1)
     apply_stylesheet!(STYLESHEET_EMPTY, dd)
     layout!(dd, Region(1, 1, 2, 1))
     buf = Buffer(2, 1)
@@ -79,7 +79,7 @@ end
 end
 
 @testitem "dropdown: closed UP/DOWN cycle the selection, fire on_change" begin
-    using DualUI
+    using ManyUI
     hits = Int[]
     dd = DropDown(["a", "b", "c"], w -> push!(hits, selected(w)))
     key(s) = begin
@@ -102,7 +102,7 @@ end
 end
 
 @testitem "dropdown: closed SPACE is Key.SPACE and opens the list" begin
-    using DualUI
+    using ManyUI
     # browser-lesson 1: byte 0x20 is Key.SPACE, NEVER Key.CHAR(' ').
     dd = DropDown(["x", "y", "z"])
     ap = App(dd, HeadlessDriver(Size(20, 10)))
@@ -114,19 +114,19 @@ end
     on_event!(dd, d)
     @test d.consumed
     @test is_open(dd)
-    @test DualUI.popup_of(ap) !== nothing
-    @test DualUI.popup_of(ap).owner === dd
+    @test ManyUI.popup_of(ap) !== nothing
+    @test ManyUI.popup_of(ap).owner === dd
 end
 
 @testitem "dropdown: a LEFT click opens the list, painted OVER the tree" begin
-    using DualUI
+    using ManyUI
     dd = DropDown(["Small", "Medium", "Large"])
     marker = List(fill("XXXXXXXX", 9))          # fills every row below
     root = Container(dd, marker)
-    DualUI._sp_box!(root, DualUI.BoxPatch(; display = Display.FLEX,
+    ManyUI._sp_box!(root, ManyUI.BoxPatch(; display = Display.FLEX,
                                           direction = Direction.COLUMN))
-    DualUI._sp_box!(dd, DualUI.BoxPatch(; shrink = 0f0, grow = 0f0))
-    DualUI._sp_box!(marker, DualUI.BoxPatch(; grow = 1f0))
+    ManyUI._sp_box!(dd, ManyUI.BoxPatch(; shrink = 0f0, grow = 0f0))
+    ManyUI._sp_box!(marker, ManyUI.BoxPatch(; grow = 1f0))
     ap = App(root, HeadlessDriver(Size(24, 8)))
     frame!(ap)
     below = split(string(ap.back), '\n')
@@ -148,7 +148,7 @@ end
 end
 
 @testitem "dropdown: keyboard DOWN highlights, ENTER commits and closes" begin
-    using DualUI
+    using ManyUI
     hits = Int[]
     dd = DropDown(["Small", "Medium", "Large"],
                   w -> push!(hits, selected(w)))
@@ -159,19 +159,19 @@ end
 
     @test key("enter")           # closed ENTER opens
     @test is_open(dd)
-    @test DualUI.row_cursor(dd.panel.list) == 1   # cursor seeded at 1
+    @test ManyUI.row_cursor(dd.panel.list) == 1   # cursor seeded at 1
     @test key("down")            # highlight -> 2
-    @test DualUI.row_cursor(dd.panel.list) == 2
+    @test ManyUI.row_cursor(dd.panel.list) == 2
     @test selected(dd) == 0      # NOT committed yet
     @test key("enter")           # commit the highlight
     @test !is_open(dd)
     @test selected(dd) == 2
     @test hits == [2]
-    @test DualUI.popup_of(ap) === nothing
+    @test ManyUI.popup_of(ap) === nothing
 end
 
 @testitem "dropdown: open SPACE commits (Key.SPACE)" begin
-    using DualUI
+    using ManyUI
     dd = DropDown(["a", "b", "c"])
     ap = App(Container(dd), HeadlessDriver(Size(20, 10)))
     frame!(ap)
@@ -187,7 +187,7 @@ end
 end
 
 @testitem "dropdown: ESCAPE closes WITHOUT changing the selection" begin
-    using DualUI
+    using ManyUI
     dd = DropDown(["Small", "Medium", "Large"])
     ap = App(Container(dd), HeadlessDriver(Size(20, 12)))
     frame!(ap)
@@ -201,18 +201,18 @@ end
 
     # reopen, browse away, ESCAPE: selection is KEPT, highlight abandoned.
     set_open!(dd, true)
-    @test DualUI.row_cursor(dd.panel.list) == 2   # seeded at committed
+    @test ManyUI.row_cursor(dd.panel.list) == 2   # seeded at committed
     key("down")                  # highlight 3
-    @test DualUI.row_cursor(dd.panel.list) == 3
+    @test ManyUI.row_cursor(dd.panel.list) == 3
     @test key("escape")
     @test !is_open(dd)
     @test selected(dd) == 2      # UNCHANGED
     # click-away/escape revert the browse cursor to the committed row.
-    @test DualUI.row_cursor(dd.panel.list) == 2
+    @test ManyUI.row_cursor(dd.panel.list) == 2
 end
 
 @testitem "dropdown: a row click commits and closes" begin
-    using DualUI
+    using ManyUI
     hits = Int[]
     dd = DropDown(["Small", "Medium", "Large"],
                   w -> push!(hits, selected(w)))
@@ -220,9 +220,9 @@ end
     frame!(ap)
     set_open!(dd, true)
     frame!(ap)                   # lay the popup out so hit-test works
-    p = DualUI.popup_of(ap)
+    p = ManyUI.popup_of(ap)
     @test p !== nothing
-    r = DualUI.painted_region(p.content)
+    r = ManyUI.painted_region(p.content)
     # click the SECOND visible row inside the border (row r.y + 2).
     handle!(ap, MouseEvent(MouseAction.PRESS, MouseButton.LEFT,
                            r.x + 1, r.y + 2, MOD_NONE))
@@ -232,25 +232,25 @@ end
 end
 
 @testitem "dropdown: a press OUTSIDE closes it and is SWALLOWED" begin
-    using DualUI
+    using ManyUI
     clicks = Ref(0)
     dd = DropDown(["Small", "Medium", "Large"])
     btn = Button("go", _ -> clicks[] += 1)
     root = Container(dd, btn)
-    DualUI._sp_box!(root, DualUI.BoxPatch(; display = Display.FLEX,
+    ManyUI._sp_box!(root, ManyUI.BoxPatch(; display = Display.FLEX,
                                           direction = Direction.COLUMN))
-    DualUI._sp_box!(dd, DualUI.BoxPatch(; shrink = 0f0, grow = 0f0))
+    ManyUI._sp_box!(dd, ManyUI.BoxPatch(; shrink = 0f0, grow = 0f0))
     # push the button to the very bottom, clear of the popup.
-    DualUI._sp_box!(btn, DualUI.BoxPatch(; grow = 1f0))
+    ManyUI._sp_box!(btn, ManyUI.BoxPatch(; grow = 1f0))
     ap = App(root, HeadlessDriver(Size(24, 12)))
     frame!(ap)
     set_open!(dd, true)
     frame!(ap)
-    p = DualUI.popup_of(ap)
-    br = DualUI.painted_region(btn)
+    p = ManyUI.popup_of(ap)
+    br = ManyUI.painted_region(btn)
     # a cell on the button, BELOW the popup: outside the list.
-    ex, ey = br.x, DualUI.bottom(br)
-    @test !(DualUI.Offset(ex, ey) in DualUI.painted_region(p.content))
+    ex, ey = br.x, ManyUI.bottom(br)
+    @test !(ManyUI.Offset(ex, ey) in ManyUI.painted_region(p.content))
     handle!(ap, MouseEvent(MouseAction.PRESS, MouseButton.LEFT,
                            ex, ey, MOD_NONE))
     @test !is_open(dd)           # the press closed it
@@ -262,7 +262,7 @@ end
 end
 
 @testitem "dropdown: a wheel notch over the open list does NOT dismiss" begin
-    using DualUI
+    using ManyUI
     # browser-lesson: a wheel notch is MouseAction.PRESS with a WHEEL_*
     # button; `_popup_dismiss!` tests `is_scroll` FIRST, so scrolling
     # does not close the list.
@@ -277,36 +277,36 @@ end
 end
 
 @testitem "dropdown: near the BOTTOM edge the list flips ABOVE the head" begin
-    using DualUI
+    using ManyUI
     dd = DropDown(["Small", "Medium", "Large"])
     spacer = List(fill("....", 20))
     root = Container(spacer, dd)   # dd is the LAST row
-    DualUI._sp_box!(root, DualUI.BoxPatch(; display = Display.FLEX,
+    ManyUI._sp_box!(root, ManyUI.BoxPatch(; display = Display.FLEX,
                                           direction = Direction.COLUMN))
-    DualUI._sp_box!(spacer, DualUI.BoxPatch(; grow = 1f0))
-    DualUI._sp_box!(dd, DualUI.BoxPatch(; shrink = 0f0, grow = 0f0))
+    ManyUI._sp_box!(spacer, ManyUI.BoxPatch(; grow = 1f0))
+    ManyUI._sp_box!(dd, ManyUI.BoxPatch(; shrink = 0f0, grow = 0f0))
     ap = App(root, HeadlessDriver(Size(24, 8)))
     frame!(ap)
-    hr = DualUI.region(dd)
+    hr = ManyUI.region(dd)
     @test hr.y == 8               # head on the last screen row
     set_open!(dd, true)
     frame!(ap)
-    p = DualUI.popup_of(ap)
-    pr = DualUI.painted_region(p.content)
+    p = ManyUI.popup_of(ap)
+    pr = ManyUI.painted_region(p.content)
     # BELOW did not fit, so the popup flips ABOVE: it ends above the head
     # and stays on screen.
-    @test DualUI.bottom(pr) < hr.y
+    @test ManyUI.bottom(pr) < hr.y
     @test pr.y >= 1
     ls = split(string(ap.back), '\n')
     @test occursin("Small", join(ls[1:7], "\n"))
 end
 
 @testitem "dropdown: opening the second dropdown closes the first" begin
-    using DualUI
+    using ManyUI
     dd1 = DropDown(["a", "b"])
     dd2 = DropDown(["c", "d"])
     root = Container(dd1, dd2)
-    DualUI._sp_box!(root, DualUI.BoxPatch(; display = Display.FLEX,
+    ManyUI._sp_box!(root, ManyUI.BoxPatch(; display = Display.FLEX,
                                           direction = Direction.COLUMN))
     ap = App(root, HeadlessDriver(Size(24, 12)))
     frame!(ap)
@@ -316,13 +316,13 @@ end
     @test set_open!(dd2, true)
     @test is_open(dd2)
     @test !is_open(dd1)
-    @test DualUI.popup_of(ap).owner === dd2
+    @test ManyUI.popup_of(ap).owner === dd2
 end
 
 @testitem "dropdown: on_blur and on_unmount close the popup" begin
-    using DualUI
+    using ManyUI
     dd = DropDown(["a", "b", "c"])
-    other = Button("x", DualUI._tc_noop)
+    other = Button("x", ManyUI._tc_noop)
     root = Container(dd, other)
     ap = App(root, HeadlessDriver(Size(24, 10)))
     frame!(ap)
@@ -330,24 +330,24 @@ end
     set_open!(dd, true)
     @test is_open(dd)
     # moving focus away blurs the owner, which closes its popup.
-    DualUI.focus!(ap, other)
+    ManyUI.focus!(ap, other)
     @test !is_open(dd)
-    @test DualUI.popup_of(ap) === nothing
+    @test ManyUI.popup_of(ap) === nothing
 
     # and unmounting a still-open dropdown closes it, never leaks it.
     set_open!(dd, true)
     @test is_open(dd)
-    DualUI.unmount!(dd)
+    ManyUI.unmount!(dd)
     @test !is_open(dd)
-    @test DualUI.popup_of(ap) === nothing
+    @test ManyUI.popup_of(ap) === nothing
 end
 
 @testitem "dropdown: set_items! closes, clears the selection, resizes" begin
-    using DualUI
+    using ManyUI
     dd = DropDown(["Small", "Medium", "Large"])
     ap = App(Container(dd), HeadlessDriver(Size(20, 10)))
     frame!(ap)
-    @test DualUI._dd_select!(dd, 3)
+    @test ManyUI._dd_select!(dd, 3)
     @test selected(dd) == 3
     set_open!(dd, true)
     @test is_open(dd)
@@ -358,11 +358,11 @@ end
     @test options(dd) == ["Tiny", "Enormous"]
     # measure now reflects the new widest option.
     @test measure(dd, Size(80, 24)) ==
-          Size(text_width("Enormous") + DualUI.DD_ARROW_W, 1)
+          Size(text_width("Enormous") + ManyUI.DD_ARROW_W, 1)
 end
 
 @testitem "dropdown: TAB is left unconsumed so the tab order survives" begin
-    using DualUI
+    using ManyUI
     dd = DropDown(["a", "b", "c"])
     ap = App(Container(dd), HeadlessDriver(Size(24, 10)))
     frame!(ap)
@@ -380,13 +380,13 @@ end
 end
 
 @testitem "dropdown: the head keeps focus while open (not a focus layer)" begin
-    using DualUI
+    using ManyUI
     dd = DropDown(["a", "b", "c"])
     ap = App(Container(dd), HeadlessDriver(Size(24, 10)))
     frame!(ap)
     set_open!(dd, true)
     # the popup content is UNPARENTED and NOT focusable: the DropDown
     # keeps focus and forwards, exactly as an HTML <select> does.
-    @test DualUI.focused(ap) === dd
+    @test ManyUI.focused(ap) === dd
     @test length(focusable_widgets(ap.root)) == 1
 end

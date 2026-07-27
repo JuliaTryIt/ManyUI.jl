@@ -1,10 +1,10 @@
 # Enumerations
 
 ```@meta
-CurrentModule = DualUI
+CurrentModule = ManyUI
 ```
 
-Every finite value set in DualUI is a module-scoped enum: a module
+Every finite value set in ManyUI is a module-scoped enum: a module
 holding an `@enum T` with `SCREAMING_SNAKE_CASE` values. They
 tab-complete (`ColorDepth.<TAB>`), discriminate by type
 (`d isa ColorDepth.T`), and keep their value names out of the package

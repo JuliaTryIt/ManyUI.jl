@@ -4,7 +4,7 @@
 # traceability matrix resolves E2 to "diff: round-trip apply! law".
 
 @testitem "diff: identical buffers produce an empty patch" begin
-    using DualUI
+    using ManyUI
 
     a = Buffer(20, 5)
     write_text!(a, 3, 2, "hello")
@@ -25,7 +25,7 @@
 end
 
 @testitem "diff: round-trip apply! law" begin
-    using DualUI
+    using ManyUI
 
     # E2, the strongest available test: whatever `diff` emits must be
     # exactly enough to turn `a` into `b`. If the diff drops a cell the
@@ -78,7 +78,7 @@ end
 end
 
 @testitem "diff: gap coalesces near runs" begin
-    using DualUI
+    using ManyUI
 
     a = Buffer(20, 1)
     b = copy(a)
@@ -118,7 +118,7 @@ end
 end
 
 @testitem "diff: size mismatch produces a full patch" begin
-    using DualUI
+    using ManyUI
 
     a = Buffer(10, 3)
     write_text!(a, 1, 1, "old")
@@ -152,7 +152,7 @@ end
 end
 
 @testitem "diff: span never starts on a continuation" begin
-    using DualUI
+    using ManyUI
 
     # S3. A width-2 glyph occupies a head plus a CELL_CONT. If a span
     # could begin on the CONT, the encoder would place the cursor
@@ -203,7 +203,7 @@ end
 end
 
 @testitem "diff: is pure and mutates neither argument" begin
-    using DualUI
+    using ManyUI
 
     a = Buffer(10, 3)
     write_text!(a, 1, 1, "before")

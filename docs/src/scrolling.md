@@ -1,10 +1,10 @@
 # Scrolling
 
 ```@meta
-CurrentModule = DualUI
+CurrentModule = ManyUI
 ```
 
-Scrolling in DualUI is not a widget. Every `WidgetNode` carries a
+Scrolling in ManyUI is not a widget. Every `WidgetNode` carries a
 `scroll::Offset`, and `paint!` accumulates it down the tree and applies
 it to that node's **children**. `compute_layout` never reads the field.
 
@@ -23,7 +23,7 @@ Here is a twelve-line document in an eight-row window, painted through a
 `HeadlessDriver` — no tty, no terminal, the full pipeline:
 
 ```@example scrolling
-using DualUI
+using ManyUI
 
 log = Container([Static("line $i"; id = Symbol("line$i")) for i in 1:12]...)
 pane = Scrollpane(log; id = :log)
@@ -101,7 +101,7 @@ lands on what the user can actually see rather than on whatever occupies
 that widget's unscrolled slot.
 
 ```@example scrolling
-DualUI.id(hit_test(pane, 1, 1))
+ManyUI.id(hit_test(pane, 1, 1))
 ```
 
 ## Wheel and keyboard
@@ -257,7 +257,7 @@ the widget happened to be a `Scrollpane` would make the stylesheet lie.
 Any node can carry an offset — it is CSS's `scrollTop` and `scrollLeft`:
 
 ```@example overflow
-using DualUI
+using ManyUI
 
 sheet = css"""
 #box { overflow: scroll; }

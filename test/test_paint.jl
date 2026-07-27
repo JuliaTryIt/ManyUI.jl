@@ -17,13 +17,13 @@
 # --------------------------------------------------------------------
 
 @testitem "paint: render! cannot paint outside its view" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct P{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct P{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkbox() = BoxStyle(Display.BLOCK, Direction.COLUMN, Justify.START,
                        Align.STRETCH, AUTO, AUTO, AUTO, AUTO, AUTO,
@@ -58,13 +58,13 @@
 end
 
 @testitem "paint: children paint over parents" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct P{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct P{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkbox() = BoxStyle(Display.BLOCK, Direction.COLUMN, Justify.START,
                        Align.STRETCH, AUTO, AUTO, AUTO, AUTO, AUTO,
@@ -75,8 +75,8 @@ end
                                 STYLE_NONE, mkbox(), lay, DIRTY_ALL,
                                 true, false, nothing), fn)
     lay1(r) = LayoutBox(r, r, r, r)
-    att!(p, c) = (push!(DualUI.node(p).children, c);
-                  DualUI.node(c).parent = p; c)
+    att!(p, c) = (push!(ManyUI.node(p).children, c);
+                  ManyUI.node(c).parent = p; c)
     rows(b) = [join(String(b[x, y].content) for x in 1:size(b, 1))
                for y in 1:size(b, 2)]
     fillc(ch) = b -> fill_region!(b, buffer_region(b),
@@ -119,13 +119,13 @@ end
 # --------------------------------------------------------------------
 
 @testitem "paint: overflow HIDDEN clips children to content" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct P{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct P{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkbox(ox, oy) = BoxStyle(Display.BLOCK, Direction.COLUMN,
                              Justify.START, Align.STRETCH, AUTO, AUTO,
@@ -140,8 +140,8 @@ end
     hid() = mkbox(Overflow.HIDDEN, Overflow.HIDDEN)
     lay1(r) = LayoutBox(r, r, r, r)
     lay2(o, c) = LayoutBox(o, o, o, c)
-    att!(p, c) = (push!(DualUI.node(p).children, c);
-                  DualUI.node(c).parent = p; c)
+    att!(p, c) = (push!(ManyUI.node(p).children, c);
+                  ManyUI.node(c).parent = p; c)
 
     content = Region(2, 2, 4, 3)
     root = pnt(_ -> nothing, lay2(Region(1, 1, 8, 6), content), hid())
@@ -172,13 +172,13 @@ end
 end
 
 @testitem "paint: overflow VISIBLE clips to the inherited clip" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct P{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct P{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkbox(ox, oy) = BoxStyle(Display.BLOCK, Direction.COLUMN,
                              Justify.START, Align.STRETCH, AUTO, AUTO,
@@ -193,8 +193,8 @@ end
     hid() = mkbox(Overflow.HIDDEN, Overflow.HIDDEN)
     lay1(r) = LayoutBox(r, r, r, r)
     lay2(o, c) = LayoutBox(o, o, o, c)
-    att!(p, c) = (push!(DualUI.node(p).children, c);
-                  DualUI.node(c).parent = p; c)
+    att!(p, c) = (push!(ManyUI.node(p).children, c);
+                  ManyUI.node(c).parent = p; c)
     rows(b) = [join(String(b[x, y].content) for x in 1:size(b, 1))
                for y in 1:size(b, 2)]
     fillc(ch) = b -> fill_region!(b, buffer_region(b),
@@ -222,13 +222,13 @@ end
 end
 
 @testitem "paint: clipping is strict at each edge" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct P{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct P{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkbox() = BoxStyle(Display.BLOCK, Direction.COLUMN, Justify.START,
                        Align.STRETCH, AUTO, AUTO, AUTO, AUTO, AUTO,
@@ -240,8 +240,8 @@ end
                                 true, false, nothing), fn)
     lay1(r) = LayoutBox(r, r, r, r)
     lay2(o, c) = LayoutBox(o, o, o, c)
-    att!(p, c) = (push!(DualUI.node(p).children, c);
-                  DualUI.node(c).parent = p; c)
+    att!(p, c) = (push!(ManyUI.node(p).children, c);
+                  ManyUI.node(c).parent = p; c)
 
     content = Region(3, 3, 4, 3)   # x 3:6, y 3:5, inside an 8x7 buffer
     # One child per edge, each overhanging exactly that edge.
@@ -297,13 +297,13 @@ end
 # --------------------------------------------------------------------
 
 @testitem "paint: Display.NONE subtree is skipped" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct P{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct P{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkbox(disp) = BoxStyle(disp, Direction.COLUMN, Justify.START,
                            Align.STRETCH, AUTO, AUTO, AUTO, AUTO, AUTO,
@@ -315,8 +315,8 @@ end
                                       mkbox(disp), lay, DIRTY_ALL, true,
                                       false, nothing), fn)
     lay1(r) = LayoutBox(r, r, r, r)
-    att!(p, c) = (push!(DualUI.node(p).children, c);
-                  DualUI.node(c).parent = p; c)
+    att!(p, c) = (push!(ManyUI.node(p).children, c);
+                  ManyUI.node(c).parent = p; c)
     fillc(ch) = b -> fill_region!(b, buffer_region(b),
                                   Cell(ch, STYLE_NONE))
 
@@ -339,13 +339,13 @@ end
 end
 
 @testitem "paint: invisible subtree is skipped" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct P{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct P{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkbox() = BoxStyle(Display.BLOCK, Direction.COLUMN, Justify.START,
                        Align.STRETCH, AUTO, AUTO, AUTO, AUTO, AUTO,
@@ -357,8 +357,8 @@ end
                                      mkbox(), lay, DIRTY_ALL, vis,
                                      false, nothing), fn)
     lay1(r) = LayoutBox(r, r, r, r)
-    att!(p, c) = (push!(DualUI.node(p).children, c);
-                  DualUI.node(c).parent = p; c)
+    att!(p, c) = (push!(ManyUI.node(p).children, c);
+                  ManyUI.node(c).parent = p; c)
     fillc(ch) = b -> fill_region!(b, buffer_region(b),
                                   Cell(ch, STYLE_NONE))
 
@@ -383,7 +383,7 @@ end
 # --------------------------------------------------------------------
 
 @testitem "paint: paint_border! draws only the perimeter" begin
-    using DualUI
+    using ManyUI
 
     buf = Buffer(6, 4)
     g = border_glyphs(BorderKind.SOLID)
@@ -441,13 +441,13 @@ end
 end
 
 @testitem "paint: a border draws on the border box and clips kids" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct P{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct P{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkbox(bd) = BoxStyle(Display.BLOCK, Direction.COLUMN, Justify.START,
                          Align.STRETCH, AUTO, AUTO, AUTO, AUTO, AUTO,
@@ -458,8 +458,8 @@ end
                                     BOX_PATCH_NONE, STYLE_NONE,
                                     mkbox(bd), lay, DIRTY_ALL, true,
                                     false, nothing), fn)
-    att!(p, c) = (push!(DualUI.node(p).children, c);
-                  DualUI.node(c).parent = p; c)
+    att!(p, c) = (push!(ManyUI.node(p).children, c);
+                  ManyUI.node(c).parent = p; c)
     rows(b) = [join(String(b[x, y].content) for x in 1:size(b, 1))
                for y in 1:size(b, 2)]
     sol = Border(BorderKind.SOLID, STYLE_NONE)
@@ -494,13 +494,13 @@ end
 end
 
 @testitem "paint: background fills the padding box when bg is set" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct P{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct P{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkbox() = BoxStyle(Display.BLOCK, Direction.COLUMN, Justify.START,
                        Align.STRETCH, AUTO, AUTO, AUTO, AUTO, AUTO,
@@ -545,13 +545,13 @@ end
 # --------------------------------------------------------------------
 
 @testitem "paint: isolates app logic from the rendering target" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct P{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct P{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkbox() = BoxStyle(Display.BLOCK, Direction.COLUMN, Justify.START,
                        Align.STRETCH, AUTO, AUTO, AUTO, AUTO, AUTO,
@@ -583,13 +583,13 @@ end
 end
 
 @testitem "paint: produces the frame buffer the diff consumes" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct P{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct P{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::P, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkbox() = BoxStyle(Display.BLOCK, Direction.COLUMN, Justify.START,
                        Align.STRETCH, AUTO, AUTO, AUTO, AUTO, AUTO,

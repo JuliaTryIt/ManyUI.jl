@@ -1,6 +1,6 @@
 # Color, style and CSS
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["color.jl", "style.jl", "css.jl"]
 ```

@@ -5,7 +5,7 @@
 # self-contained, per the contract's test plan.
 
 @testitem "widgets: Container constructs empty and with children" begin
-    using DualUI
+    using ManyUI
     c = Container()
     @test c isa Container
     @test c isa Widget
@@ -28,7 +28,7 @@
 end
 
 @testitem "widgets: Container ids are unique by default" begin
-    using DualUI
+    using ManyUI
     @test id(Container()) !== id(Container())
     @test id(Label("x")) !== id(Label("x"))
     @test id(Static("x")) !== id(Static("x"))
@@ -36,7 +36,7 @@ end
 end
 
 @testitem "widgets: tree is queryable by id class and type" begin
-    using DualUI
+    using ManyUI
     lab = Label("hi"; id = :greeting, classes = [:big])
     btn = Button("OK", identity; id = :ok)
     root = Container(Container(lab), btn; id = :root)
@@ -52,7 +52,7 @@ end
 end
 
 @testitem "widgets: Label measure wraps to available width" begin
-    using DualUI
+    using ManyUI
     l = Label("hello world")
     @test measure(l, Size(11, 10)) == Size(11, 1)
     @test measure(l, Size(20, 10)) == Size(11, 1)
@@ -67,21 +67,21 @@ end
 end
 
 @testitem "widgets: Label render! wraps into its view" begin
-    using DualUI
+    using ManyUI
     buf = Buffer(5, 3)
     render!(Label("hello world"), buf)
     @test string(buf) == "hello\nworld\n     "
 end
 
 @testitem "widgets: Label render! stops at the bottom of its view" begin
-    using DualUI
+    using ManyUI
     buf = Buffer(5, 1)
     render!(Label("hello world"), buf)
     @test string(buf) == "hello"
 end
 
 @testitem "widgets: Label wraps on grapheme boundaries" begin
-    using DualUI
+    using ManyUI
     # A wide cluster that would straddle the right edge is moved to the
     # next line, never halved: S3 through the widget layer.
     l = Label("世界ab")
@@ -99,7 +99,7 @@ end
 end
 
 @testitem "widgets: Label text is reactive" begin
-    using DualUI
+    using ManyUI
     l = Label("one")
     @test l.text[] == "one"
     clean!(l)
@@ -112,7 +112,7 @@ end
 end
 
 @testitem "widgets: Static measure is text_width by one" begin
-    using DualUI
+    using ManyUI
     @test measure(Static("hello"), Size(2, 1)) == Size(5, 1)
     @test measure(Static("hello"), Size(100, 100)) == Size(5, 1)
     @test measure(Static("世界"), Size(1, 1)) == Size(4, 1)
@@ -123,14 +123,14 @@ end
 end
 
 @testitem "widgets: Static render! is one truncated line" begin
-    using DualUI
+    using ManyUI
     buf = Buffer(5, 2)
     render!(Static("hello world"), buf)
     @test string(buf) == "hello\n     "
 end
 
 @testitem "widgets: Static render! refuses a straddling wide cluster" begin
-    using DualUI
+    using ManyUI
     buf = Buffer(3, 1)
     render!(Static("世界"), buf)
     @test buf[1, 1].content == "世"
@@ -139,7 +139,7 @@ end
 end
 
 @testitem "widgets: Static type_name is its own" begin
-    using DualUI
+    using ManyUI
     @test type_name(Static("x")) === :Static
     @test type_name(Label("x")) === :Label
     @test type_name(Button("x", identity)) === :Button
@@ -147,14 +147,14 @@ end
 end
 
 @testitem "widgets: Button measure is the caption extent" begin
-    using DualUI
+    using ManyUI
     @test measure(Button("OK", identity), Size(10, 10)) == Size(2, 1)
     @test measure(Button("世界", identity), Size(10, 10)) == Size(4, 1)
     @test measure(Button("", identity), Size(10, 10)) == Size(0, 1)
 end
 
 @testitem "widgets: Button render! centres the caption" begin
-    using DualUI
+    using ManyUI
     b = Button("OK", identity)
     buf = Buffer(6, 3)
     render!(b, buf)
@@ -167,14 +167,14 @@ end
 end
 
 @testitem "widgets: Button render! truncates an oversized caption" begin
-    using DualUI
+    using ManyUI
     buf = Buffer(3, 1)
     render!(Button("hello", identity), buf)
     @test string(buf) == "hel"
 end
 
 @testitem "widgets: Button is focusable" begin
-    using DualUI
+    using ManyUI
     @test is_focusable(Button("OK", identity))
     @test !is_focusable(Label("x"))
     @test !is_focusable(Static("x"))
@@ -189,7 +189,7 @@ end
 end
 
 @testitem "widgets: Button on_press fires on ENTER" begin
-    using DualUI
+    using ManyUI
     fired = Ref(0)
     b = Button("OK", w -> (fired[] += 1; nothing))
 
@@ -232,7 +232,7 @@ end
 end
 
 @testitem "widgets: Button on_press fires on LEFT click" begin
-    using DualUI
+    using ManyUI
     fired = Ref(0)
     b = Button("OK", w -> (fired[] += 1; nothing))
 
@@ -271,7 +271,7 @@ end
 end
 
 @testitem "widgets: Button press is routed by hit testing" begin
-    using DualUI
+    using ManyUI
     fired = Ref(0)
     b = Button("OK", w -> (fired[] += 1; nothing))
     root = Container(Label("title"), b)
@@ -295,7 +295,7 @@ end
 end
 
 @testitem "widgets: Button ENTER reaches the focused button" begin
-    using DualUI
+    using ManyUI
     fired = Ref(0)
     b = Button("OK", w -> (fired[] += 1; nothing))
     root = Container(Label("title"), b)
@@ -305,7 +305,7 @@ end
 end
 
 @testitem "widgets: Button label is reactive" begin
-    using DualUI
+    using ManyUI
     b = Button("OK", identity)
     @test b.label[] == "OK"
     @test !b.pressed[]
@@ -323,7 +323,7 @@ end
 end
 
 @testitem "widgets: Button field is concrete" begin
-    using DualUI
+    using ManyUI
     f = w -> nothing
     b = Button("x", f)
     @test b isa Button{typeof(f)}
@@ -337,7 +337,7 @@ end
 end
 
 @testitem "widgets: paint! composites the widget tree" begin
-    using DualUI
+    using ManyUI
     root = Container(Static("ab"), Static("cd"); id = :root)
     layout!(root, Region(1, 1, 4, 3))
     buf = Buffer(4, 3)
@@ -346,7 +346,7 @@ end
 end
 
 @testitem "widgets: a widget cannot paint outside its box" begin
-    using DualUI
+    using ManyUI
     root = Container(Static("hello world"); id = :root)
     root.node.inline_box = BoxPatch(; padding = Spacing(1))
     apply_stylesheet!(STYLESHEET_EMPTY, root)
@@ -358,7 +358,7 @@ end
 end
 
 @testitem "overlay: should_suspend predicate table" begin
-    using DualUI
+    using ManyUI
     @test should_suspend(Size(12, 3), Size(20, 5)) === true
     @test should_suspend(Size(80, 24), Size(20, 5)) === false
     @test should_suspend(Size(20, 5), Size(20, 5)) === false
@@ -370,7 +370,7 @@ end
 end
 
 @testitem "overlay: MinSizeOverlay is an ordinary widget" begin
-    using DualUI
+    using ManyUI
     o = MinSizeOverlay()
     @test o isa Widget
     @test id(o) === :_min_size_overlay
@@ -396,7 +396,7 @@ end
 end
 
 @testitem "overlay: render_min_size_overlay! degrades in three steps" begin
-    using DualUI
+    using ManyUI
     # 1. message + dimensions
     big = Buffer(40, 3)
     render_min_size_overlay!(big, Size(40, 3), Size(80, 24))
@@ -427,7 +427,7 @@ end
 end
 
 @testitem "overlay: render_min_size_overlay! clears what it paints over" begin
-    using DualUI
+    using ManyUI
     buf = Buffer(40, 3)
     fill!(buf, Cell("x"))
     render_min_size_overlay!(buf, Size(40, 3), Size(80, 24))
@@ -436,10 +436,10 @@ end
 end
 
 @testitem "overlay: render_min_size_overlay! calls no layout" begin
-    using DualUI
+    using ManyUI
     # X2: the tree-free path exists precisely because layout is
     # meaningless below OVERLAY_MIN_SIZE. Assert it structurally.
-    src = read(joinpath(dirname(pathof(DualUI)), "widgets",
+    src = read(joinpath(dirname(pathof(ManyUI)), "widgets",
                         "overlay.jl"), String)
     for bad in (r"\blayout!\(", r"\brelayout!\(", r"\bcompute_layout\(",
                 r"\bcascade\(", r"\bapply_layout!\(", r"\bpaint!\(")
@@ -455,7 +455,7 @@ end
         end
         return nothing
     end
-    for ci in code_lowered(DualUI.render_min_size_overlay!,
+    for ci in code_lowered(ManyUI.render_min_size_overlay!,
                            (Buffer, Size, Size))
         for st in ci.code
             walkexpr(st)

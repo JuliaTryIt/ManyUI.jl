@@ -1,6 +1,6 @@
 # tablecore_tests.jl -- the shared row-widget core (layer 7).
 #
-# Every testitem is self-contained, starts `using DualUI`, needs no tty
+# Every testitem is self-contained, starts `using ManyUI`, needs no tty
 # and never sleeps.
 #
 # NOTHING here constructs a List, a Table or a DataTable, and that is
@@ -14,7 +14,7 @@
 # is ONE step and TWO cells, and it is never halved.
 
 @testitem "tablecore: enums are module-scoped and typed" begin
-    using DualUI
+    using ManyUI
     @test SelectMode isa Module
     @test SelectMode.T <: Enum{UInt8}
     @test SelectMode.NONE isa SelectMode.T
@@ -35,12 +35,12 @@
 
     # There is NO CellAlign enum, and that is normative: `Align` already
     # says everything a column needs, and `cross_align` places it.
-    @test !isdefined(DualUI, :CellAlign)
+    @test !isdefined(ManyUI, :CellAlign)
     @test length(instances(Align.T)) == 4
 end
 
 @testitem "tablecore: glyph constants are all width-1" begin
-    using DualUI
+    using ManyUI
     # The `SB_TRACK_V`/`SB_THUMB` discipline (scroll.jl:600): "width-1
     # BY CONSTRUCTION, asserted in the suite" is only true if the suite
     # actually asserts it.
@@ -66,7 +66,7 @@ end
 end
 
 @testitem "tablecore: selection is total on empty data" begin
-    using DualUI
+    using ManyUI
     # `n == 0` is a real state, not a degenerate one: no method throws
     # and no method returns `nothing` where an `Int` is declared.
     for m in (SelectMode.NONE, SelectMode.SINGLE, SelectMode.MULTI)
@@ -101,7 +101,7 @@ end
 end
 
 @testitem "tablecore: selection on exactly one row" begin
-    using DualUI
+    using ManyUI
     s = Selection(SelectMode.SINGLE, 1)
     @test n_rows(s) == 1
     @test row_cursor(s) == 1
@@ -134,7 +134,7 @@ end
 end
 
 @testitem "tablecore: every mutator returns true iff it changed" begin
-    using DualUI
+    using ManyUI
     # `set_scroll!`'s contract (widget.jl:204), one layer up. It buys
     # three things: the widget bumps PAINT only on a real change; the
     # handler consumes only when it moved; and the tests read like this.
@@ -161,7 +161,7 @@ end
 end
 
 @testitem "tablecore: SINGLE selects at most one row" begin
-    using DualUI
+    using ManyUI
     s = Selection(SelectMode.SINGLE, 6)
     set_cursor!(s, 2)
     @test selected_rows(s) == [2]
@@ -188,7 +188,7 @@ end
 end
 
 @testitem "tablecore: SINGLE refuses to toggle its only row off" begin
-    using DualUI
+    using ManyUI
     # Toggling the one selected row off would leave a single-select list
     # with nothing selected, which is a contradiction.
     s = Selection(SelectMode.SINGLE, 4)
@@ -202,7 +202,7 @@ end
 end
 
 @testitem "tablecore: NONE navigates and never selects" begin
-    using DualUI
+    using ManyUI
     # NONE is a browsable list with no selection at all, which is a real
     # widget (a log viewer) and not a degenerate one. The CURSOR is
     # orthogonal to the mode and exists under every one of them.
@@ -229,7 +229,7 @@ end
 end
 
 @testitem "tablecore: MULTI anchor+extend across both directions" begin
-    using DualUI
+    using ManyUI
     s = Selection(SelectMode.MULTI, 10)
     set_cursor!(s, 5)
     @test row_anchor(s) == 5
@@ -263,7 +263,7 @@ end
 end
 
 @testitem "tablecore: extend REPLACES rather than unions" begin
-    using DualUI
+    using ManyUI
     # NORMATIVE: shift+click after a run of ctrl+clicks REPLACES the
     # selection with the anchor range -- what every file manager does.
     # `toggle_row!` is the documented escape.
@@ -283,7 +283,7 @@ end
 end
 
 @testitem "tablecore: sel_extend_ids! over a UnitRange" begin
-    using DualUI
+    using ManyUI
     s = Selection(SelectMode.MULTI, 100_000)
     # A contiguous extend is a BITMAP RANGE, not 100 000 hash inserts.
     @test sel_extend_ids!(s, 1:100_000)
@@ -306,7 +306,7 @@ end
 end
 
 @testitem "tablecore: sel_extend_ids! over a generator, zero alloc" begin
-    using DualUI
+    using ManyUI
     # THE call `datatable.jl` makes. `ids` is ANY iterable of `Int`, and
     # that is the whole reason `tablecore` never learns what a
     # permutation is.
@@ -333,7 +333,7 @@ end
 end
 
 @testitem "tablecore: set_cursor! 0 is Home and typemax is End" begin
-    using DualUI
+    using ManyUI
     # "Go as far as you can" needs no knowledge of how far that is --
     # `_sp_key_delta`'s trick (scroll.jl:475) reused, not reinvented.
     s = Selection(SelectMode.SINGLE, 20)
@@ -358,7 +358,7 @@ end
 end
 
 @testitem "tablecore: resize_selection! shrinking under a cursor" begin
-    using DualUI
+    using ManyUI
     s = Selection(SelectMode.MULTI, 10)
     set_cursor!(s, 6)
     set_cursor!(s, 10; extend = true)
@@ -393,7 +393,7 @@ end
 end
 
 @testitem "tablecore: resize_selection! is O(1) when n is unchanged" begin
-    using DualUI
+    using ManyUI
     # THE self-healing guard: `render!`, `_tc_key!` and `_tc_mouse!` all
     # call this every single time, so an unchanged count MUST cost one
     # Int compare and touch nothing. This is what makes it affordable
@@ -409,7 +409,7 @@ end
 end
 
 @testitem "tablecore: reindex_insert! shifts the selection up" begin
-    using DualUI
+    using ManyUI
     # Source indices are structurally safe against REORDERING; they are
     # NOT safe against insertion, and this is the price -- paid by the
     # mutation rather than by the frame.
@@ -445,7 +445,7 @@ end
 end
 
 @testitem "tablecore: reindex_delete! drops i and shifts down" begin
-    using DualUI
+    using ManyUI
     s = Selection(SelectMode.MULTI, 6)
     set_cursor!(s, 1)
     sel_extend_ids!(s, [2, 3, 5])
@@ -468,7 +468,7 @@ end
 end
 
 @testitem "tablecore: reindex_delete! leaves the cursor in range" begin
-    using DualUI
+    using ManyUI
     # The cursor, if it was ON `i`, STAYS at `i` and is re-clamped, so
     # it lands on the row that took `i`'s place.
     s = Selection(SelectMode.SINGLE, 5)
@@ -505,7 +505,7 @@ end
 end
 
 @testitem "tablecore: is_selected allocates zero" begin
-    using DualUI
+    using ManyUI
     # FRAME PATH: one call per VISIBLE row, so a byte here is a byte per
     # row per frame. MEASURED, not assumed -- and `Set{Int}` measures
     # zero too, so the usual allocation argument for BitSet is WRONG and
@@ -527,7 +527,7 @@ end
 end
 
 @testitem "tablecore: is_selected is total outside 1:n" begin
-    using DualUI
+    using ManyUI
     s = Selection(SelectMode.MULTI, 4)
     select_all!(s)
     @test is_selected(s, 1)
@@ -545,7 +545,7 @@ end
 end
 
 @testitem "tablecore: selected_rows is ascending" begin
-    using DualUI
+    using ManyUI
     # `rows` is UNORDERED; THIS is the ordered view of it, and it is
     # what an application calls after ENTER.
     s = Selection(SelectMode.MULTI, 50)
@@ -562,7 +562,7 @@ end
 end
 
 @testitem "tablecore: Column defaults and Length bounds" begin
-    using DualUI
+    using ManyUI
     c = Column()
     @test c.header == ""
     @test c.width === AUTO
@@ -594,7 +594,7 @@ end
 end
 
 @testitem "tablecore: TableGrid throws on a wide rule glyph" begin
-    using DualUI
+    using ManyUI
     cols = [Column("A"), Column("B")]
     # Throwing beats a quiet nothing: `mount!(::Scrollpane, ...)` throws
     # for the same class of reason.
@@ -618,7 +618,7 @@ end
 end
 
 @testitem "tablecore: TableGrid throws on a negative sample" begin
-    using DualUI
+    using ManyUI
     cols = [Column("A")]
     @test_throws ArgumentError TableGrid(cols; sample = -1)
     @test_throws ArgumentError TableGrid(cols; sample = typemin(Int))
@@ -646,13 +646,13 @@ end
 end
 
 @testitem "tablecore: resolve_columns is a table test" begin
-    using DualUI
+    using ManyUI
     # PURE: a TableGrid and an Int in; `widths`, `xs` and `cache_total`
     # out. No widget, no layout, no buffer -- `thumb_span` set that bar
     # (scroll.jl:572) and this meets it.
     function resolve(cols, avail; sep = " ")
         g = TableGrid(cols; sep = sep)
-        DualUI._tc_resolve_now!(g, avail)
+        ManyUI._tc_resolve_now!(g, avail)
         return (copy(g.widths), copy(g.xs), g.cache_total)
     end
 
@@ -671,7 +671,7 @@ end
     # 3. AUTO: reads the cached mark and measures NOTHING here.
     g = TableGrid([Column("A"), Column("B"; width = cells(3))])
     g.autos[1] = 7
-    DualUI._tc_resolve_now!(g, 40)
+    ManyUI._tc_resolve_now!(g, 40)
     @test g.widths == [7, 3]
     @test g.xs == [0, 8]
 
@@ -709,7 +709,7 @@ end
 
     # 8. ZERO columns does not throw and reports nothing.
     g0 = TableGrid(Column[])
-    DualUI._tc_resolve_now!(g0, 40)
+    ManyUI._tc_resolve_now!(g0, 40)
     @test g0.widths == Int[]
     @test g0.xs == Int[]
     @test g0.cache_total == 0
@@ -722,7 +722,7 @@ end
 end
 
 @testitem "tablecore: fr columns sum to the window EXACTLY" begin
-    using DualUI
+    using ManyUI
     # `_apportion` is the SAME largest-remainder-first kernel
     # `_arrange!` step 3 uses (layout.jl:417), so `sum == leftover`
     # EXACTLY and a column never drifts a cell. `fr` therefore means
@@ -732,7 +732,7 @@ end
     for avail in 0:60, k in 1:5
         cols = [Column("c$j"; width = fr(1)) for j in 1:k]
         g = TableGrid(cols)                # sep_w == 1
-        DualUI._tc_resolve_now!(g, avail)
+        ManyUI._tc_resolve_now!(g, avail)
         inner = max(0, avail - (k - 1))
         (sum(g.widths) == inner &&
          g.cache_total == inner + (k - 1) &&
@@ -744,7 +744,7 @@ end
     g = TableGrid([Column("a"; width = fr(1)),
                    Column("b"; width = fr(3)),
                    Column("c"; width = fr(1))])
-    DualUI._tc_resolve_now!(g, 33)
+    ManyUI._tc_resolve_now!(g, 33)
     @test sum(g.widths) == 33 - 2
     @test g.cache_total == 33
     # inner = 31 over weights 1:3:1 -> 6.2, 18.6, 6.2; the floors are
@@ -754,13 +754,13 @@ end
     # A window that exactly fits the separators leaves nothing to bid
     # for, and that is a number, not an error.
     h = TableGrid([Column("a"; width = fr(1)), Column("b"; width = fr(1))])
-    DualUI._tc_resolve_now!(h, 1)
+    ManyUI._tc_resolve_now!(h, 1)
     @test h.widths == [0, 0]
     @test h.cache_total == 1
 end
 
 @testitem "tablecore: columns do NOT shrink when they overflow" begin
-    using DualUI
+    using ManyUI
     # NORMATIVE: `sum(widths) + sep_w*(ncols-1)` MAY EXCEED `avail`, and
     # that excess IS the horizontal scroll range. A table that shrank
     # its columns to fit would have nothing left to scroll and no reason
@@ -770,7 +770,7 @@ end
     g = TableGrid([Column("A"; width = cells(30)),
                    Column("B"; width = cells(30)),
                    Column("C"; width = cells(30))])
-    DualUI._tc_resolve_now!(g, 20)
+    ManyUI._tc_resolve_now!(g, 20)
     @test g.widths == [30, 30, 30]         # NOT squeezed to the window
     @test g.xs == [0, 31, 62]
     @test g.cache_total == 92
@@ -780,39 +780,39 @@ end
     h = TableGrid([Column("A"), Column("B")])
     h.autos[1] = 50
     h.autos[2] = 50
-    DualUI._tc_resolve_now!(h, 10)
+    ManyUI._tc_resolve_now!(h, 10)
     @test h.widths == [50, 50]
     @test h.cache_total == 101
 
     # A PERCENT column is exact, not fitted.
     p = TableGrid([Column("A"; width = pct(100)),
                    Column("B"; width = pct(100))])
-    DualUI._tc_resolve_now!(p, 10)
+    ManyUI._tc_resolve_now!(p, 10)
     @test p.widths == [10, 10]
     @test p.cache_total == 21
 
     # `fr` is the OPT-IN to filling the window instead.
     f = TableGrid([Column("A"; width = fr(1))])
-    DualUI._tc_resolve_now!(f, 10)
+    ManyUI._tc_resolve_now!(f, 10)
     @test f.widths == [10]
     @test f.cache_total == 10
 end
 
 @testitem "tablecore: largest-remainder ties go to the lower index" begin
-    using DualUI
+    using ManyUI
     # Two equal `fr` columns over an ODD leftover: the spare cell goes
     # to the LOWER index, DETERMINISTICALLY. `_apportion`'s contract,
     # reused rather than re-derived, so the right edge is never ragged.
     g = TableGrid([Column("a"; width = fr(1)),
                    Column("b"; width = fr(1))])
-    DualUI._tc_resolve_now!(g, 10)         # inner = 9
+    ManyUI._tc_resolve_now!(g, 10)         # inner = 9
     @test g.widths == [5, 4]
     @test sum(g.widths) == 9
 
     h = TableGrid([Column("a"; width = fr(1)),
                    Column("b"; width = fr(1)),
                    Column("c"; width = fr(1))])
-    DualUI._tc_resolve_now!(h, 13)         # inner = 11
+    ManyUI._tc_resolve_now!(h, 13)         # inner = 11
     @test h.widths == [4, 4, 3]
     @test sum(h.widths) == 11
 
@@ -820,19 +820,19 @@ end
     m = TableGrid([Column("a"; width = cells(2)),
                    Column("b"; width = fr(1)),
                    Column("c"; width = fr(1))])
-    DualUI._tc_resolve_now!(m, 12)         # inner = 10, leftover = 8
+    ManyUI._tc_resolve_now!(m, 12)         # inner = 10, leftover = 8
     @test m.widths == [2, 4, 4]
 end
 
 @testitem "tablecore: _tc_measure is capped, not O(length)" begin
-    using DualUI
+    using ManyUI
     # THE bound on every AUTO measurement, and it is not a micro-
     # optimisation: `truncate_width` (unicode.jl:138) BREAKS OUT of its
     # grapheme loop the moment the budget is exceeded, so this is O(cap)
     # and NEVER O(length(s)). A 10 KB description column would otherwise
     # cost 10 KB of grapheme iteration per measured cell to discover a
     # fact `truncate_width` already knows.
-    m = DualUI._tc_measure
+    m = ManyUI._tc_measure
     @test m("abc", 10) == 3
     @test m("abcdefghij", 4) == 4
     @test m("", 10) == 0
@@ -869,28 +869,28 @@ end
 end
 
 @testitem "tablecore: _tc_show returns its argument for a String" begin
-    using DualUI
+    using ManyUI
     # `string(s::String) === s`, so a `List{String}` formats for ZERO
     # allocation per row.
     s = "already a string"
-    @test DualUI._tc_show(s) === s
-    @test DualUI._tc_show(SubString(s, 1, 7)) === SubString(s, 1, 7)
-    @test DualUI._tc_show(42) == "42"
-    @test DualUI._tc_show(4.5) == "4.5"
-    @test DualUI._tc_show(:sym) == "sym"
-    @test DualUI._tc_show(nothing) == "nothing"
-    @test DualUI._tc_show(s) isa AbstractString
-    @test DualUI._tc_show(42) isa AbstractString
-    DualUI._tc_show(s)
-    @test @allocated(DualUI._tc_show(s)) == 0
+    @test ManyUI._tc_show(s) === s
+    @test ManyUI._tc_show(SubString(s, 1, 7)) === SubString(s, 1, 7)
+    @test ManyUI._tc_show(42) == "42"
+    @test ManyUI._tc_show(4.5) == "4.5"
+    @test ManyUI._tc_show(:sym) == "sym"
+    @test ManyUI._tc_show(nothing) == "nothing"
+    @test ManyUI._tc_show(s) isa AbstractString
+    @test ManyUI._tc_show(42) isa AbstractString
+    ManyUI._tc_show(s)
+    @test @allocated(ManyUI._tc_show(s)) == 0
 
     # The default `on_activate` does nothing, and returns nothing.
-    @test DualUI._tc_noop(Container()) === nothing
+    @test ManyUI._tc_noop(Container()) === nothing
 end
 
 @testitem "tablecore: _tc_put! truncates on a grapheme boundary" begin
-    using DualUI
-    put! = DualUI._tc_put!
+    using ManyUI
+    put! = ManyUI._tc_put!
     txt(b) = String(strip(string(b)))
 
     # ASCII.
@@ -931,12 +931,12 @@ end
 end
 
 @testitem "tablecore: _tc_put! never halves a cluster at a column edge" begin
-    using DualUI
+    using ManyUI
     # A CLUSTER CANNOT STRADDLE A COLUMN EDGE BY CONSTRUCTION:
     # `truncate_width` DROPS a width-2 cluster that would straddle the
     # cap, and `cross_align` places the result inside
     # `0 : cw - text_width(t)`. There is no second guard to write.
-    put! = DualUI._tc_put!
+    put! = ManyUI._tc_put!
 
     # A width-2 cluster in an ODD-width column leaves a one-cell gap --
     # the correct rendering of "it does not fit".
@@ -967,13 +967,13 @@ end
 end
 
 @testitem "tablecore: _tc_put! never halves a cluster at a frame edge" begin
-    using DualUI
+    using ManyUI
     # LEFT: `x0` MAY BE <= 0 -- a column scrolled off the left is a
     # NEGATIVE start, exactly as `TextInput.render!` hands `write_text!`
     # a negative `1 - off`. A cluster landing at `cx < 1` is skipped
     # WHOLE, so `set_cell!` never sees the half that would orphan a
     # continuation into column 1.
-    put! = DualUI._tc_put!
+    put! = ManyUI._tc_put!
     b = Buffer(6, 1)
     put!(b, 0, 1, 6, "世界ab", Align.START, STYLE_NONE)
     # The first cluster starts at frame column 0 and STRADDLES the edge:
@@ -1006,11 +1006,11 @@ end
 end
 
 @testitem "tablecore: _tc_put! in a 1-cell column holding CJK" begin
-    using DualUI
+    using ManyUI
     # DEGENERATE BY CONSTRUCTION, not by special case:
     # `truncate_width("世", 1) == ""` (VERIFIED), so the cell gets
     # the ellipsis ALONE -- one cell, one legible glyph, nothing halved.
-    put! = DualUI._tc_put!
+    put! = ManyUI._tc_put!
     b = Buffer(4, 1)
     put!(b, 1, 1, 1, "世", Align.START, STYLE_NONE)
     @test String(b[1, 1].content) == TC_ELLIPSIS
@@ -1038,8 +1038,8 @@ end
 end
 
 @testitem "tablecore: _tc_put! ellipsis marks a truncated cell" begin
-    using DualUI
-    put! = DualUI._tc_put!
+    using ManyUI
+    put! = ManyUI._tc_put!
     txt(b) = String(strip(string(b)))
 
     b = Buffer(12, 1)
@@ -1060,19 +1060,19 @@ end
 
     # `_tc_truncated` is `ncodeunits`, not `text_width(s) > cw`: the
     # obvious spelling walks the WHOLE untruncated string.
-    @test DualUI._tc_truncated(truncate_width("abcdef", 3), "abcdef")
-    @test !DualUI._tc_truncated(truncate_width("abc", 3), "abc")
-    @test !DualUI._tc_truncated(truncate_width("", 3), "")
-    @test DualUI._tc_truncated(truncate_width("世", 1), "世")
+    @test ManyUI._tc_truncated(truncate_width("abcdef", 3), "abcdef")
+    @test !ManyUI._tc_truncated(truncate_width("abc", 3), "abc")
+    @test !ManyUI._tc_truncated(truncate_width("", 3), "")
+    @test ManyUI._tc_truncated(truncate_width("世", 1), "世")
 end
 
 @testitem "tablecore: a truncated cell is left-anchored under every align" begin
-    using DualUI
+    using ManyUI
     # NORMATIVE: `align` applies ONLY when the text FITS. A right-
     # aligned truncated number ("…234") reads as a DIFFERENT
     # NUMBER, which is worse than a visibly clipped one. This also fixes
     # the bug where an END-aligned cell paints text OVER its own marker.
-    put! = DualUI._tc_put!
+    put! = ManyUI._tc_put!
     txt(b) = String(strip(string(b)))
     for a in (Align.START, Align.CENTER, Align.END, Align.STRETCH)
         b = Buffer(12, 1)
@@ -1084,13 +1084,13 @@ end
 end
 
 @testitem "tablecore: _tc_put! honours all four Align values" begin
-    using DualUI
+    using ManyUI
     # `cross_align` (layout.jl:163) does the placement -- REUSED, not
     # reinvented. `Align.STRETCH` degenerates to START FOR FREE, because
     # `cross_align(n, STRETCH, w)` returns `(0, w)` and a text painter
     # reads only the OFFSET. That is why there is no CellAlign enum and
     # no `_tc_lead`.
-    put! = DualUI._tc_put!
+    put! = ManyUI._tc_put!
     lay(a) = begin
         b = Buffer(9, 1)
         put!(b, 1, 1, 9, "abc", a, STYLE_NONE)
@@ -1115,12 +1115,12 @@ end
 end
 
 @testitem "tablecore: _tc_paint_slice! drops a cluster at the left edge" begin
-    using DualUI
+    using ManyUI
     # `TextArea.render!`'s loop (textarea.jl:239), third and last copy:
     # a cluster left of the window lands on `cx <= 0` and is skipped,
     # and one STRADDLING the edge lands there too, so `set_cell!` never
     # sees the half of it that would orphan a continuation into column 1.
-    slice! = DualUI._tc_paint_slice!
+    slice! = ManyUI._tc_paint_slice!
 
     # skip = 1 cuts INTO the first wide cluster: dropped, not halved.
     b = Buffer(6, 1)
@@ -1155,12 +1155,12 @@ end
 end
 
 @testitem "tablecore: _tc_paint_slice! returns the column reached" begin
-    using DualUI
+    using ManyUI
     # THE return value is what `List.render!` raises `widest` from, and
     # it makes the high-water mark cost the paint loop NOTHING -- no
     # second pass over the graphemes, no `text_width` on an unbounded
     # string.
-    slice! = DualUI._tc_paint_slice!
+    slice! = ManyUI._tc_paint_slice!
     b = Buffer(10, 1)
 
     # It FIT: the row's FULL width.
@@ -1183,7 +1183,7 @@ end
 end
 
 @testitem "tablecore: no CELL_CONT without its head" begin
-    using DualUI
+    using ManyUI
     # THE §6.2 property, checkable by scanning the buffer, and it
     # catches everything: for every `s`, `x0`, `cw` and `align` the
     # painter writes ONLY into frame columns
@@ -1222,7 +1222,7 @@ end
         a in (Align.START, Align.CENTER, Align.END, Align.STRETCH)
 
         b = Buffer(W, 1)
-        DualUI._tc_put!(b, x0, 1, cw, s, a, STYLE_NONE)
+        ManyUI._tc_put!(b, x0, 1, cw, s, a, STYLE_NONE)
         orphan(b) && push!(bad, (:orphan, s, x0, cw, a))
         outside(b, max(x0, 1), min(x0 + cw - 1, W)) &&
             push!(bad, (:outside, s, x0, cw, a))
@@ -1233,7 +1233,7 @@ end
     bad2 = Any[]
     for s in texts, skip in 0:6
         b = Buffer(W, 1)
-        DualUI._tc_paint_slice!(b, 1, W, skip, s, STYLE_NONE)
+        ManyUI._tc_paint_slice!(b, 1, W, skip, s, STYLE_NONE)
         orphan(b) && push!(bad2, (s, skip))
     end
     @test isempty(bad2)
@@ -1242,7 +1242,7 @@ end
     # its continuation a continuation -- `style_region!`, never
     # `fill_region!` (buffer.jl:476).
     b = Buffer(W, 1)
-    DualUI._tc_put!(b, 1, 1, 4, "世界", Align.START, STYLE_NONE)
+    ManyUI._tc_put!(b, 1, 1, 4, "世界", Align.START, STYLE_NONE)
     style_region!(b, Region(1, 1, W, 1), TC_SELECTED)
     @test !orphan(b)
     @test b[1, 1].width == Int8(2)

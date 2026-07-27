@@ -9,12 +9,12 @@
 # the Driver, so `HeadlessDriver` runs it end to end.
 
 @testitem "app: App{HeadlessDriver} is concrete" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Box1 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Box1 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Box1() = Box1(DualUI.WidgetNode(type_name = :Box1))
+    Box1() = Box1(ManyUI.WidgetNode(type_name = :Box1))
 
     dr = HeadlessDriver(Size(20, 5))
     ap = App(Box1(), dr)
@@ -27,12 +27,12 @@
 end
 
 @testitem "app: App binds itself to every node" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Box2 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Box2 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Box2() = Box2(DualUI.WidgetNode(type_name = :Box2))
+    Box2() = Box2(ManyUI.WidgetNode(type_name = :Box2))
 
     rt = Box2()
     kid = Box2()
@@ -43,26 +43,26 @@ end
     dr = HeadlessDriver(Size(20, 5))
     ap = App(rt, dr)
 
-    @test DualUI.app(rt) === ap
-    @test DualUI.app(kid) === ap
-    @test DualUI.app(grandkid) === ap
-    @test DualUI.app(ap.overlay) === ap
+    @test ManyUI.app(rt) === ap
+    @test ManyUI.app(kid) === ap
+    @test ManyUI.app(grandkid) === ap
+    @test ManyUI.app(ap.overlay) === ap
     @test ap.viewport == Size(20, 5)
     @test size(ap.front) == (20, 5)
     @test size(ap.back) == (20, 5)
 end
 
 @testitem "app: frame! on a clean tree writes zero bytes" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Leaf3 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Leaf3 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         text::String
     end
     Leaf3(t::AbstractString) =
-        Leaf3(DualUI.WidgetNode(type_name = :Leaf3), String(t))
-    DualUI.measure(w::Leaf3, avail::Size) = Size(text_width(w.text), 1)
-    function DualUI.render!(w::Leaf3, buf::AbstractMatrix{Cell})
+        Leaf3(ManyUI.WidgetNode(type_name = :Leaf3), String(t))
+    ManyUI.measure(w::Leaf3, avail::Size) = Size(text_width(w.text), 1)
+    function ManyUI.render!(w::Leaf3, buf::AbstractMatrix{Cell})
         write_text!(buf, 1, 1, w.text)
         nothing
     end
@@ -82,12 +82,12 @@ end
 end
 
 @testitem "app: resize relayouts entire tree" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Box4 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Box4 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Box4() = Box4(DualUI.WidgetNode(type_name = :Box4))
+    Box4() = Box4(ManyUI.WidgetNode(type_name = :Box4))
 
     leaf = Box4()
     rt = Box4()
@@ -101,8 +101,8 @@ end
     @test region(leaf).width == 80
 
     # E4 is unconditional: even a perfectly clean tree is recomputed.
-    walk(w -> (DualUI.clean!(w); nothing), rt)
-    @test !DualUI.is_dirty(leaf)
+    walk(w -> (ManyUI.clean!(w); nothing), rt)
+    @test !ManyUI.is_dirty(leaf)
 
     handle!(ap, ResizeEvent(Size(40, 10)))
     @test ap.viewport == Size(40, 10)
@@ -114,15 +114,15 @@ end
 end
 
 @testitem "app: throw restores driver before rethrow" begin
-    using DualUI
+    using ManyUI
 
     # X3. A widget that explodes mid-frame, inside the app task.
-    mutable struct Boom5 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Boom5 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Boom5() = Boom5(DualUI.WidgetNode(type_name = :Boom5))
-    DualUI.measure(w::Boom5, avail::Size) = Size(1, 1)
-    DualUI.render!(w::Boom5, buf::AbstractMatrix{Cell}) =
+    Boom5() = Boom5(ManyUI.WidgetNode(type_name = :Boom5))
+    ManyUI.measure(w::Boom5, avail::Size) = Size(1, 1)
+    ManyUI.render!(w::Boom5, buf::AbstractMatrix{Cell}) =
         error("widget exploded")
 
     dr = HeadlessDriver(Size(20, 5))
@@ -152,9 +152,9 @@ end
 end
 
 @testitem "app: restore! precedes stop! on the error path" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct RecDriver6 <: DualUI.Driver
+    mutable struct RecDriver6 <: ManyUI.Driver
         chan::Channel{Event}
         log::Vector{Symbol}
         sz::Size
@@ -166,26 +166,26 @@ end
     # `size_hint` must be typed: an untyped second argument is
     # genuinely ambiguous with driver.jl's
     # `start!(::Driver, ::Union{Nothing,Size})` fallback.
-    DualUI.start!(d::RecDriver6,
+    ManyUI.start!(d::RecDriver6,
                   size_hint::Union{Nothing,Size} = nothing) =
         (push!(d.log, :start!); nothing)
-    DualUI.stop!(d::RecDriver6) = (push!(d.log, :stop!);
+    ManyUI.stop!(d::RecDriver6) = (push!(d.log, :stop!);
                                    d.open = false;
                                    isopen(d.chan) && close(d.chan);
                                    nothing)
-    DualUI.restore!(d::RecDriver6) = (push!(d.log, :restore!); nothing)
-    DualUI.emit!(d::RecDriver6, b::AbstractVector{UInt8}) = length(b)
-    DualUI.flush!(d::RecDriver6) = nothing
-    DualUI.display_size(d::RecDriver6) = d.sz
-    DualUI.capabilities(d::RecDriver6) = DriverCaps()
-    DualUI.events(d::RecDriver6) = d.chan
+    ManyUI.restore!(d::RecDriver6) = (push!(d.log, :restore!); nothing)
+    ManyUI.emit!(d::RecDriver6, b::AbstractVector{UInt8}) = length(b)
+    ManyUI.flush!(d::RecDriver6) = nothing
+    ManyUI.display_size(d::RecDriver6) = d.sz
+    ManyUI.capabilities(d::RecDriver6) = DriverCaps()
+    ManyUI.events(d::RecDriver6) = d.chan
     Base.isopen(d::RecDriver6) = d.open
 
-    mutable struct Boom6 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Boom6 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Boom6() = Boom6(DualUI.WidgetNode(type_name = :Boom6))
-    DualUI.render!(w::Boom6, buf::AbstractMatrix{Cell}) =
+    Boom6() = Boom6(ManyUI.WidgetNode(type_name = :Boom6))
+    ManyUI.render!(w::Boom6, buf::AbstractMatrix{Cell}) =
         error("kaboom")
 
     dr = RecDriver6()
@@ -204,16 +204,16 @@ end
 end
 
 @testitem "app: RefreshEvent forces a full repaint" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Leaf7 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Leaf7 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         text::String
     end
     Leaf7(t::AbstractString) =
-        Leaf7(DualUI.WidgetNode(type_name = :Leaf7), String(t))
-    DualUI.measure(w::Leaf7, avail::Size) = Size(text_width(w.text), 1)
-    function DualUI.render!(w::Leaf7, buf::AbstractMatrix{Cell})
+        Leaf7(ManyUI.WidgetNode(type_name = :Leaf7), String(t))
+    ManyUI.measure(w::Leaf7, avail::Size) = Size(text_width(w.text), 1)
+    function ManyUI.render!(w::Leaf7, buf::AbstractMatrix{Cell})
         write_text!(buf, 1, 1, w.text)
         nothing
     end
@@ -234,23 +234,23 @@ end
     @test n > 0
 
     out = String(take_bytes!(dr))
-    @test occursin(DualUI.Ansi.CLEAR_SCREEN, out)
+    @test occursin(ManyUI.Ansi.CLEAR_SCREEN, out)
     @test occursin("hi", out)
     @test !ap.needs_full
     @test frame!(ap) == 0
 end
 
 @testitem "app: pause! stops frame production" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Leaf8 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Leaf8 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         text::String
     end
     Leaf8(t::AbstractString) =
-        Leaf8(DualUI.WidgetNode(type_name = :Leaf8), String(t))
-    DualUI.measure(w::Leaf8, avail::Size) = Size(text_width(w.text), 1)
-    function DualUI.render!(w::Leaf8, buf::AbstractMatrix{Cell})
+        Leaf8(ManyUI.WidgetNode(type_name = :Leaf8), String(t))
+    ManyUI.measure(w::Leaf8, avail::Size) = Size(text_width(w.text), 1)
+    function ManyUI.render!(w::Leaf8, buf::AbstractMatrix{Cell})
         write_text!(buf, 1, 1, w.text)
         nothing
     end
@@ -282,16 +282,16 @@ end
 end
 
 @testitem "app: resume! implies invalidate!" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Leaf9 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Leaf9 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         text::String
     end
     Leaf9(t::AbstractString) =
-        Leaf9(DualUI.WidgetNode(type_name = :Leaf9), String(t))
-    DualUI.measure(w::Leaf9, avail::Size) = Size(text_width(w.text), 1)
-    function DualUI.render!(w::Leaf9, buf::AbstractMatrix{Cell})
+        Leaf9(ManyUI.WidgetNode(type_name = :Leaf9), String(t))
+    ManyUI.measure(w::Leaf9, avail::Size) = Size(text_width(w.text), 1)
+    function ManyUI.render!(w::Leaf9, buf::AbstractMatrix{Cell})
         write_text!(buf, 1, 1, w.text)
         nothing
     end
@@ -314,20 +314,20 @@ end
 
     clear_output!(dr)
     @test frame!(ap) > 0
-    @test occursin(DualUI.Ansi.CLEAR_SCREEN, String(take_bytes!(dr)))
+    @test occursin(ManyUI.Ansi.CLEAR_SCREEN, String(take_bytes!(dr)))
 end
 
 @testitem "app: burst of events coalesces into one frame" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Leaf10 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Leaf10 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         text::String
     end
     Leaf10(t::AbstractString) =
-        Leaf10(DualUI.WidgetNode(type_name = :Leaf10), String(t))
-    DualUI.measure(w::Leaf10, avail::Size) = Size(text_width(w.text), 1)
-    function DualUI.render!(w::Leaf10, buf::AbstractMatrix{Cell})
+        Leaf10(ManyUI.WidgetNode(type_name = :Leaf10), String(t))
+    ManyUI.measure(w::Leaf10, avail::Size) = Size(text_width(w.text), 1)
+    function ManyUI.render!(w::Leaf10, buf::AbstractMatrix{Cell})
         write_text!(buf, 1, 1, w.text)
         nothing
     end
@@ -356,18 +356,18 @@ end
 end
 
 @testitem "app: key binding fires after propagation is unconsumed" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Box11 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Box11 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Box11() = Box11(DualUI.WidgetNode(type_name = :Box11))
+    Box11() = Box11(ManyUI.WidgetNode(type_name = :Box11))
 
-    mutable struct Eater11 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Eater11 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Eater11() = Eater11(DualUI.WidgetNode(type_name = :Eater11))
-    DualUI.on_event!(w::Eater11, d::Dispatch{KeyEvent}) =
+    Eater11() = Eater11(ManyUI.WidgetNode(type_name = :Eater11))
+    ManyUI.on_event!(w::Eater11, d::Dispatch{KeyEvent}) =
         (consume!(d); nothing)
 
     dr = HeadlessDriver(Size(20, 5))
@@ -394,17 +394,17 @@ end
 end
 
 @testitem "app: focus_next follows pre-order tab order" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Box12 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Box12 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Box12() = Box12(DualUI.WidgetNode(type_name = :Box12))
+    Box12() = Box12(ManyUI.WidgetNode(type_name = :Box12))
 
-    mutable struct Tab12 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Tab12 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Tab12(i::Symbol) = Tab12(DualUI.WidgetNode(id = i, type_name = :Tab12,
+    Tab12(i::Symbol) = Tab12(ManyUI.WidgetNode(id = i, type_name = :Tab12,
                                                focusable = true))
 
     f1 = Tab12(:f1)
@@ -437,18 +437,18 @@ end
 end
 
 @testitem "app: the event loop is asynchronous over the channel" begin
-    using DualUI
+    using ManyUI
 
     # EARS 2.1: the framework maintains a reactive ASYNCHRONOUS event
     # loop. `start!` must not block, and the driver's channel must be
     # the only way in.
-    mutable struct Counter13 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Counter13 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         seen::Vector{Char}
     end
-    Counter13() = Counter13(DualUI.WidgetNode(type_name = :Counter13),
+    Counter13() = Counter13(ManyUI.WidgetNode(type_name = :Counter13),
                             Char[])
-    function DualUI.on_event!(w::Counter13, d::Dispatch{KeyEvent})
+    function ManyUI.on_event!(w::Counter13, d::Dispatch{KeyEvent})
         e = event(d)
         e.code === Key.CHAR && push!(w.seen, e.char)
         nothing
@@ -477,12 +477,12 @@ end
 end
 
 @testitem "app: quit! ends the loop through the channel" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Box14 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Box14 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Box14() = Box14(DualUI.WidgetNode(type_name = :Box14))
+    Box14() = Box14(ManyUI.WidgetNode(type_name = :Box14))
 
     dr = HeadlessDriver(Size(40, 10))
     ap = App(Box14(), dr)
@@ -499,12 +499,12 @@ end
 end
 
 @testitem "app: post! on a closed channel is a silent no-op" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Box15 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Box15 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Box15() = Box15(DualUI.WidgetNode(type_name = :Box15))
+    Box15() = Box15(ManyUI.WidgetNode(type_name = :Box15))
 
     dr = HeadlessDriver(Size(40, 10))
     ap = App(Box15(), dr)
@@ -518,12 +518,12 @@ end
 end
 
 @testitem "app: call_later! fires and its timer closes on exit" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct Box16 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct Box16 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
-    Box16() = Box16(DualUI.WidgetNode(type_name = :Box16))
+    Box16() = Box16(ManyUI.WidgetNode(type_name = :Box16))
 
     dr = HeadlessDriver(Size(40, 10))
     ap = App(Box16(), dr)
@@ -555,13 +555,13 @@ end
 end
 
 @testitem "app: AppConfig defaults and overrides" begin
-    using DualUI
+    using ManyUI
 
     c = AppConfig()
     @test c.min_size == Size(20, 5)
     @test c.diff_gap == 4
     @test c.esc_timeout == 0.05
-    @test c.title == "DualUI"
+    @test c.title == "ManyUI"
     @test c.sync_frames
 
     c2 = AppConfig(min_size = Size(40, 10), diff_gap = 0,

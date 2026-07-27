@@ -4,7 +4,7 @@
 # "color: degrade truth table and idempotence".
 
 @testitem "color: Color is isbits and 4 bytes" begin
-    using DualUI
+    using ManyUI
 
     @test isbitstype(Color)
     @test sizeof(Color) == 4
@@ -31,7 +31,7 @@
 end
 
 @testitem "color: constructors validate and accessors read" begin
-    using DualUI
+    using ManyUI
 
     c = rgb(255, 136, 0)
     @test c.kind === ColorKind.RGB
@@ -75,7 +75,7 @@ end
 end
 
 @testitem "color: to_rgb resolves the palettes and rejects UNSET" begin
-    using DualUI
+    using ManyUI
 
     @test to_rgb(rgb(1, 2, 3)) === rgb(1, 2, 3)
 
@@ -117,7 +117,7 @@ end
 end
 
 @testitem "color: luminance is sRGB-decoded and in 0..1" begin
-    using DualUI
+    using ManyUI
 
     @test luminance(rgb(0x000000)) == 0.0
     @test luminance(rgb(0xffffff)) == 1.0
@@ -153,7 +153,7 @@ end
 end
 
 @testitem "color: color_distance is a symmetric linear-space metric" begin
-    using DualUI
+    using ManyUI
 
     @test color_distance(rgb(1, 2, 3), rgb(1, 2, 3)) == 0.0
     @test color_distance(ansi16(9), rgb(255, 0, 0)) == 0.0
@@ -177,7 +177,7 @@ end
 end
 
 @testitem "color: nearest indexed known vectors" begin
-    using DualUI
+    using ManyUI
 
     # The four vectors named in the contract. Each is exact, and each
     # proves the SYSTEM colors 0:15 are NOT candidates: black would
@@ -232,7 +232,7 @@ end
 end
 
 @testitem "color: rgb_to_ansi16 equals the staged composition" begin
-    using DualUI
+    using ManyUI
 
     # NORMATIVE: rgb_to_ansi16 is DEFINED as the composition, so
     # TrueColor->16 and TrueColor->256->16 cannot disagree.
@@ -251,7 +251,7 @@ end
 end
 
 @testitem "color: color_distance ties go to lower index" begin
-    using DualUI
+    using ManyUI
 
     # THE tie in this palette, and it is exact rather than a rounding
     # accident. Bytes 0, 4 and 8 all sit in the LINEAR branch of the
@@ -304,7 +304,7 @@ end
 end
 
 @testitem "color: degrade truth table and idempotence" begin
-    using DualUI
+    using ManyUI
 
     D = ColorDepth
     depths = (D.MONOCHROME, D.ANSI16, D.ANSI256, D.TRUECOLOR)
@@ -386,7 +386,7 @@ end
 end
 
 @testitem "color: MONOCHROME uses luminance not DEFAULT" begin
-    using DualUI
+    using ManyUI
 
     # C's proposal (RGB -> COLOR_DEFAULT) is REJECTED: it collapses fg
     # and bg to the same value and loses the distinction entirely.
@@ -423,7 +423,7 @@ end
 end
 
 @testitem "color: parse accepts every documented form" begin
-    using DualUI
+    using ManyUI
 
     @test parse(Color, "#f80") === rgb(0xff, 0x88, 0x00)
     @test parse(Color, "#ff8800") === rgb(0xff8800)
@@ -470,7 +470,7 @@ end
 end
 
 @testitem "color: detect_color_depth rule table" begin
-    using DualUI
+    using ManyUI
 
     D = ColorDepth
     E(ps...) = Dict{String,String}(ps...)
@@ -523,7 +523,7 @@ end
 end
 
 @testitem "color: degrade is allocation-free on the hot path" begin
-    using DualUI
+    using ManyUI
 
     # `degrade` runs once per Style per span inside AnsiEncoder; it must
     # not put the GC on the render path.

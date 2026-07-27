@@ -1,10 +1,10 @@
-# css_tests.jl -- tests for DualUI/src/css.jl (U4, req 2.1).
+# css_tests.jl -- tests for ManyUI/src/css.jl (U4, req 2.1).
 #
 # Every @testitem is self-contained: it names its own stub widget type
 # so the cascade is exercised with no App and no tree walk.
 
 @testitem "css: specificity is lexicographic" begin
-    using DualUI
+    using ManyUI
 
     S = Specificity
 
@@ -37,16 +37,16 @@
 end
 
 @testitem "css: cascade id beats class beats type" begin
-    using DualUI
+    using ManyUI
 
-    struct W1 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    struct W1 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
     mkw(; wid::Symbol = :_w, cls = Symbol[], ty::Symbol = :Widget) =
-        W1(DualUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
-                             DualUI.Widget[], STYLE_NONE,
+        W1(ManyUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
+                             ManyUI.Widget[], STYLE_NONE,
                              BOX_PATCH_NONE, STYLE_NONE, BOX_DEFAULT,
-                             LAYOUT_BOX_EMPTY, DualUI.DirtyMask(0),
+                             LAYOUT_BOX_EMPTY, ManyUI.DirtyMask(0),
                              true, false, nothing))
 
     w = mkw(wid = :ok, cls = [:primary], ty = :Button)
@@ -92,16 +92,16 @@ end
 end
 
 @testitem "css: source order breaks specificity ties" begin
-    using DualUI
+    using ManyUI
 
-    struct W2 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    struct W2 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
     mkw(; wid::Symbol = :_w, cls = Symbol[], ty::Symbol = :Widget) =
-        W2(DualUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
-                             DualUI.Widget[], STYLE_NONE,
+        W2(ManyUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
+                             ManyUI.Widget[], STYLE_NONE,
                              BOX_PATCH_NONE, STYLE_NONE, BOX_DEFAULT,
-                             LAYOUT_BOX_EMPTY, DualUI.DirtyMask(0),
+                             LAYOUT_BOX_EMPTY, ManyUI.DirtyMask(0),
                              true, false, nothing))
 
     w = mkw(cls = [:a, :b])
@@ -128,16 +128,16 @@ end
 end
 
 @testitem "css: inline style always wins" begin
-    using DualUI
+    using ManyUI
 
-    struct W3 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    struct W3 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
     mkw(; wid::Symbol = :_w, cls = Symbol[], ty::Symbol = :Widget) =
-        W3(DualUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
-                             DualUI.Widget[], STYLE_NONE,
+        W3(ManyUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
+                             ManyUI.Widget[], STYLE_NONE,
                              BOX_PATCH_NONE, STYLE_NONE, BOX_DEFAULT,
-                             LAYOUT_BOX_EMPTY, DualUI.DirtyMask(0),
+                             LAYOUT_BOX_EMPTY, ManyUI.DirtyMask(0),
                              true, false, nothing))
 
     w = mkw(wid = :ok, ty = :Button)
@@ -147,7 +147,7 @@ end
     @test st0.fg == parse(Color, "red")
     @test bx0.gap == 2
 
-    n = DualUI.node(w)
+    n = ManyUI.node(w)
     n.inline_style = Style(fg = parse(Color, "green"))
     n.inline_box = BoxPatch(gap = 7)
 
@@ -163,21 +163,21 @@ end
 end
 
 @testitem "css: cascade is pure" begin
-    using DualUI
+    using ManyUI
 
-    struct W4 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    struct W4 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
     mkw(; wid::Symbol = :_w, cls = Symbol[], ty::Symbol = :Widget) =
-        W4(DualUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
-                             DualUI.Widget[], STYLE_NONE,
+        W4(ManyUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
+                             ManyUI.Widget[], STYLE_NONE,
                              BOX_PATCH_NONE, STYLE_NONE, BOX_DEFAULT,
-                             LAYOUT_BOX_EMPTY, DualUI.DirtyMask(0),
+                             LAYOUT_BOX_EMPTY, ManyUI.DirtyMask(0),
                              true, false, nothing))
 
     w = mkw(wid = :ok, cls = [:primary], ty = :Button)
     ss = parse_css("#ok { color: red; width: 30%; }")
-    n = DualUI.node(w)
+    n = ManyUI.node(w)
 
     cs, bx, dirty = n.computed_style, n.box, n.dirty
     r1 = cascade(ss, w)
@@ -187,7 +187,7 @@ end
     @test n.computed_style === cs
     @test n.box === bx
     @test n.dirty == dirty
-    @test isempty(DualUI.node(w).children)
+    @test isempty(ManyUI.node(w).children)
 
     # Same inputs, same outputs.
     @test r1 == r2
@@ -201,20 +201,20 @@ end
 end
 
 @testitem "css: child combinator does not match a grandchild" begin
-    using DualUI
+    using ManyUI
 
-    struct W5 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    struct W5 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
     mkw(; wid::Symbol = :_w, cls = Symbol[], ty::Symbol = :Widget) =
-        W5(DualUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
-                             DualUI.Widget[], STYLE_NONE,
+        W5(ManyUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
+                             ManyUI.Widget[], STYLE_NONE,
                              BOX_PATCH_NONE, STYLE_NONE, BOX_DEFAULT,
-                             LAYOUT_BOX_EMPTY, DualUI.DirtyMask(0),
+                             LAYOUT_BOX_EMPTY, ManyUI.DirtyMask(0),
                              true, false, nothing))
     function link!(p, c)
-        push!(DualUI.node(p).children, c)
-        DualUI.node(c).parent = p
+        push!(ManyUI.node(p).children, c)
+        ManyUI.node(c).parent = p
         return c
     end
 
@@ -245,20 +245,20 @@ end
 end
 
 @testitem "css: descendant combinator matches a grandchild" begin
-    using DualUI
+    using ManyUI
 
-    struct W6 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    struct W6 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
     mkw(; wid::Symbol = :_w, cls = Symbol[], ty::Symbol = :Widget) =
-        W6(DualUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
-                             DualUI.Widget[], STYLE_NONE,
+        W6(ManyUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
+                             ManyUI.Widget[], STYLE_NONE,
                              BOX_PATCH_NONE, STYLE_NONE, BOX_DEFAULT,
-                             LAYOUT_BOX_EMPTY, DualUI.DirtyMask(0),
+                             LAYOUT_BOX_EMPTY, ManyUI.DirtyMask(0),
                              true, false, nothing))
     function link!(p, c)
-        push!(DualUI.node(p).children, c)
-        DualUI.node(c).parent = p
+        push!(ManyUI.node(p).children, c)
+        ManyUI.node(c).parent = p
         return c
     end
 
@@ -288,7 +288,7 @@ end
 end
 
 @testitem "css: margin shorthand 1 2 and 4 values" begin
-    using DualUI
+    using ManyUI
 
     one = parse_css("#a { margin: 1; }").rules[1].box
     @test one.margin == Spacing(1, 1, 1, 1)
@@ -310,7 +310,7 @@ end
 end
 
 @testitem "css: parse_css throws CssParseError with line and col" begin
-    using DualUI
+    using ManyUI
 
     grab(src) = try
         parse_css(src)
@@ -363,20 +363,20 @@ end
 end
 
 @testitem "css: apply_stylesheet! dirties only on real change" begin
-    using DualUI
+    using ManyUI
 
-    struct W7 <: DualUI.Widget
-        node::DualUI.WidgetNode
+    struct W7 <: ManyUI.Widget
+        node::ManyUI.WidgetNode
     end
     mkw(; wid::Symbol = :_w, cls = Symbol[], ty::Symbol = :Widget) =
-        W7(DualUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
-                             DualUI.Widget[], STYLE_NONE,
+        W7(ManyUI.WidgetNode(wid, Set{Symbol}(cls), ty, nothing,
+                             ManyUI.Widget[], STYLE_NONE,
                              BOX_PATCH_NONE, STYLE_NONE, BOX_DEFAULT,
-                             LAYOUT_BOX_EMPTY, DualUI.DirtyMask(0),
+                             LAYOUT_BOX_EMPTY, ManyUI.DirtyMask(0),
                              true, false, nothing))
     function link!(p, c)
-        push!(DualUI.node(p).children, c)
-        DualUI.node(c).parent = p
+        push!(ManyUI.node(p).children, c)
+        ManyUI.node(c).parent = p
         return c
     end
 
@@ -387,13 +387,13 @@ end
     # A style-only change dirties PAINT, not LAYOUT.
     ss = parse_css("#a { color: red; }")
     apply_stylesheet!(ss, root)
-    @test DualUI.node(root).computed_style.fg == parse(Color, "red")
+    @test ManyUI.node(root).computed_style.fg == parse(Color, "red")
     @test is_dirty(root, Dirty.PAINT)
     @test !is_dirty(root, Dirty.LAYOUT)
     @test !is_dirty(root, Dirty.STYLE)          # STYLE is cleared
 
     # fg inherits down; the child was cascaded too.
-    @test DualUI.node(kid).computed_style.fg == parse(Color, "red")
+    @test ManyUI.node(kid).computed_style.fg == parse(Color, "red")
 
     # Re-running an UNCHANGED cascade must cost zero frames.
     clean!(root)
@@ -407,7 +407,7 @@ end
     clean!(kid)
     apply_stylesheet!(parse_css("#a { color: red; width: 10; }"), root)
     @test is_dirty(root, Dirty.LAYOUT)
-    @test DualUI.node(root).box.width == parse(Length, "10")
+    @test ManyUI.node(root).box.width == parse(Length, "10")
 
     # recascade! is a no-op on a style-clean tree.
     clean!(root)
@@ -415,17 +415,17 @@ end
     ss2 = parse_css("#a { color: green; }")
     recascade!(ss2, root)
     @test !is_dirty(root)
-    @test DualUI.node(root).computed_style.fg == parse(Color, "red")
+    @test ManyUI.node(root).computed_style.fg == parse(Color, "red")
 
     # ... and re-cascades once STYLE is marked.
     mark!(root, Dirty.STYLE)
     recascade!(ss2, root)
-    @test DualUI.node(root).computed_style.fg == parse(Color, "green")
+    @test ManyUI.node(root).computed_style.fg == parse(Color, "green")
     @test !is_dirty(root, Dirty.STYLE)
 end
 
 @testitem "css: css_str parses at macro expansion" begin
-    using DualUI
+    using ManyUI
 
     ss = css"#ok { }"
     @test ss isa Stylesheet
@@ -443,7 +443,7 @@ end
 end
 
 @testitem "css: declarations cover paint and box properties" begin
-    using DualUI
+    using ManyUI
 
     r = parse_css("""
         Button {
@@ -516,14 +516,14 @@ end
     @test parse_css("A { gap: 1; }").rules[1].style === STYLE_NONE
 
     # parse_property is the extension point.
-    (s, p) = DualUI.parse_property(Val(:color), "red")
+    (s, p) = ManyUI.parse_property(Val(:color), "red")
     @test s.fg == parse(Color, "red")
     @test isempty(p)
-    @test_throws CssParseError DualUI.parse_property(Val(:nope), "x")
+    @test_throws CssParseError ManyUI.parse_property(Val(:nope), "x")
 end
 
 @testitem "css: stylesheet collection API" begin
-    using DualUI
+    using ManyUI
 
     ss = Stylesheet()
     @test isempty(ss)

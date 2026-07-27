@@ -368,7 +368,7 @@ Open the popup. False when it is already open, when there are no
 options, or when there is no App.
 
 `focus!(a, w)` FIRST, AND IT IS NOT A COURTESY: there is no
-click-to-focus in DualUI, so without it a MOUSE-OPENED dropdown leaves
+click-to-focus in ManyUI, so without it a MOUSE-OPENED dropdown leaves
 focus on whatever had it and UP/DOWN/ENTER/ESCAPE go somewhere else --
 an open list you cannot drive. `focus!` is a no-op when `w` is already
 focused, so the keyboard path pays nothing. BEFORE `open_popup!`, so

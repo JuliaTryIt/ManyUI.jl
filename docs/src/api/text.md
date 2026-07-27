@@ -1,6 +1,6 @@
 # Text entry widgets
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/textinput.jl", "widgets/textarea.jl"]
 ```

@@ -1,7 +1,7 @@
 # Layout
 
 ```@meta
-CurrentModule = DualUI
+CurrentModule = ManyUI
 ```
 
 The layout engine resolves a widget tree into an absolute `Region` for
@@ -31,7 +31,7 @@ into.
 Margins, padding and borders are measured in cells:
 
 ```@example layout
-using DualUI
+using ManyUI
 
 outer = Region(1, 1, 20, 6)
 style = BoxStyle(; margin = Spacing(1), padding = Spacing(2),
@@ -63,7 +63,7 @@ whatever is left is split between the `fr` children in proportion to
 their weights.
 
 ```@example layout
-using DualUI
+using ManyUI
 (cells(10), pct(50), fr(1), AUTO)
 ```
 
@@ -82,7 +82,7 @@ the axis with `align`:
 `layout!` computes the whole tree against a viewport:
 
 ```@example layout
-using DualUI
+using ManyUI
 
 root = Container(Label("first"; id = :a), Label("second"; id = :b);
                  id = :root)
@@ -101,7 +101,7 @@ a `SIGWINCH` on a tty, a browser window resize reported over the
 WebSocket — funnels through the same path:
 
 ```@example layout
-using DualUI
+using ManyUI
 
 driver = HeadlessDriver(Size(20, 5))
 app = App(Container(Label("x")), driver)

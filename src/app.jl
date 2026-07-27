@@ -23,7 +23,7 @@ Config with the documented defaults.
 AppConfig(; min_size::Size = Size(20, 5),
             diff_gap::Int = 4,
             esc_timeout::Float64 = 0.05,
-            title::AbstractString = "DualUI",
+            title::AbstractString = "ManyUI",
             sync_frames::Bool = true)::AppConfig =
     AppConfig(min_size, diff_gap, esc_timeout, String(title),
               sync_frames)
@@ -82,7 +82,7 @@ end
 The task currently running each App's loop.
 
 `App` has no task field -- it is a fixed, contract-owned struct shared
-with `DualUIWeb` -- so `start!` records its task here and `wait(::App)`
+with `ManyUIWeb` -- so `start!` records its task here and `wait(::App)`
 reads it back. Weak keys: a collected App takes its entry with it.
 """
 const _APP_TASKS = WeakKeyDict{AbstractApp,Task}()
@@ -384,7 +384,7 @@ end
 X4. Explicit loop pause: stops FRAME PRODUCTION. Queued events still
 accumulate and are handled on `resume!`.
 
-Target-agnostic -- a loop pause is not a web concept, and DualUIWeb
+Target-agnostic -- a loop pause is not a web concept, and ManyUIWeb
 calls it on socket drop. This REPLACES any scheme where a bounded
 output channel implicitly stalls the loop via a blocking `put!`: that
 is untestable, and one bounded channel away from deadlock.

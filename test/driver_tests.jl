@@ -5,14 +5,14 @@
 # terminal into raw mode: every driver is built over an `IOBuffer`.
 
 @testitem "driver: DriverCaps is isbits" begin
-    using DualUI
+    using ManyUI
 
     @test isbitstype(DriverCaps)
     @test isconcretetype(DriverCaps)
 end
 
 @testitem "driver: DriverCaps keyword constructor matches the field order" begin
-    using DualUI
+    using ManyUI
 
     c = DriverCaps()
     @test c.color_depth === ColorDepth.TRUECOLOR
@@ -56,7 +56,7 @@ end
 end
 
 @testitem "driver: REQUIRED_DRIVER_METHODS has nine entries" begin
-    using DualUI
+    using ManyUI
 
     @test length(REQUIRED_DRIVER_METHODS) == 9
     @test REQUIRED_DRIVER_METHODS ===
@@ -66,43 +66,43 @@ end
 end
 
 @testitem "driver: check_driver_interface finds gaps" begin
-    using DualUI
+    using ManyUI
 
-    struct GapDriver <: DualUI.Driver end
+    struct GapDriver <: ManyUI.Driver end
 
     @test check_driver_interface(GapDriver) ==
           collect(REQUIRED_DRIVER_METHODS)
 
-    mutable struct AlmostDriver <: DualUI.Driver
-        ch::Channel{DualUI.Event}
+    mutable struct AlmostDriver <: ManyUI.Driver
+        ch::Channel{ManyUI.Event}
     end
-    DualUI.start!(::AlmostDriver, ::Union{Nothing,Size} = nothing) = nothing
-    DualUI.stop!(::AlmostDriver) = nothing
-    DualUI.restore!(::AlmostDriver) = nothing
-    DualUI.emit!(::AlmostDriver, b::AbstractVector{UInt8}) = length(b)
-    DualUI.display_size(::AlmostDriver) = Size(80, 24)
-    DualUI.capabilities(::AlmostDriver) = CAPS_MINIMAL
-    DualUI.events(d::AlmostDriver) = d.ch
+    ManyUI.start!(::AlmostDriver, ::Union{Nothing,Size} = nothing) = nothing
+    ManyUI.stop!(::AlmostDriver) = nothing
+    ManyUI.restore!(::AlmostDriver) = nothing
+    ManyUI.emit!(::AlmostDriver, b::AbstractVector{UInt8}) = length(b)
+    ManyUI.display_size(::AlmostDriver) = Size(80, 24)
+    ManyUI.capabilities(::AlmostDriver) = CAPS_MINIMAL
+    ManyUI.events(d::AlmostDriver) = d.ch
     Base.isopen(d::AlmostDriver) = isopen(d.ch)
     # `flush!` deliberately left out.
 
     @test check_driver_interface(AlmostDriver) == [:flush!]
 
-    DualUI.flush!(::AlmostDriver) = nothing
+    ManyUI.flush!(::AlmostDriver) = nothing
     @test check_driver_interface(AlmostDriver) == Symbol[]
 end
 
 @testitem "driver: check_driver_interface accepts the shipped drivers" begin
-    using DualUI
+    using ManyUI
 
     @test check_driver_interface(HeadlessDriver) == Symbol[]
     @test check_driver_interface(TerminalDriver) == Symbol[]
 end
 
 @testitem "driver: an unimplemented seam throws DriverInterfaceError" begin
-    using DualUI
+    using ManyUI
 
-    struct BareDriver <: DualUI.Driver end
+    struct BareDriver <: ManyUI.Driver end
     d = BareDriver()
 
     for f in (start!, stop!, restore!, flush!, display_size,
@@ -122,16 +122,16 @@ end
     @test e.method === :flush!
     msg = sprint(showerror, e)
     @test occursin("BareDriver", msg)
-    @test occursin("does not implement DualUI.flush!", msg)
+    @test occursin("does not implement ManyUI.flush!", msg)
 end
 
 @testitem "driver: Base.close forwards to stop!" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct CloseDriver <: DualUI.Driver
+    mutable struct CloseDriver <: ManyUI.Driver
         stopped::Int
     end
-    DualUI.stop!(d::CloseDriver) = (d.stopped += 1; nothing)
+    ManyUI.stop!(d::CloseDriver) = (d.stopped += 1; nothing)
 
     d = CloseDriver(0)
     close(d)
@@ -141,27 +141,27 @@ end
 end
 
 @testitem "driver: negative invariant holds" begin
-    using DualUI
+    using ManyUI
 
     # 2.1 / U3. A Driver moves bytes, reports a size and capabilities,
     # and yields events. If any required method mentions a render-path
-    # type in its signature, the abstraction has leaked and DualUIWeb
+    # type in its signature, the abstraction has leaked and ManyUIWeb
     # can no longer implement it from outside.
-    banned = (DualUI.Buffer, DualUI.BufferView, DualUI.Patch,
-              DualUI.Span, DualUI.Widget, DualUI.Region,
-              DualUI.LayoutBox, DualUI.LayoutMap, DualUI.Style,
-              DualUI.Cell)
+    banned = (ManyUI.Buffer, ManyUI.BufferView, ManyUI.Patch,
+              ManyUI.Span, ManyUI.Widget, ManyUI.Region,
+              ManyUI.LayoutBox, ManyUI.LayoutMap, ManyUI.Style,
+              ManyUI.Cell)
 
     leaks = Tuple{Symbol,Any}[]
     for name in REQUIRED_DRIVER_METHODS
-        f = name === :isopen ? Base.isopen : getfield(DualUI, name)
+        f = name === :isopen ? Base.isopen : getfield(ManyUI, name)
         for m in methods(f)
             sig = Base.unwrap_unionall(m.sig)
             params = sig.parameters
             length(params) >= 2 || continue
             first = params[2]
             first isa Type || continue
-            first <: DualUI.Driver || continue
+            first <: ManyUI.Driver || continue
             for p in params[2:end]
                 p isa Type || continue
                 p === Any && continue
@@ -175,16 +175,16 @@ end
 end
 
 @testitem "driver: notify_resize! default puts a ResizeEvent" begin
-    using DualUI
+    using ManyUI
 
     # 2.2. A SIGWINCH poll, a web control frame and a test harness all
     # funnel through this one door.
-    mutable struct NotifyDriver <: DualUI.Driver
-        ch::Channel{DualUI.Event}
+    mutable struct NotifyDriver <: ManyUI.Driver
+        ch::Channel{ManyUI.Event}
     end
-    DualUI.events(d::NotifyDriver) = d.ch
+    ManyUI.events(d::NotifyDriver) = d.ch
 
-    d = NotifyDriver(Channel{DualUI.Event}(4))
+    d = NotifyDriver(Channel{ManyUI.Event}(4))
     @test notify_resize!(d, Size(100, 30)) === nothing
     e = take!(d.ch)
     @test e isa ResizeEvent
@@ -192,16 +192,16 @@ end
 end
 
 @testitem "driver: a foreign driver needs only the nine methods" begin
-    using DualUI
+    using ManyUI
 
-    # 2.1. THE seam test. `TapeDriver` stands in for DualUIWeb's
+    # 2.1. THE seam test. `TapeDriver` stands in for ManyUIWeb's
     # `WebSocketDriver`: an in-memory driver that captures every emitted
     # byte into a buffer and feeds input bytes back through the shared
     # pump. It is written using ONLY names in `WEB_BRIDGE_SURFACE` --
-    # it reaches into no DualUI internal, and it never mentions a
+    # it reaches into no ManyUI internal, and it never mentions a
     # Buffer, Patch, Widget or Region.
-    mutable struct TapeDriver <: DualUI.Driver
-        const ch::Channel{DualUI.Event}
+    mutable struct TapeDriver <: ManyUI.Driver
+        const ch::Channel{ManyUI.Event}
         const sink::IOBuffer
         const parser::InputParser
         size::Size
@@ -209,21 +209,21 @@ end
         started::Bool
         restored::Bool
     end
-    TapeDriver(sz::Size) = TapeDriver(Channel{DualUI.Event}(64),
+    TapeDriver(sz::Size) = TapeDriver(Channel{ManyUI.Event}(64),
                                       IOBuffer(), InputParser(), sz,
                                       DriverCaps(), false, false)
 
-    DualUI.start!(d::TapeDriver, hint::Union{Nothing,Size} = nothing) =
+    ManyUI.start!(d::TapeDriver, hint::Union{Nothing,Size} = nothing) =
         (hint === nothing || (d.size = hint); d.started = true; nothing)
-    DualUI.stop!(d::TapeDriver) =
-        (close(d.ch); DualUI.restore!(d); nothing)
-    DualUI.restore!(d::TapeDriver) = (d.restored = true; nothing)
-    DualUI.emit!(d::TapeDriver, b::AbstractVector{UInt8}) =
+    ManyUI.stop!(d::TapeDriver) =
+        (close(d.ch); ManyUI.restore!(d); nothing)
+    ManyUI.restore!(d::TapeDriver) = (d.restored = true; nothing)
+    ManyUI.emit!(d::TapeDriver, b::AbstractVector{UInt8}) =
         Int(write(d.sink, b))
-    DualUI.flush!(::TapeDriver) = nothing
-    DualUI.display_size(d::TapeDriver) = d.size
-    DualUI.capabilities(d::TapeDriver) = d.caps
-    DualUI.events(d::TapeDriver) = d.ch
+    ManyUI.flush!(::TapeDriver) = nothing
+    ManyUI.display_size(d::TapeDriver) = d.size
+    ManyUI.capabilities(d::TapeDriver) = d.caps
+    ManyUI.events(d::TapeDriver) = d.ch
     Base.isopen(d::TapeDriver) = isopen(d.ch)
 
     d = TapeDriver(Size(80, 24))
@@ -255,11 +255,11 @@ end
     @test d.restored
 end
 
-@testitem "driver: DualUI has no HTTP dependency" begin
-    using DualUI
+@testitem "driver: ManyUI has no HTTP dependency" begin
+    using ManyUI
 
     # Invariant 1, as a diff anyone can check.
-    path = joinpath(pkgdir(DualUI), "Project.toml")
+    path = joinpath(pkgdir(ManyUI), "Project.toml")
     src = read(path, String)
     deps = split(src, "[deps]")[2]
     deps = split(deps, "\n[")[1]
@@ -270,7 +270,7 @@ end
 end
 
 @testitem "terminal: detect_caps color depth follows detect_color_depth" begin
-    using DualUI
+    using ManyUI
 
     truecolor = Dict("TERM" => "xterm", "COLORTERM" => "truecolor")
     c256 = Dict("TERM" => "xterm-256color")
@@ -299,7 +299,7 @@ end
 end
 
 @testitem "terminal: detect_caps rule table" begin
-    using DualUI
+    using ManyUI
 
     # TERM == dumb or unset: every optional feature is off, title is on.
     for env in (Dict("TERM" => "dumb"), Dict{String,String}())
@@ -336,15 +336,15 @@ end
 end
 
 @testitem "terminal: conforms to the driver interface" begin
-    using DualUI
+    using ManyUI
 
-    @test TerminalDriver <: DualUI.Driver
+    @test TerminalDriver <: ManyUI.Driver
     @test check_driver_interface(TerminalDriver) == Symbol[]
 
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = IOBuffer(),
                        caps = CAPS_MINIMAL)
     @test capabilities(d) === CAPS_MINIMAL
-    @test events(d) isa Channel{DualUI.Event}
+    @test events(d) isa Channel{ManyUI.Event}
     @test isopen(d)
     @test display_size(d) isa Size
 
@@ -354,7 +354,7 @@ end
 end
 
 @testitem "terminal: emit! buffers and flush! commits" begin
-    using DualUI
+    using ManyUI
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
@@ -374,7 +374,7 @@ end
 end
 
 @testitem "terminal: start! emits alt screen then hide cursor" begin
-    using DualUI
+    using ManyUI
 
     # 2.3 (S2). The alternate screen keeps the user's scrollback
     # intact; the order is part of the contract.
@@ -385,11 +385,11 @@ end
     try
         start!(d)
         got = String(take!(out))
-        @test got == string(DualUI.Ansi.ALT_SCREEN_ENTER,
-                            DualUI.Ansi.CURSOR_HIDE,
-                            DualUI.Ansi.MOUSE_ON,
-                            DualUI.Ansi.PASTE_ON,
-                            DualUI.Ansi.FOCUS_ON)
+        @test got == string(ManyUI.Ansi.ALT_SCREEN_ENTER,
+                            ManyUI.Ansi.CURSOR_HIDE,
+                            ManyUI.Ansi.MOUSE_ON,
+                            ManyUI.Ansi.PASTE_ON,
+                            ManyUI.Ansi.FOCUS_ON)
         @test d.alt
         @test d.mouse_on
         @test d.started
@@ -403,7 +403,7 @@ end
 end
 
 @testitem "terminal: caps gate every optional sequence" begin
-    using DualUI
+    using ManyUI
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
@@ -413,7 +413,7 @@ end
         got = String(take!(out))
         # CAPS_MINIMAL has no alt screen, mouse, paste or focus: only
         # the unconditional cursor hide goes out.
-        @test got == DualUI.Ansi.CURSOR_HIDE
+        @test got == ManyUI.Ansi.CURSOR_HIDE
         @test !d.alt
         @test !d.mouse_on
     finally
@@ -422,7 +422,7 @@ end
 end
 
 @testitem "terminal: alt screen entered and left in order" begin
-    using DualUI
+    using ManyUI
 
     # 2.3 (S2) + 2.5. restore! is the EXACT reverse of start!: leaving
     # the alternate screen before showing the cursor would strand an
@@ -435,23 +435,23 @@ end
     restore!(d)
 
     got = String(take!(out))
-    @test got == string(DualUI.Ansi.FOCUS_OFF,
-                        DualUI.Ansi.PASTE_OFF,
-                        DualUI.Ansi.MOUSE_OFF,
-                        DualUI.Ansi.CURSOR_SHOW,
-                        DualUI.Ansi.ALT_SCREEN_EXIT)
+    @test got == string(ManyUI.Ansi.FOCUS_OFF,
+                        ManyUI.Ansi.PASTE_OFF,
+                        ManyUI.Ansi.MOUSE_OFF,
+                        ManyUI.Ansi.CURSOR_SHOW,
+                        ManyUI.Ansi.ALT_SCREEN_EXIT)
     @test !d.alt
     @test !d.mouse_on
     @test d.restored
 
     # The whole point of the ordering, stated as an assertion.
-    @test findfirst(DualUI.Ansi.CURSOR_SHOW, got).start <
-          findfirst(DualUI.Ansi.ALT_SCREEN_EXIT, got).start
+    @test findfirst(ManyUI.Ansi.CURSOR_SHOW, got).start <
+          findfirst(ManyUI.Ansi.ALT_SCREEN_EXIT, got).start
     stop!(d)
 end
 
 @testitem "terminal: start! enters raw, restore! exits" begin
-    using DualUI
+    using ManyUI
 
     # 2.3 (S1). Raw mode is REQUESTED here; the OS toggle is a no-op on
     # an IOBuffer, which is exactly why no test needs a tty. `d.raw`
@@ -468,7 +468,7 @@ end
 end
 
 @testitem "terminal: set_raw! never throws on a non-tty" begin
-    using DualUI
+    using ManyUI
 
     # REPL.Terminals.raw! reaches for a libuv handle; an IOBuffer has
     # none. It must degrade to a false return, never an exception --
@@ -482,7 +482,7 @@ end
 end
 
 @testitem "terminal: restore! is idempotent" begin
-    using DualUI
+    using ManyUI
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
@@ -505,7 +505,7 @@ end
 end
 
 @testitem "terminal: restore! on a driver that never started is a no-op" begin
-    using DualUI
+    using ManyUI
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
@@ -515,7 +515,7 @@ end
 end
 
 @testitem "terminal: restore! runs every step despite a throw" begin
-    using DualUI
+    using ManyUI
 
     # 2.5. THE crash-safety requirement. Every step must run even when
     # an earlier one throws, and restore! itself must never throw --
@@ -539,7 +539,7 @@ end
 end
 
 @testitem "terminal: restore! survives a throwing out_stream" begin
-    using DualUI
+    using ManyUI
 
     mutable struct DeadOut <: IO
         writes::Int
@@ -560,7 +560,7 @@ end
 end
 
 @testitem "terminal: displaysize rows cols are swapped into Size" begin
-    using DualUI
+    using ManyUI
 
     # `displaysize` is (rows, cols); `Size` is (width, height). This is
     # a known off-by-orientation trap, so it gets its own test.
@@ -579,7 +579,7 @@ end
 end
 
 @testitem "terminal: start! honours a size_hint" begin
-    using DualUI
+    using ManyUI
 
     inner = IOBuffer()
     out = IOContext(inner, :displaysize => (30, 100))
@@ -595,7 +595,7 @@ end
 end
 
 @testitem "terminal: start! posts an initial ResizeEvent" begin
-    using DualUI
+    using ManyUI
 
     # 2.2. The app never special-cases its first frame: the size
     # arrives through the same door a SIGWINCH would use.
@@ -613,7 +613,7 @@ end
 end
 
 @testitem "terminal: notify_resize! updates the cached size" begin
-    using DualUI
+    using ManyUI
 
     # 2.2. The one seam a SIGWINCH poll, a signal handler and a web
     # control frame all share.
@@ -625,7 +625,7 @@ end
 end
 
 @testitem "terminal: the resize poll pushes a ResizeEvent on a change" begin
-    using DualUI
+    using ManyUI
 
     # 2.2. The SIGWINCH source. Julia 1.12 exposes no async-signal-safe
     # SIGWINCH hook, so the driver polls -- but it funnels through
@@ -639,7 +639,7 @@ end
 
     # A watchdog turns a hang into a failure. No `sleep` in the test.
     guard = Timer(_ -> close(events(d)), 10.0)
-    task = @async DualUI._resize_loop!(d)
+    task = @async ManyUI._resize_loop!(d)
     try
         e = take!(events(d))
         @test e isa ResizeEvent
@@ -654,27 +654,27 @@ end
 end
 
 @testitem "terminal: the reader loop pumps tty bytes into events" begin
-    using DualUI
+    using ManyUI
 
     # The byte source is an IOBuffer, but the path is the production
     # one: readavailable -> pump_input! -> the channel.
     d = TerminalDriver(in_stream = IOBuffer("hi\e[B"),
                        out_stream = IOBuffer(), caps = CAPS_MINIMAL)
-    @test DualUI._reader_loop!(d) === nothing
+    @test ManyUI._reader_loop!(d) === nothing
     @test take!(events(d)) == key('h')
     @test take!(events(d)) == key('i')
     @test take!(events(d)) == key(Key.DOWN)
 end
 
 @testitem "terminal: set_title! is gated on caps.title" begin
-    using DualUI
+    using ManyUI
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = DriverCaps(title = true))
     @test set_title!(d, "app") === nothing
     flush!(d)
-    @test String(take!(out)) == DualUI.Ansi.title("app")
+    @test String(take!(out)) == ManyUI.Ansi.title("app")
 
     quiet = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                            caps = DriverCaps(title = false))
@@ -684,7 +684,7 @@ end
 end
 
 @testitem "terminal: stop! closes the channel and restores" begin
-    using DualUI
+    using ManyUI
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,

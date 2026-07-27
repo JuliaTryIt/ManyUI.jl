@@ -18,14 +18,14 @@
 # --------------------------------------------------------------------
 
 @testitem "scrolloffset: an unscrolled tree paints exactly as before" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct RG <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct RG <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         seen::Vector{Symbol}
     end
-    DualUI.measure(w::RG, avail::Size)::Size = Size(4, 1)
-    function DualUI.render!(w::RG, b::AbstractMatrix{Cell})::Nothing
+    ManyUI.measure(w::RG, avail::Size)::Size = Size(4, 1)
+    function ManyUI.render!(w::RG, b::AbstractMatrix{Cell})::Nothing
         push!(w.seen, nameof(typeof(b)))
         write_text!(b, 1, 1, "abcd", STYLE_NONE)
         return nothing
@@ -74,7 +74,7 @@ end
 # --------------------------------------------------------------------
 
 @testitem "scrolloffset: an unscrolled node's scroll is ORIGIN" begin
-    using DualUI
+    using ManyUI
 
     c = Container()
     @test node(c).scroll === ORIGIN
@@ -84,7 +84,7 @@ end
 end
 
 @testitem "scrolloffset: clamp_scroll pins to 0 when content fits" begin
-    using DualUI
+    using ManyUI
 
     # content <= viewport: there is nowhere to go but 0.
     @test clamp_scroll(0, 10, 4) == 0
@@ -97,7 +97,7 @@ end
 end
 
 @testitem "scrolloffset: clamp_scroll pins to content - viewport" begin
-    using DualUI
+    using ManyUI
 
     @test clamp_scroll(100, 3, 10) == 7
     @test clamp_scroll(7, 3, 10) == 7
@@ -109,7 +109,7 @@ end
 end
 
 @testitem "scrolloffset: scroll_into_view keeps visible content still" begin
-    using DualUI
+    using ManyUI
 
     # Window 2:6 (0-based, viewport 5); the extent 3:5 is already in it.
     @test scroll_into_view(2, 5, 3, 5) == 2
@@ -127,7 +127,7 @@ end
 end
 
 @testitem "scrolloffset: scroll_into_view prefers an over-long START" begin
-    using DualUI
+    using ManyUI
 
     # The extent 1:10 cannot fit a 3-cell window: its START wins, so the
     # reader sees the top of the over-long item rather than its bottom.
@@ -142,7 +142,7 @@ end
 # --------------------------------------------------------------------
 
 @testitem "scrolloffset: ScrolledView size is the FRAME not the clip" begin
-    using DualUI
+    using ManyUI
 
     buf = Buffer(10, 6)
     v = ScrolledView(buf, Region(1, 1, 8, 6), Region(2, 2, 4, 3))
@@ -164,7 +164,7 @@ end
 end
 
 @testitem "scrolloffset: a shifted frame places glyphs by the frame" begin
-    using DualUI
+    using ManyUI
 
     buf = Buffer(8, 3)
     clear!(buf)
@@ -186,7 +186,7 @@ end
 end
 
 @testitem "scrolloffset: a shifted frame clips by the clip" begin
-    using DualUI
+    using ManyUI
 
     buf = Buffer(8, 3)
     clear!(buf)
@@ -204,7 +204,7 @@ end
 end
 
 @testitem "scrolloffset: a ScrolledView drops writes above and left" begin
-    using DualUI
+    using ManyUI
 
     buf = Buffer(6, 4)
     clear!(buf)
@@ -233,7 +233,7 @@ end
 end
 
 @testitem "scrolloffset: writable_region == buffer_region on old grids" begin
-    using DualUI
+    using ManyUI
 
     # THE no-regression lemma: for every grid that existed before this
     # change, the frame IS the clip, so every writer that swapped
@@ -261,7 +261,7 @@ end
 # --------------------------------------------------------------------
 
 @testitem "scrolloffset: a wide cluster at the LEFT clip edge is dropped" begin
-    using DualUI
+    using ManyUI
 
     buf = Buffer(6, 1)
     clear!(buf)
@@ -282,7 +282,7 @@ end
 end
 
 @testitem "scrolloffset: a wide cluster at the RIGHT clip edge is dropped" begin
-    using DualUI
+    using ManyUI
 
     buf = Buffer(6, 1)
     clear!(buf)
@@ -302,7 +302,7 @@ end
 end
 
 @testitem "scrolloffset: no orphaned continuation at ANY offset" begin
-    using DualUI
+    using ManyUI
 
     # One case is not enough: the two edges fail for DIFFERENT reasons
     # -- the right via `x + 1 > w`, the left via the clip guard -- so
@@ -335,16 +335,16 @@ end
 # --------------------------------------------------------------------
 
 @testitem "scrolloffset: a clip cutting the TOP-LEFT keeps the origin" begin
-    using DualUI
+    using ManyUI
 
     # The literal bug paint.jl's old comment predicted: a clip that cuts
     # the content box's TOP-LEFT corner used to move the local origin
     # with it, so a glyph at local (1, 1) landed on the CLIP's corner.
-    mutable struct TL{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct TL{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::TL, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::TL, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
 
     frames = Tuple{Int,Int}[]
@@ -361,7 +361,7 @@ end
 
     buf = Buffer(10, 6)
     clear!(buf)
-    DualUI._paint_node!(buf, w, Region(2, 2, 4, 3))
+    ManyUI._paint_node!(buf, w, Region(2, 2, 4, 3))
 
     # The frame is the FULL content box, whatever the clip cut off.
     @test frames == [(8, 6)]
@@ -377,17 +377,17 @@ end
 end
 
 @testitem "scrolloffset: size(buf) in render! is invariant under scroll" begin
-    using DualUI
+    using ManyUI
 
     # The assertion a design that grows a node's own frame under scroll
     # fails, and this one passes: `size(buf)` inside `render!` is the
     # widget's REAL content box, so a scrolled Label does not rewrap and
     # a scrolled Button does not re-centre.
-    mutable struct IV <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct IV <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         seen::Vector{Tuple{Int,Int}}
     end
-    DualUI.render!(w::IV, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::IV, b::AbstractMatrix{Cell})::Nothing =
         (push!(w.seen, size(b)); nothing)
 
     par = Container()
@@ -409,13 +409,13 @@ end
 end
 
 @testitem "scrolloffset: scroll shifts children not the own frame" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct SC{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct SC{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::SC, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::SC, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
     mkn(t) = (n = WidgetNode(; type_name = t);
               n.layout = LayoutBox(Region(1, 1, 6, 3), Region(1, 1, 6, 3),
@@ -445,13 +445,13 @@ end
 end
 
 @testitem "scrolloffset: a scrolled widget cannot escape its clip" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct ES{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct ES{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::ES, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::ES, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
 
     par = Container()
@@ -487,13 +487,13 @@ end
 end
 
 @testitem "scrolloffset: nested scroll offsets compose" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct NS{F} <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct NS{F} <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         fn::F
     end
-    DualUI.render!(w::NS, b::AbstractMatrix{Cell})::Nothing =
+    ManyUI.render!(w::NS, b::AbstractMatrix{Cell})::Nothing =
         (w.fn(b); nothing)
 
     outer = Container()
@@ -534,7 +534,7 @@ end
 # --------------------------------------------------------------------
 
 @testitem "scrolloffset: a PAINT mark leaves dirty_root nothing" begin
-    using DualUI
+    using ManyUI
 
     root = Container(; id = :root)
     c = Container(; id = :c)
@@ -559,7 +559,7 @@ end
 end
 
 @testitem "scrolloffset: the LayoutMap is invariant under scroll" begin
-    using DualUI
+    using ManyUI
 
     root = Container(; id = :root)
     a = Container(; id = :a)
@@ -585,7 +585,7 @@ end
 # --------------------------------------------------------------------
 
 @testitem "scrolloffset: set_scroll! is idempotent and clamps at zero" begin
-    using DualUI
+    using ManyUI
 
     c = Container()
     @test set_scroll!(c, Offset(2, 3)) === true
@@ -603,7 +603,7 @@ end
 end
 
 @testitem "scrolloffset: paint_offset excludes the node's own scroll" begin
-    using DualUI
+    using ManyUI
 
     a = Container()
     b = Container()
@@ -621,7 +621,7 @@ end
 end
 
 @testitem "scrolloffset: painted_region tracks the scroll" begin
-    using DualUI
+    using ManyUI
 
     p = Container()
     k = Container()
@@ -637,7 +637,7 @@ end
 end
 
 @testitem "scrolloffset: the 14-arg positional WidgetNode constructs" begin
-    using DualUI
+    using ManyUI
 
     # `test_paint.jl` and `css_tests.jl` build nodes positionally in the
     # pre-scroll 14-argument shape, and both are frozen: the compat
@@ -670,13 +670,13 @@ end
 # --------------------------------------------------------------------
 
 @testitem "scrolloffset: reveal! visits ancestors nearest-first" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct RV <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct RV <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         log::Vector{Symbol}
     end
-    DualUI.reveal_child!(w::RV, d::DualUI.Widget)::Nothing =
+    ManyUI.reveal_child!(w::RV, d::ManyUI.Widget)::Nothing =
         (push!(w.log, id(w)); nothing)
 
     log = Symbol[]
@@ -699,13 +699,13 @@ end
 end
 
 @testitem "scrolloffset: on_focus! calls reveal! by default" begin
-    using DualUI
+    using ManyUI
 
-    mutable struct FR <: DualUI.Widget
-        node::DualUI.WidgetNode
+    mutable struct FR <: ManyUI.Widget
+        node::ManyUI.WidgetNode
         log::Vector{Symbol}
     end
-    DualUI.reveal_child!(w::FR, d::DualUI.Widget)::Nothing =
+    ManyUI.reveal_child!(w::FR, d::ManyUI.Widget)::Nothing =
         (push!(w.log, id(w)); nothing)
 
     log = Symbol[]

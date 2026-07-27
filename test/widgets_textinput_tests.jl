@@ -8,7 +8,7 @@
 # Every testitem is self-contained, needs no tty and never sleeps.
 
 @testitem "textinput: measure is Size(avail.width, 1) whatever the text" begin
-    using DualUI
+    using ManyUI
     @test measure(TextInput(""), Size(20, 5)) == Size(20, 1)
     @test measure(TextInput("short"), Size(20, 5)) == Size(20, 1)
     long = TextInput(repeat("long text ", 40))
@@ -21,7 +21,7 @@
 end
 
 @testitem "textinput: the ZWJ family is ONE cursor step and TWO cells" begin
-    using DualUI
+    using ManyUI
     fam = "👨‍👩‍👧‍👦"
     # 7 codepoints, 25 bytes, 1 cluster, 2 cells. Stepping by codepoint
     # would take 7 moves; stepping by byte would take 25.
@@ -47,7 +47,7 @@ end
 end
 
 @testitem "textinput: backspace deletes one cluster, not one codepoint" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("a👍🏽b")
     @test move_to!(ti, typemax(Int)) == 3      # "a", "👍🏽", "b"
     @test move_to!(ti, 2) == 2                 # caret after the emoji
@@ -69,7 +69,7 @@ end
 end
 
 @testitem "textinput: a combining mark merges and the caret is recomputed" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("e")
     @test move_to!(ti, typemax(Int)) == 1
     insert_text!(ti, "́")          # COMBINING ACUTE ACCENT
@@ -92,7 +92,7 @@ end
 end
 
 @testitem "textinput: the caret at 0 refuses to move left" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("abc")
     @test move_to!(ti, 0) == 0
     @test move_by!(ti, -1) == 0
@@ -105,7 +105,7 @@ end
 end
 
 @testitem "textinput: the caret at n refuses to move right" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("abc")
     @test move_to!(ti, typemax(Int)) == 3
     @test move_by!(ti, 1) == 3
@@ -118,7 +118,7 @@ end
 end
 
 @testitem "textinput: Home and End go to both extremes" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("世界")                     # 2 clusters, 4 cells
     @test move_to!(ti, typemax(Int)) == 2      # End
     @test move_to!(ti, 0) == 0                 # Home
@@ -135,7 +135,7 @@ end
 end
 
 @testitem "textinput: deleting the last grapheme empties the text" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("👨‍👩‍👧‍👦")
     @test move_to!(ti, typemax(Int)) == 1
     @test backspace!(ti)
@@ -154,7 +154,7 @@ end
 end
 
 @testitem "textinput: backspace on empty text returns false" begin
-    using DualUI
+    using ManyUI
     ti = TextInput()
     @test ti.text[] == ""
     @test ti.cursor[] == 0
@@ -169,7 +169,7 @@ end
 end
 
 @testitem "textinput: delete removes the cluster AT the caret" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("a世b")
     @test move_to!(ti, 1) == 1
     @test delete_forward!(ti)                  # takes "世" whole
@@ -183,7 +183,7 @@ end
 end
 
 @testitem "textinput: the window slides only as far as it must" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("abcdefghij")               # 10 clusters, 10 cells
     root = Container(ti)
     apply_stylesheet!(STYLESHEET_EMPTY, root)
@@ -217,7 +217,7 @@ end
 end
 
 @testitem "textinput: the window follows the caret right and left" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("abcdefghij")
     root = Container(ti)
     apply_stylesheet!(STYLESHEET_EMPTY, root)
@@ -251,7 +251,7 @@ end
 end
 
 @testitem "textinput: a wide cluster at a window edge is dropped whole" begin
-    using DualUI
+    using ManyUI
     # "世界世界": 4 clusters, 8 cells, every one of them width 2.
     ti = TextInput("世界世界")
     buf = Buffer(5, 1)
@@ -290,7 +290,7 @@ end
     # Sweep every offset: no cell is ever an orphaned continuation.
     for off in 0:8
         set_scroll!(ti, Offset(off, 0))
-        ti.cursor[] = DualUI._col_at_cell(ti.text[], off)
+        ti.cursor[] = ManyUI._col_at_cell(ti.text[], off)
         clear!(buf)
         render!(ti, buf)
         for x in 1:5
@@ -302,7 +302,7 @@ end
 end
 
 @testitem "textinput: typing a wide grapheme at a boundary" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("ab")
     root = Container(ti)
     apply_stylesheet!(STYLESHEET_EMPTY, root)
@@ -341,7 +341,7 @@ end
 end
 
 @testitem "textinput: the caret cell is reversed only when focused" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("ab")
     ti.cursor[] = 0
     buf = Buffer(5, 1)
@@ -374,7 +374,7 @@ end
 end
 
 @testitem "textinput: the caret over a wide cluster reverses the HEAD" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("世界")
     ti.focused[] = true
     ti.cursor[] = 0
@@ -402,7 +402,7 @@ end
 end
 
 @testitem "textinput: the placeholder shows dimmed only while empty" begin
-    using DualUI
+    using ManyUI
     ti = TextInput(""; placeholder = "name")
     buf = Buffer(8, 1)
     clear!(buf)
@@ -433,7 +433,7 @@ end
 end
 
 @testitem "textinput: ENTER calls on_submit" begin
-    using DualUI
+    using ManyUI
     fired = Ref(0)
     seen = Ref{Any}(nothing)
     ti = TextInput("hi", w -> (fired[] += 1; seen[] = w.text[]; nothing))
@@ -468,7 +468,7 @@ end
 end
 
 @testitem "textinput: TAB and ESCAPE are NOT consumed" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("hi")
     move_to!(ti, typemax(Int))
     for k in ("tab", "shift+tab", "escape", "f1")
@@ -482,7 +482,7 @@ end
 end
 
 @testitem "textinput: ctrl+a is NOT consumed" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("hi")
     for k in ("ctrl+a", "alt+b", "ctrl+left", "ctrl+shift+left")
         d = Dispatch(parse(KeyEvent, k), ti)
@@ -501,7 +501,7 @@ end
 end
 
 @testitem "textinput: typed keys insert at the caret" begin
-    using DualUI
+    using ManyUI
     ti = TextInput()
     for e in (key('h'), key('i'), parse(KeyEvent, "space"), key('世'))
         d = Dispatch(e, ti)
@@ -526,7 +526,7 @@ end
 end
 
 @testitem "textinput: paste strips newlines" begin
-    using DualUI
+    using ManyUI
     ti = TextInput()
     d = Dispatch(PasteEvent("a\nb\r\nc\td"), ti)
     d.phase = Phase.AT_TARGET
@@ -569,7 +569,7 @@ end
 end
 
 @testitem "textinput: typing does not mark Dirty.LAYOUT" begin
-    using DualUI
+    using ManyUI
     ti = TextInput("ab")
     root = Container(ti)
     apply_stylesheet!(STYLESHEET_EMPTY, root)
@@ -607,7 +607,7 @@ end
 end
 
 @testitem "textinput: on_focus! reveals through an ancestor pane" begin
-    using DualUI
+    using ManyUI
 
     # A stand-in for any scrolling ancestor: the core knows only that a
     # node MAY reveal a descendant, never how. `Scrollpane` overrides
@@ -618,7 +618,7 @@ end
     end
     RevealSpy() = RevealSpy(WidgetNode(; type_name = :RevealSpy),
                             Widget[])
-    DualUI.reveal_child!(w::RevealSpy, d::Widget)::Nothing =
+    ManyUI.reveal_child!(w::RevealSpy, d::Widget)::Nothing =
         (push!(w.seen, d); nothing)
 
     ti = TextInput("hi")
@@ -646,7 +646,7 @@ end
 end
 
 @testitem "textinput: is focusable with concrete fields" begin
-    using DualUI
+    using ManyUI
     f = w -> nothing
     ti = TextInput("x", f)
     @test ti isa TextInput{typeof(f)}
@@ -670,7 +670,7 @@ end
 end
 
 @testitem "textinput: content_extent leaves a cell for the caret" begin
-    using DualUI
+    using ManyUI
     # The `+ 1` is load-bearing: the caret must be able to rest ONE cell
     # past the last glyph, and without it End scrolls one cell short.
     @test content_extent(TextInput("")) == Size(1, 1)
@@ -684,23 +684,23 @@ end
     insert_text!(ti, "cd")
     @test content_extent(ti) == Size(5, 1)
     @test scroll_of(ti) isa Offset
-    @test layout_of(ti) isa DualUI.LayoutBox
+    @test layout_of(ti) isa ManyUI.LayoutBox
 end
 
 @testitem "textinput: the grapheme helpers meet bytes and clusters" begin
-    using DualUI
+    using ManyUI
     # THE one place byte and cluster indices are allowed to meet, and
     # `textarea.jl` codes against these exact signatures.
     fam = "👨‍👩‍👧‍👦"
 
     # _byte_after: 0 below the range, ncodeunits past the end, always a
     # boundary that SubString can split at.
-    @test DualUI._byte_after("abc", 0) == 0
-    @test DualUI._byte_after("abc", -3) == 0
-    @test DualUI._byte_after("abc", 2) == 2
-    @test DualUI._byte_after("abc", 99) == 3
-    @test DualUI._byte_after(fam, 1) == 25
-    @test DualUI._byte_after("世界", 1) == 3
+    @test ManyUI._byte_after("abc", 0) == 0
+    @test ManyUI._byte_after("abc", -3) == 0
+    @test ManyUI._byte_after("abc", 2) == 2
+    @test ManyUI._byte_after("abc", 99) == 3
+    @test ManyUI._byte_after(fam, 1) == 25
+    @test ManyUI._byte_after("世界", 1) == 3
 
     # A code-unit COUNT, never a character INDEX. `SubString(s, 1, b)`
     # would throw a StringIndexError the moment the prefix ends inside a
@@ -708,53 +708,53 @@ end
     # precaution `truncate_width` already takes.
     s = "a世👍🏽"
     for k in -1:5
-        b = DualUI._byte_after(s, k)
+        b = ManyUI._byte_after(s, k)
         head = SubString(s, 1, thisind(s, b))
         tail = SubString(s, b + 1)
         @test ncodeunits(head) == b            # a whole-cluster split
         @test string(head, tail) == s          # and a lossless one
     end
-    @test_throws StringIndexError SubString(s, 1, DualUI._byte_after(s, 2))
+    @test_throws StringIndexError SubString(s, 1, ManyUI._byte_after(s, 2))
 
     # _ngraphemes: clusters, never codepoints and never bytes.
-    @test DualUI._ngraphemes("") == 0
-    @test DualUI._ngraphemes("abc") == 3
-    @test DualUI._ngraphemes("世界") == 2
-    @test DualUI._ngraphemes(fam) == 1
-    @test DualUI._ngraphemes("é") == 1
-    @test DualUI._ngraphemes("🇫🇷") == 1
+    @test ManyUI._ngraphemes("") == 0
+    @test ManyUI._ngraphemes("abc") == 3
+    @test ManyUI._ngraphemes("世界") == 2
+    @test ManyUI._ngraphemes(fam) == 1
+    @test ManyUI._ngraphemes("é") == 1
+    @test ManyUI._ngraphemes("🇫🇷") == 1
 
     # _gindex_at: clusters ENDING at or before a byte; rounds DOWN.
-    @test DualUI._gindex_at("abc", 0) == 0
-    @test DualUI._gindex_at("abc", 2) == 2
-    @test DualUI._gindex_at("abc", 99) == 3
-    @test DualUI._gindex_at(fam, 24) == 0      # inside the cluster
-    @test DualUI._gindex_at(fam, 25) == 1
-    @test DualUI._gindex_at("世界", 3) == 1
-    @test DualUI._gindex_at("世界", 5) == 1    # rounds DOWN
+    @test ManyUI._gindex_at("abc", 0) == 0
+    @test ManyUI._gindex_at("abc", 2) == 2
+    @test ManyUI._gindex_at("abc", 99) == 3
+    @test ManyUI._gindex_at(fam, 24) == 0      # inside the cluster
+    @test ManyUI._gindex_at(fam, 25) == 1
+    @test ManyUI._gindex_at("世界", 3) == 1
+    @test ManyUI._gindex_at("世界", 5) == 1    # rounds DOWN
 
     # _cluster_width_at: cells of the cluster after a byte; 1 at the end
     # so the caret always has a cell to sit in.
-    @test DualUI._cluster_width_at("a世", 0) == 1
-    @test DualUI._cluster_width_at("a世", 1) == 2
-    @test DualUI._cluster_width_at("a世", 4) == 1
-    @test DualUI._cluster_width_at("", 0) == 1
-    @test DualUI._cluster_width_at(fam, 0) == 2
+    @test ManyUI._cluster_width_at("a世", 0) == 1
+    @test ManyUI._cluster_width_at("a世", 1) == 2
+    @test ManyUI._cluster_width_at("a世", 4) == 1
+    @test ManyUI._cluster_width_at("", 0) == 1
+    @test ManyUI._cluster_width_at(fam, 0) == 2
 
     # _col_at_cell: the inverse of "cells before the caret". It can
     # never land INSIDE a wide cluster.
-    @test DualUI._col_at_cell("世界", 0) == 0
-    @test DualUI._col_at_cell("世界", 1) == 0  # inside cluster 1
-    @test DualUI._col_at_cell("世界", 2) == 1
-    @test DualUI._col_at_cell("世界", 3) == 1  # inside cluster 2
-    @test DualUI._col_at_cell("世界", 4) == 2
-    @test DualUI._col_at_cell("世界", 99) == 2
-    @test DualUI._col_at_cell("abc", 2) == 2
-    @test DualUI._col_at_cell("abc", -1) == 0
+    @test ManyUI._col_at_cell("世界", 0) == 0
+    @test ManyUI._col_at_cell("世界", 1) == 0  # inside cluster 1
+    @test ManyUI._col_at_cell("世界", 2) == 1
+    @test ManyUI._col_at_cell("世界", 3) == 1  # inside cluster 2
+    @test ManyUI._col_at_cell("世界", 4) == 2
+    @test ManyUI._col_at_cell("世界", 99) == 2
+    @test ManyUI._col_at_cell("abc", 2) == 2
+    @test ManyUI._col_at_cell("abc", -1) == 0
 end
 
 @testitem "textinput: every grapheme test vector round-trips" begin
-    using DualUI
+    using ManyUI
     # The contract's § 4.4 table, entire. Each row is (text, cells,
     # clusters).
     vectors = (("abc", 3, 3),

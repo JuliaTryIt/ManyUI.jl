@@ -8,7 +8,7 @@
 # test.
 
 @testitem "unicode: grapheme_width mandatory vectors" begin
-    using DualUI
+    using ManyUI
 
     # ---- contract 2.3, the normative table. All MUST pass. ----
     @test text_width("\U1F468‍\U1F469‍\U1F467") == 2   # 👨‍👩‍👧
@@ -75,7 +75,7 @@
 end
 
 @testitem "unicode: VS16 promotes width 1 base to 2" begin
-    using DualUI
+    using ManyUI
 
     # U+2764 HEAVY BLACK HEART is width 1 on its own...
     @test char_width('❤') == 1
@@ -105,19 +105,19 @@ end
     # VS16/VS15/ZWJ are [I] internal (contract 2.3): they are part of
     # the package's vocabulary but are deliberately NOT exported, so
     # they must be reached through the module.
-    @test char_width(DualUI.VS16) == 0
-    @test char_width(DualUI.VS15) == 0
-    @test char_width(DualUI.ZWJ) == 0
-    @test is_combining(DualUI.VS16)
-    @test is_combining(DualUI.ZWJ)
-    @test DualUI.VS16 == '️'
-    @test DualUI.VS15 == '︎'
-    @test DualUI.ZWJ == '‍'
+    @test char_width(ManyUI.VS16) == 0
+    @test char_width(ManyUI.VS15) == 0
+    @test char_width(ManyUI.ZWJ) == 0
+    @test is_combining(ManyUI.VS16)
+    @test is_combining(ManyUI.ZWJ)
+    @test ManyUI.VS16 == '️'
+    @test ManyUI.VS15 == '︎'
+    @test ManyUI.ZWJ == '‍'
     @test !isdefined(Main, :VS16)   # stays internal
 end
 
 @testitem "unicode: regional indicator pair is 2" begin
-    using DualUI
+    using ManyUI
 
     # A lone regional indicator is width 1 per the Unicode tables...
     @test is_regional_indicator('\U1F1EB')
@@ -141,7 +141,7 @@ end
 end
 
 @testitem "unicode: NFC and NFD forms agree" begin
-    using DualUI
+    using ManyUI
     using Unicode
 
     nfc = Unicode.normalize("é", :NFC)   # single codepoint U+00E9
@@ -173,7 +173,7 @@ end
 end
 
 @testitem "unicode: text_width never delegates to textwidth" begin
-    using DualUI
+    using ManyUI
 
     # Base.textwidth sums codepoints and ignores grapheme clustering.
     # These are the exact cases where it is WRONG; if text_width ever
@@ -226,7 +226,7 @@ end
 end
 
 @testitem "unicode: truncate_width drops straddling wide cluster" begin
-    using DualUI
+    using ManyUI
 
     # A width-2 cluster that would straddle the limit is DROPPED, not
     # halved: half a glyph corrupts the grid.
@@ -273,7 +273,7 @@ end
 end
 
 @testitem "unicode: wrap_width never splits a cluster" begin
-    using DualUI
+    using ManyUI
     using Unicode
 
     # Greedy word wrap.
@@ -331,7 +331,7 @@ end
 end
 
 @testitem "unicode: grapheme_width allocates nothing" begin
-    using DualUI
+    using ManyUI
 
     # grapheme_width runs per cell per frame. It MUST NOT collect the
     # cluster into a Vector{Char}: that would allocate on the hot path.
@@ -357,7 +357,7 @@ end
 end
 
 @testitem "unicode: char_width classifies codepoints" begin
-    using DualUI
+    using ManyUI
 
     # Narrow.
     @test char_width('a') == 1

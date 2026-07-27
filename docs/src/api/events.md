@@ -1,6 +1,6 @@
 # Events, input and dispatch
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["events.jl", "src/input.jl", "dispatch.jl"]
 ```

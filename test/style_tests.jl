@@ -5,7 +5,7 @@
 # MONOCHROME".
 
 @testitem "style: Style is isbits and 12 bytes" begin
-    using DualUI
+    using ManyUI
 
     @test isbitstype(Style)
     @test sizeof(Style) == 12          # Color(4) + Color(4) + 2 + 2
@@ -33,7 +33,7 @@
 end
 
 @testitem "style: kwarg constructor is tri-state" begin
-    using DualUI
+    using ManyUI
 
     # nothing = unspecified, false = specified-off, true = specified-on.
     @test STYLE_NONE.mask === 0x0000
@@ -82,7 +82,7 @@ end
 end
 
 @testitem "style: with and without are inverse on the mask" begin
-    using DualUI
+    using ManyUI
 
     @test with(STYLE_NONE, Attr.BOLD, true) === Style(bold = true)
     @test with(STYLE_NONE, Attr.BOLD, false) === Style(bold = false)
@@ -126,7 +126,7 @@ end
 end
 
 @testitem "style: merge monoid laws" begin
-    using DualUI
+    using ManyUI
 
     a = Style(fg = rgb(255, 0, 0), bold = true)
     b = Style(bg = rgb(0, 0, 255), italic = true)
@@ -176,7 +176,7 @@ end
 end
 
 @testitem "style: bold false overrides inherited bold" begin
-    using DualUI
+    using ManyUI
 
     # THE reason Style carries a mask: without it, `bold: false` in a
     # stylesheet could not switch off an inherited bold, exactly the
@@ -213,7 +213,7 @@ end
 end
 
 @testitem "style: inheritable keeps fg drops bg" begin
-    using DualUI
+    using ManyUI
 
     s = Style(fg = rgb(255, 0, 0), bg = rgb(0, 0, 255), bold = true,
               italic = false, strike = true)
@@ -245,7 +245,7 @@ end
 end
 
 @testitem "style: resolve replaces unset colors with default" begin
-    using DualUI
+    using ManyUI
 
     r = resolve(STYLE_NONE)
     @test r.fg === COLOR_DEFAULT
@@ -268,7 +268,7 @@ end
 end
 
 @testitem "style: degrade drops attrs at MONOCHROME" begin
-    using DualUI
+    using ManyUI
 
     D = ColorDepth
     s = Style(fg = rgb(0xffffff), bg = rgb(0x000000), bold = true,
@@ -345,7 +345,7 @@ end
 end
 
 @testitem "style: parse_attrs handles no- prefix" begin
-    using DualUI
+    using ManyUI
 
     B = UInt16(Attr.BOLD)
     I = UInt16(Attr.ITALIC)

@@ -4,7 +4,7 @@
 # Every @testitem is self-contained: TestItemRunner isolates them.
 
 @testitem "Input: parse_events grammar table" begin
-    using DualUI
+    using ManyUI
 
     bytes_of(s::AbstractString) = Vector{UInt8}(codeunits(s))
 
@@ -110,7 +110,7 @@
 end
 
 @testitem "Input: modified keys via CSI parameters" begin
-    using DualUI
+    using ManyUI
 
     p1(s) = first(parse_events(Vector{UInt8}(codeunits(s))))[1]
 
@@ -139,7 +139,7 @@ end
 end
 
 @testitem "Input: function keys F1 through F12" begin
-    using DualUI
+    using ManyUI
 
     p1(s) = first(parse_events(Vector{UInt8}(codeunits(s))))[1]
 
@@ -157,7 +157,7 @@ end
 end
 
 @testitem "Input: SGR mouse reports" begin
-    using DualUI
+    using ManyUI
 
     p1(s) = first(parse_events(Vector{UInt8}(codeunits(s))))[1]
     CTRL = Modifiers(UInt8(Modifier.CTRL))
@@ -202,7 +202,7 @@ end
 end
 
 @testitem "Input: legacy X10 mouse reports" begin
-    using DualUI
+    using ManyUI
 
     bs = UInt8[0x1b, UInt8('['), UInt8('M'), 0x20, 0x21, 0x22]
     (evs, n) = parse_events(bs)
@@ -226,7 +226,7 @@ end
 end
 
 @testitem "Input: incomplete CSI is left unconsumed" begin
-    using DualUI
+    using ManyUI
 
     for s in ("\e", "\e[", "\e[1", "\e[1;", "\e[1;5", "\e[<", "\e[<0;1",
               "\eO")
@@ -243,7 +243,7 @@ end
 end
 
 @testitem "Input: CSI split across two feeds parses once" begin
-    using DualUI
+    using ManyUI
 
     # W4 / req 2.4: a sequence cut by a frame boundary must not be lost
     # and must not be double-counted.
@@ -263,7 +263,7 @@ end
 end
 
 @testitem "Input: partial UTF-8 is left unconsumed" begin
-    using DualUI
+    using ManyUI
 
     bs = Vector{UInt8}(codeunits("🚀"))
     @test length(bs) == 4
@@ -295,7 +295,7 @@ end
 end
 
 @testitem "Input: byte-at-a-time matches whole feeding" begin
-    using DualUI
+    using ManyUI
 
     function collect_drip(bs::Vector{UInt8})
         p = InputParser()
@@ -323,11 +323,11 @@ end
 end
 
 @testitem "Input: source agnostic byte stream (req 2.4)" begin
-    using DualUI
+    using ManyUI
 
     # The parser never touches a byte source: the same bytes cut at ANY
     # boundary -- a raw keyboard read or a web frame split -- must yield
-    # exactly the same events. This is why DualUIWeb needs no parser.
+    # exactly the same events. This is why ManyUIWeb needs no parser.
     s = "hi\e[1;5C\e[<0;3;4M🚀\eOQ"
     bs = Vector{UInt8}(codeunits(s))
     whole = feed!(InputParser(), bs, 0.0)
@@ -342,7 +342,7 @@ end
 end
 
 @testitem "Input: bracketed paste accumulates then emits" begin
-    using DualUI
+    using ManyUI
 
     p = InputParser()
     @test isempty(feed!(p, "\e[200~hello", 0.0))
@@ -382,7 +382,7 @@ end
 end
 
 @testitem "Input: lone ESC resolves via injected clock" begin
-    using DualUI
+    using ManyUI
 
     # No sleep anywhere: the clock is a parameter.
     p = InputParser(esc_timeout = 0.05)
@@ -419,7 +419,7 @@ end
 end
 
 @testitem "Input: unknown CSI is consumed and dropped" begin
-    using DualUI
+    using ManyUI
 
     for s in ("\e[99y", "\e[?1;2c", "\e[>0;95;0c", "\e[=1u", "\e[R")
         (evs, n) = parse_events(Vector{UInt8}(codeunits(s)))
@@ -440,7 +440,7 @@ end
 end
 
 @testitem "Input: empty! drops half-parsed state" begin
-    using DualUI
+    using ManyUI
 
     p = InputParser()
     feed!(p, "\e[1;", 0.0)
@@ -472,7 +472,7 @@ end
 end
 
 @testitem "Input: pump_input! puts events on a channel" begin
-    using DualUI
+    using ManyUI
 
     p = InputParser()
     ch = Channel{Event}(16)
@@ -495,7 +495,7 @@ end
 end
 
 @testitem "Input: parse_events never throws" begin
-    using DualUI
+    using ManyUI
 
     junk = Vector{UInt8}[
         UInt8[],
@@ -530,7 +530,7 @@ end
 end
 
 @testitem "Input: InputParser is a thin shell over parse_events" begin
-    using DualUI
+    using ManyUI
 
     p = InputParser()
     @test isempty(p)
@@ -553,9 +553,9 @@ end
 end
 
 @testitem "Input: file contains no IO type" begin
-    using DualUI
+    using ManyUI
 
-    src = read(joinpath(pkgdir(DualUI), "src", "input.jl"), String)
+    src = read(joinpath(pkgdir(ManyUI), "src", "input.jl"), String)
     @test !occursin(r"\bIO\b", src)
     @test !occursin(r"\bIOBuffer\b", src)
     @test !occursin("stdin", src)

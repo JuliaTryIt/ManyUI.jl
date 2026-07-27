@@ -1,20 +1,20 @@
 # Drop-down, forms and popups
 
 ```@meta
-CurrentModule = DualUI
+CurrentModule = ManyUI
 ```
 
 ## Drop-down
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/dropdown.jl"]
 ```
 
 ## Form
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/form.jl"]
 ```
 
@@ -26,6 +26,6 @@ popup; an owner opens it with `open_popup!` and is notified through
 `on_popup_close!`.
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/popup.jl", "popup_ops.jl"]
 ```

@@ -1,6 +1,6 @@
 # widgets_toggle_tests.jl -- Checkbox and RadioGroup (layer 7).
 #
-# Every testitem is self-contained, starts `using DualUI`, needs no tty
+# Every testitem is self-contained, starts `using ManyUI`, needs no tty
 # and never sleeps.
 #
 # THE SPACE BAR IS `Key.SPACE`, NOT `Key.CHAR(' ')`. The input parser
@@ -13,7 +13,7 @@
 # NOTHING. These paint into a headless `Buffer` and assert the CELLS.
 
 @testitem "toggle: a checkbox is focusable and starts unchecked" begin
-    using DualUI
+    using ManyUI
     cb = Checkbox("Accept")
     @test cb isa Widget
     @test type_name(cb) === :Checkbox
@@ -25,7 +25,7 @@
 end
 
 @testitem "toggle: a checkbox seeds its state at construction" begin
-    using DualUI
+    using ManyUI
     @test check_state(Checkbox("x"; state = CheckState.CHECKED)) ===
         CheckState.CHECKED
     @test check_state(Checkbox("x"; state = CheckState.MIXED)) ===
@@ -34,7 +34,7 @@ end
 end
 
 @testitem "toggle: ids are unique by default, settable by hand" begin
-    using DualUI
+    using ManyUI
     @test id(Checkbox("a")) !== id(Checkbox("a"))
     @test id(Checkbox("a"; id = :fixed)) === :fixed
     @test id(RadioGroup(["a"])) !== id(RadioGroup(["a"]))
@@ -42,20 +42,20 @@ end
 end
 
 @testitem "toggle: all five glyphs are exactly CB_WIDTH cells" begin
-    using DualUI
+    using ManyUI
     # LOAD-BEARING, not tidiness: equal widths are what make `measure`
     # independent of `state`, which is what LICENSES `state`'s
     # `Dirty.PAINT` reactivity. A width-1 "check" against a width-3
     # "[ ]" would make a click a LAYOUT pass.
-    @test DualUI.CB_WIDTH == 3
-    for g in (DualUI.CB_UNCHECKED, DualUI.CB_CHECKED, DualUI.CB_MIXED,
-              DualUI.RB_ON, DualUI.RB_OFF)
-        @test text_width(g) == DualUI.CB_WIDTH
+    @test ManyUI.CB_WIDTH == 3
+    for g in (ManyUI.CB_UNCHECKED, ManyUI.CB_CHECKED, ManyUI.CB_MIXED,
+              ManyUI.RB_ON, ManyUI.RB_OFF)
+        @test text_width(g) == ManyUI.CB_WIDTH
     end
 end
 
 @testitem "toggle: an unchecked checkbox paints [ ] and its caption" begin
-    using DualUI
+    using ManyUI
     cb = Checkbox("Accept")
     apply_stylesheet!(STYLESHEET_EMPTY, cb)
     layout!(cb, Region(1, 1, 20, 1))
@@ -71,7 +71,7 @@ end
 end
 
 @testitem "toggle: a checked checkbox paints [x]" begin
-    using DualUI
+    using ManyUI
     cb = Checkbox("Accept"; state = CheckState.CHECKED)
     apply_stylesheet!(STYLESHEET_EMPTY, cb)
     layout!(cb, Region(1, 1, 20, 1))
@@ -84,7 +84,7 @@ end
 end
 
 @testitem "toggle: a mixed checkbox paints [-]" begin
-    using DualUI
+    using ManyUI
     cb = Checkbox("Accept"; state = CheckState.MIXED)
     apply_stylesheet!(STYLESHEET_EMPTY, cb)
     layout!(cb, Region(1, 1, 20, 1))
@@ -95,7 +95,7 @@ end
 end
 
 @testitem "toggle: a bare checkbox paints only its box" begin
-    using DualUI
+    using ManyUI
     cb = Checkbox("")
     apply_stylesheet!(STYLESHEET_EMPTY, cb)
     layout!(cb, Region(1, 1, 6, 1))
@@ -106,7 +106,7 @@ end
 end
 
 @testitem "toggle: SPACE via Key.SPACE toggles the checkbox" begin
-    using DualUI
+    using ManyUI
     # The adversarial case. `Key.SPACE`, NOT `Key.CHAR(' ')`, is what the
     # parser emits for the space bar; this is the press that has shipped
     # dead before.
@@ -124,7 +124,7 @@ end
 end
 
 @testitem "toggle: SPACE via Key.CHAR space also toggles" begin
-    using DualUI
+    using ManyUI
     cb = Checkbox("x")
     d = Dispatch(key(' '), cb)
     d.phase = Phase.AT_TARGET
@@ -134,7 +134,7 @@ end
 end
 
 @testitem "toggle: a checkbox does NOT toggle or consume ENTER" begin
-    using DualUI
+    using ManyUI
     # ENTER in a form is SUBMIT. A checkbox that eats ENTER makes ENTER
     # the one key an app cannot bind.
     cb = Checkbox("x")
@@ -146,7 +146,7 @@ end
 end
 
 @testitem "toggle: a checkbox leaves TAB alone" begin
-    using DualUI
+    using ManyUI
     # A control that consumes TAB traps focus forever. Consume ONLY what
     # you handle.
     cb = Checkbox("x")
@@ -161,7 +161,7 @@ end
 end
 
 @testitem "toggle: a LEFT click toggles, its release does not" begin
-    using DualUI
+    using ManyUI
     cb = Checkbox("x")
     apply_stylesheet!(STYLESHEET_EMPTY, cb)
     layout!(cb, Region(1, 1, 20, 1))
@@ -182,7 +182,7 @@ end
 end
 
 @testitem "toggle: a click on the caption toggles too" begin
-    using DualUI
+    using ManyUI
     # The box is ONE widget: a caption you cannot click is a bug users
     # file.
     cb = Checkbox("Accept")
@@ -196,7 +196,7 @@ end
 end
 
 @testitem "toggle: a non-LEFT press is ignored" begin
-    using DualUI
+    using ManyUI
     cb = Checkbox("x")
     apply_stylesheet!(STYLESHEET_EMPTY, cb)
     layout!(cb, Region(1, 1, 20, 1))
@@ -209,7 +209,7 @@ end
 end
 
 @testitem "toggle: toggle! NEVER produces MIXED" begin
-    using DualUI
+    using ManyUI
     # The user has two reachable states; MIXED is set BY CODE. "some are
     # on" answered by a human means "now all of them".
     cb = Checkbox("x"; state = CheckState.MIXED)
@@ -219,7 +219,7 @@ end
 end
 
 @testitem "toggle: set_state! fires on_change only on a real change" begin
-    using DualUI
+    using ManyUI
     hits = Ref(0)
     cb = Checkbox("x", c -> (hits[] += 1; nothing))
     @test set_state!(cb, CheckState.CHECKED)
@@ -232,19 +232,19 @@ end
 end
 
 @testitem "toggle: checkbox measure is content-sized, never avail" begin
-    using DualUI
+    using ManyUI
     # A `measure` returning `avail` would make a one-row Label beside a
     # checkbox into a ZERO-row label and vanish it.
     huge = Size(500, 40)
-    @test measure(Checkbox(""), huge) == Size(DualUI.CB_WIDTH, 1)
+    @test measure(Checkbox(""), huge) == Size(ManyUI.CB_WIDTH, 1)
     m = measure(Checkbox("Accept"), huge)
-    @test m == Size(DualUI.CB_WIDTH + DualUI.CB_GAP +
+    @test m == Size(ManyUI.CB_WIDTH + ManyUI.CB_GAP +
                     text_width("Accept"), 1)
     @test m != huge
 end
 
 @testitem "toggle: focusing a checkbox underlines it, blur clears it" begin
-    using DualUI
+    using ManyUI
     cb = Checkbox("Ok")
     apply_stylesheet!(STYLESHEET_EMPTY, cb)
     layout!(cb, Region(1, 1, 10, 1))
@@ -263,7 +263,7 @@ end
 end
 
 @testitem "toggle: a disabled checkbox refuses TAB, click and paint" begin
-    using DualUI
+    using ManyUI
     # There is no `disabled` field (contract 3.6): "disabled" is
     # `focusable = false` (out of the tab order) plus `set_visible!` when
     # clicks must be refused too. A hidden, non-focusable checkbox
@@ -290,7 +290,7 @@ end
 # ---- RadioGroup -----------------------------------------------------
 
 @testitem "toggle: a radiogroup chooses nothing initially" begin
-    using DualUI
+    using ManyUI
     opts = ["Small", "Medium", "Large"]
     rg = RadioGroup(opts)
     @test rg isa Widget
@@ -307,7 +307,7 @@ end
 end
 
 @testitem "toggle: a radiogroup collects an AbstractVector once" begin
-    using DualUI
+    using ManyUI
     # `split` yields a Vector{SubString{String}}: an
     # AbstractVector{<:AbstractString} that is NOT a Vector{String}, so
     # it exercises the collecting constructor.
@@ -319,7 +319,7 @@ end
 end
 
 @testitem "toggle: with nothing selected every radio paints ( )" begin
-    using DualUI
+    using ManyUI
     rg = RadioGroup(["Small", "Medium"])
     apply_stylesheet!(STYLESHEET_EMPTY, rg)
     layout!(rg, Region(1, 1, 12, 2))
@@ -336,7 +336,7 @@ end
 end
 
 @testitem "toggle: choosing one option deselects the others" begin
-    using DualUI
+    using ManyUI
     # The mutual exclusion lives in ONE Int: there is no state in which
     # two options are on.
     rg = RadioGroup(["Small", "Medium", "Large"])
@@ -361,7 +361,7 @@ end
 end
 
 @testitem "toggle: SPACE selects the cursor option (both forms)" begin
-    using DualUI
+    using ManyUI
     for e in (key(Key.SPACE), key(' '))
         rg = RadioGroup(["A", "B", "C"])
         # Move the cursor to row 2 without choosing.
@@ -379,7 +379,7 @@ end
 end
 
 @testitem "toggle: ENTER selects in a radiogroup" begin
-    using DualUI
+    using ManyUI
     rg = RadioGroup(["A", "B"])
     d = Dispatch(key(Key.ENTER), rg)
     d.phase = Phase.AT_TARGET
@@ -389,7 +389,7 @@ end
 end
 
 @testitem "toggle: arrows move the cursor without choosing" begin
-    using DualUI
+    using ManyUI
     # Selection-follows-arrow would make SPACE a no-op on the row it just
     # moved to and fire on_change on every keystroke.
     hits = Ref(0)
@@ -408,7 +408,7 @@ end
 end
 
 @testitem "toggle: an arrow at the end of a radiogroup bubbles" begin
-    using DualUI
+    using ManyUI
     # Consumes only on a real move, so UP on option 1 bubbles.
     rg = RadioGroup(["A", "B"])
     du = Dispatch(key(Key.UP), rg)
@@ -429,7 +429,7 @@ end
 end
 
 @testitem "toggle: a radiogroup leaves TAB alone" begin
-    using DualUI
+    using ManyUI
     rg = RadioGroup(["A", "B"])
     for e in (key(Key.TAB), key(Key.BACK_TAB), key(Key.ESCAPE),
               key(Key.SPACE; ctrl = true))
@@ -442,7 +442,7 @@ end
 end
 
 @testitem "toggle: a LEFT click chooses that radio row" begin
-    using DualUI
+    using ManyUI
     # A click is unambiguous: nobody clicks a radio button to browse.
     rg = RadioGroup(["A", "B", "C"])
     apply_stylesheet!(STYLESHEET_EMPTY, rg)
@@ -457,7 +457,7 @@ end
 end
 
 @testitem "toggle: a click outside the radio rows chooses nothing" begin
-    using DualUI
+    using ManyUI
     rg = RadioGroup(["A", "B"])
     apply_stylesheet!(STYLESHEET_EMPTY, rg)
     layout!(rg, Region(1, 1, 10, 4))
@@ -470,7 +470,7 @@ end
 end
 
 @testitem "toggle: choose! clamps, moves the cursor, reports change" begin
-    using DualUI
+    using ManyUI
     hits = Ref(0)
     rg = RadioGroup(["A", "B", "C"], g -> (hits[] += 1; nothing))
     # Out of range clamps into 1:n.
@@ -485,17 +485,17 @@ end
 end
 
 @testitem "toggle: radiogroup measure is content-sized, never avail" begin
-    using DualUI
+    using ManyUI
     huge = Size(500, 40)
     rg = RadioGroup(["A", "Medium", "C"])
     m = measure(rg, huge)
-    @test m == Size(DualUI.CB_WIDTH + DualUI.CB_GAP +
+    @test m == Size(ManyUI.CB_WIDTH + ManyUI.CB_GAP +
                     text_width("Medium"), 3)
     @test m != huge
 end
 
 @testitem "toggle: an empty radiogroup is inert" begin
-    using DualUI
+    using ManyUI
     rg = RadioGroup(String[])
     @test selected(rg) == 0
     @test radio_cursor(rg) == 0
@@ -517,7 +517,7 @@ end
 end
 
 @testitem "toggle: focus underlines only the cursor row" begin
-    using DualUI
+    using ManyUI
     rg = RadioGroup(["A", "B", "C"])
     on_focus!(rg)
     @test rg.focused[]

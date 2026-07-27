@@ -1,6 +1,6 @@
 # widgets_tree_tests.jl -- the hierarchical TreeView (layer 7).
 #
-# Every testitem is self-contained, starts `using DualUI`, needs no tty
+# Every testitem is self-contained, starts `using ManyUI`, needs no tty
 # and never sleeps.
 #
 # NODES ARE DATA. A 10 000-node tree is 10 000 `TreeNode`s and ZERO
@@ -14,7 +14,7 @@
 # NOTHING: these paint into a headless `Buffer` and assert the CELLS.
 
 @testitem "tree: construction aliases roots and is focusable" begin
-    using DualUI
+    using ManyUI
     rs = [TreeNode("a"), TreeNode("b")]
     w = TreeView(rs)
     @test w isa Widget
@@ -31,7 +31,7 @@
 end
 
 @testitem "tree: the seam is one line each" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("a"), TreeNode("b"), TreeNode("c")])
     @test selection_of(w) === w.sel
     @test row_count(w) == 3
@@ -44,7 +44,7 @@ end
 end
 
 @testitem "tree: TreeNode and is_leaf / is_expanded" begin
-    using DualUI
+    using ManyUI
     leaf = TreeNode("x")
     @test is_leaf(leaf)
     @test !is_expanded(leaf)
@@ -61,7 +61,7 @@ end
 end
 
 @testitem "tree: a 10 000-node COLLAPSED tree flattens to roots" begin
-    using DualUI
+    using ManyUI
     big = TreeNode("r", [TreeNode("c$i") for i in 1:9999])
     w = TreeView([big])
     # 10 000 NODES, but a collapsed root contributes EXACTLY ONE ROW
@@ -75,7 +75,7 @@ end
 end
 
 @testitem "tree: nodes are DATA -- descendants empty at two sizes" begin
-    using DualUI
+    using ManyUI
     small = TreeView([TreeNode("r", [TreeNode("a") for _ in 1:9])])
     big = TreeView([TreeNode("r", [TreeNode("a$i") for i in 1:9999])])
     @test isempty(descendants(small))
@@ -101,7 +101,7 @@ end
 end
 
 @testitem "tree: render! is O(window) -- alloc independent of nodes" begin
-    using DualUI
+    using ManyUI
     small = TreeView([TreeNode("r",
         [TreeNode("c$i") for i in 1:9]; expanded = true)])
     big = TreeView([TreeNode("r",
@@ -125,7 +125,7 @@ end
 end
 
 @testitem "tree: an EMPTY tree does not throw and paints nothing" begin
-    using DualUI
+    using ManyUI
     w = TreeView(TreeNode{String}[])
     @test tree_cursor(w) === nothing
     @test row_count(w) == 0
@@ -150,7 +150,7 @@ end
 end
 
 @testitem "tree: one node paints its label past the twisty" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("hello")])
     apply_stylesheet!(STYLESHEET_EMPTY, w)
     layout!(w, Region(1, 1, 10, 2))
@@ -165,7 +165,7 @@ end
 end
 
 @testitem "tree: deep nesting indents by depth" begin
-    using DualUI
+    using ManyUI
     d = TreeNode("d")
     c = TreeNode("c", [d]; expanded = true)
     b = TreeNode("b", [c]; expanded = true)
@@ -188,7 +188,7 @@ end
 end
 
 @testitem "tree: key(Key.SPACE) toggles the cursor node" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("r", [TreeNode("a"), TreeNode("b")])])
     apply_stylesheet!(STYLESHEET_EMPTY, w)
     layout!(w, Region(1, 1, 10, 4))
@@ -215,7 +215,7 @@ end
 end
 
 @testitem "tree: key(' ') also toggles the cursor node" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("r", [TreeNode("a")])])
     apply_stylesheet!(STYLESHEET_EMPTY, w)
     layout!(w, Region(1, 1, 10, 4))
@@ -230,7 +230,7 @@ end
 end
 
 @testitem "tree: SPACE on a LEAF does not consume" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("r")])
     apply_stylesheet!(STYLESHEET_EMPTY, w)
     layout!(w, Region(1, 1, 10, 4))
@@ -248,7 +248,7 @@ end
 end
 
 @testitem "tree: collapsing an ANCESTOR re-pins the cursor onto it" begin
-    using DualUI
+    using ManyUI
     a1 = TreeNode("a1")
     a2 = TreeNode("a2")
     a = TreeNode("a", [a1, a2])
@@ -271,7 +271,7 @@ end
 end
 
 @testitem "tree: expanding re-pins the cursor by IDENTITY" begin
-    using DualUI
+    using ManyUI
     rootA = TreeNode("A", [TreeNode("A1"), TreeNode("A2")])
     rootB = TreeNode("B")
     w = TreeView([rootA, rootB])
@@ -290,7 +290,7 @@ end
 end
 
 @testitem "tree: RIGHT expands; RIGHT again moves to the first child" begin
-    using DualUI
+    using ManyUI
     c1 = TreeNode("c1")
     c2 = TreeNode("c2")
     root = TreeNode("r", [c1, c2])
@@ -309,7 +309,7 @@ end
 end
 
 @testitem "tree: LEFT at a collapsed node walks to the PARENT" begin
-    using DualUI
+    using ManyUI
     grand = TreeNode("g")
     c1 = TreeNode("c1", [grand])       # a COLLAPSED branch
     root = TreeNode("r", [c1]; expanded = true)
@@ -330,7 +330,7 @@ end
 end
 
 @testitem "tree: LEFT at a root leaf does NOT consume" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("r")])
     apply_stylesheet!(STYLESHEET_EMPTY, w)
     layout!(w, Region(1, 1, 10, 4))
@@ -344,7 +344,7 @@ end
 end
 
 @testitem "tree: UP/DOWN/HOME/END/PAGE delegate to _tc_key!" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("L$i") for i in 1:20])
     apply_stylesheet!(STYLESHEET_EMPTY, w)
     layout!(w, Region(1, 1, 10, 5))
@@ -365,7 +365,7 @@ end
 end
 
 @testitem "tree: a TreeView does not consume tab" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("r", [TreeNode("a")])])
     apply_stylesheet!(STYLESHEET_EMPTY, w)
     layout!(w, Region(1, 1, 10, 5))
@@ -380,7 +380,7 @@ end
 end
 
 @testitem "tree: clicking the TWISTY toggles; the LABEL moves cursor" begin
-    using DualUI
+    using ManyUI
     r0 = TreeNode("r0", [TreeNode("x"), TreeNode("y")])
     r1 = TreeNode("r1")
     w = TreeView([r0, r1])
@@ -403,7 +403,7 @@ end
 end
 
 @testitem "tree: a TreeView inside a scrolled pane clicks the right row" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("L$i") for i in 1:20])
     # A tree takes the height it is OFFERED, so a pane wrapped round one
     # scrolls nothing until the tree is given a box TALLER than the pane.
@@ -429,7 +429,7 @@ end
 end
 
 @testitem "tree: Scrollbar{TreeView} needs no new code" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("L$i") for i in 1:20])
     bar = Scrollbar(w, ScrollAxis.VERTICAL; mode = ScrollMode.ALWAYS)
     # PARAMETRIC on the viewport type: the scrollable seam is three
@@ -450,18 +450,18 @@ end
     paint!(buf, root)
     col = [buf[6, y].content for y in 1:4]
     # 20 rows, a 4-cell track: a 1-cell thumb pinned to the top.
-    @test col[1] == DualUI.SB_THUMB
-    @test all(==(DualUI.SB_TRACK_V), col[2:4])
+    @test col[1] == ManyUI.SB_THUMB
+    @test all(==(ManyUI.SB_TRACK_V), col[2:4])
 
     scroll_to!(w, Offset(0, 16))
     clear!(buf)
     paint!(buf, root)
     col = [buf[6, y].content for y in 1:4]
-    @test col[4] == DualUI.SB_THUMB   # pinned to the BOTTOM
+    @test col[4] == ManyUI.SB_THUMB   # pinned to the BOTTOM
 end
 
 @testitem "tree: measure IS avail (greedy by design)" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("a"), TreeNode("b")])
     # GREEDY: a tree takes the space it is OFFERED and scrolls its
     # content, because an auto-height tree would be as tall as its data
@@ -472,7 +472,7 @@ end
 end
 
 @testitem "tree: expand_all! then collapse_all! is a round trip" begin
-    using DualUI
+    using ManyUI
     root = TreeNode("r",
         [TreeNode("a", [TreeNode("a1")]), TreeNode("b")])
     w = TreeView([root])
@@ -488,7 +488,7 @@ end
 end
 
 @testitem "tree: refresh_tree! picks up a push! into kids" begin
-    using DualUI
+    using ManyUI
     root = TreeNode("r", [TreeNode("c1")]; expanded = true)
     w = TreeView([root])
     @test row_count(w) == 2            # r, c1
@@ -502,7 +502,7 @@ end
 end
 
 @testitem "tree: set_roots! replaces and rewinds" begin
-    using DualUI
+    using ManyUI
     w = TreeView([TreeNode("a"), TreeNode("b"), TreeNode("c")])
     apply_stylesheet!(STYLESHEET_EMPTY, w)
     layout!(w, Region(1, 1, 10, 2))
@@ -515,12 +515,12 @@ end
 end
 
 @testitem "tree: the twisty glyphs are width 1" begin
-    using DualUI
+    using ManyUI
     # ASCII, and the text column is invariant only if all three are one
     # cell wide. `Base.textwidth` is forbidden; `text_width` is the
     # grapheme-aware measure.
-    @test text_width(DualUI.TV_OPEN) == 1
-    @test text_width(DualUI.TV_CLOSED) == 1
-    @test text_width(DualUI.TV_LEAF) == 1
-    @test DualUI.TV_INDENT == 2
+    @test text_width(ManyUI.TV_OPEN) == 1
+    @test text_width(ManyUI.TV_CLOSED) == 1
+    @test text_width(ManyUI.TV_LEAF) == 1
+    @test ManyUI.TV_INDENT == 2
 end

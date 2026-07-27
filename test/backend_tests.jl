@@ -4,12 +4,12 @@
 # tests that matter are the ones that pin the parts a user would otherwise
 # have to change by hand: who calls the factory, how many times, what the
 # handle protocol is, and whether an out-of-tree Backend can join without
-# touching DualUI. DualUIWeb's WebBackend is exactly such an out-of-tree
+# touching ManyUI. ManyUIWeb's WebBackend is exactly such an out-of-tree
 # backend, so the custom-backend testitem below is the standing proof that
 # it can exist.
 
 @testitem "backend: TerminalBackend and HeadlessBackend are Backends" begin
-    using DualUI
+    using ManyUI
 
     @test TerminalBackend <: Backend
     @test HeadlessBackend <: Backend
@@ -18,15 +18,15 @@
 end
 
 @testitem "backend: make_driver builds the right Driver" begin
-    using DualUI
+    using ManyUI
 
-    d = DualUI.make_driver(HeadlessBackend(Size(40, 8)))
+    d = ManyUI.make_driver(HeadlessBackend(Size(40, 8)))
     @test d isa HeadlessDriver
     @test display_size(d) == Size(40, 8)
 
     # A TerminalDriver over pipes rather than a real tty: the point is the
     # TYPE, not that it can find a terminal.
-    t = DualUI.make_driver(TerminalBackend(; in_stream = IOBuffer(),
+    t = ManyUI.make_driver(TerminalBackend(; in_stream = IOBuffer(),
                                              out_stream = IOBuffer(),
                                              caps = CAPS_MINIMAL))
     @test t isa TerminalDriver
@@ -34,16 +34,16 @@ end
 end
 
 @testitem "backend: make_driver has no fallback" begin
-    using DualUI
+    using ManyUI
 
-    struct UnimplementedBackend <: DualUI.Backend end
+    struct UnimplementedBackend <: ManyUI.Backend end
     # A Backend that forgets make_driver must fail loudly, not silently
     # produce a default driver on someone's terminal.
-    @test_throws MethodError DualUI.make_driver(UnimplementedBackend())
+    @test_throws MethodError ManyUI.make_driver(UnimplementedBackend())
 end
 
 @testitem "backend: launch(wait = false) returns a live App" begin
-    using DualUI
+    using ManyUI
 
     app = launch(() -> Container(Label("hi"));
                  backend = HeadlessBackend(Size(40, 8)), wait = false)
@@ -59,7 +59,7 @@ end
 end
 
 @testitem "backend: launch calls the factory exactly once" begin
-    using DualUI
+    using ManyUI
 
     calls = Ref(0)
     factory = () -> (calls[] += 1; Container(Label("x")))
@@ -73,15 +73,15 @@ end
 end
 
 @testitem "backend: launch(wait = true) blocks and returns an exit code" begin
-    using DualUI
+    using ManyUI
 
     # The blocking path hands back no handle -- that IS the contract -- so
     # queue the QuitEvent BEFORE launching and let the loop find it on its
     # first pass. Returns like run!: 0 for a clean exit.
-    struct PrebuiltBackend <: DualUI.Backend
+    struct PrebuiltBackend <: ManyUI.Backend
         driver::HeadlessDriver
     end
-    DualUI.make_driver(b::PrebuiltBackend) = b.driver
+    ManyUI.make_driver(b::PrebuiltBackend) = b.driver
 
     d = HeadlessDriver(Size(20, 5))
     push_event!(d, QuitEvent())
@@ -92,7 +92,7 @@ end
 end
 
 @testitem "backend: launch(wait = false) returns a handle that is already live" begin
-    using DualUI
+    using ManyUI
 
     # The bug this pins: start! only SPAWNS run!, and run! is what sets
     # app.running -- so a launch that returned straight from start! handed
@@ -112,7 +112,7 @@ end
 end
 
 @testitem "backend: launch threads config and stylesheet through" begin
-    using DualUI
+    using ManyUI
 
     sheet = parse_css("label { color: red; }")
     cfg = AppConfig(; title = "launched", min_size = Size(11, 3))
@@ -130,15 +130,15 @@ end
 end
 
 @testitem "backend: an out-of-tree Backend needs only make_driver" begin
-    using DualUI
+    using ManyUI
 
-    # This is DualUIWeb's situation in miniature: a Backend defined outside
-    # DualUI, joining by dispatch alone. If this testitem ever needs a
+    # This is ManyUIWeb's situation in miniature: a Backend defined outside
+    # ManyUI, joining by dispatch alone. If this testitem ever needs a
     # second method to pass, the seam has leaked.
-    struct FakeBackend <: DualUI.Backend
+    struct FakeBackend <: ManyUI.Backend
         size::Size
     end
-    DualUI.make_driver(b::FakeBackend) = HeadlessDriver(b.size)
+    ManyUI.make_driver(b::FakeBackend) = HeadlessDriver(b.size)
 
     app = launch(() -> Container(Label("out of tree"));
                  backend = FakeBackend(Size(30, 5)), wait = false)
@@ -152,7 +152,7 @@ end
 end
 
 @testitem "backend: close(app) is the uniform stop verb" begin
-    using DualUI
+    using ManyUI
 
     # `launch` promises the handle answers wait/close/isopen whatever the
     # backend is. WebServer already does; App has to learn `close`.
@@ -167,7 +167,7 @@ end
 end
 
 @testitem "backend: a factory returning a non-Widget is rejected" begin
-    using DualUI
+    using ManyUI
 
     # The factory is user code called deep inside launch; a wrong return
     # should name the problem rather than fail later as a MethodError in

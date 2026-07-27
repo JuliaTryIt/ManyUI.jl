@@ -1,16 +1,16 @@
 using Documenter
-using DualUI
+using ManyUI
 
-DocMeta.setdocmeta!(DualUI, :DocTestSetup, :(using DualUI);
+DocMeta.setdocmeta!(ManyUI, :DocTestSetup, :(using ManyUI);
                     recursive = true)
 
 makedocs(;
-    modules = [DualUI],
-    sitename = "DualUI.jl",
+    modules = [ManyUI],
+    sitename = "ManyUI.jl",
     authors = "Sébastien Celles",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://s-celles.github.io/DualUI.jl",
+        canonical = "https://s-celles.github.io/ManyUI.jl",
         edit_link = nothing,
         repolink = nothing,
         # The aggregate search index grows with the library and is past the

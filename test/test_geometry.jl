@@ -2,7 +2,7 @@
 # Written BEFORE the implementation (house rule: TDD).
 
 @testitem "geometry: Region isempty and area" begin
-    using DualUI
+    using ManyUI
 
     r = Region(1, 1, 10, 5)
     @test !isempty(r)
@@ -35,7 +35,7 @@
 end
 
 @testitem "geometry: intersect returns empty not nothing" begin
-    using DualUI
+    using ManyUI
 
     a = Region(1, 1, 10, 10)
     b = Region(5, 5, 10, 10)
@@ -74,7 +74,7 @@ end
 end
 
 @testitem "geometry: union is the bounding box" begin
-    using DualUI
+    using ManyUI
 
     a = Region(1, 1, 2, 2)
     b = Region(5, 5, 2, 2)
@@ -101,7 +101,7 @@ end
 end
 
 @testitem "geometry: shrink clamps to zero never negative" begin
-    using DualUI
+    using ManyUI
 
     r = Region(1, 1, 10, 10)
     @test shrink(r, Spacing(1)) === Region(2, 2, 8, 8)
@@ -139,7 +139,7 @@ end
 end
 
 @testitem "geometry: grow inverts shrink on positive space" begin
-    using DualUI
+    using ManyUI
 
     r = Region(5, 5, 10, 10)
     for s in (Spacing(0), Spacing(1), Spacing(2, 3), Spacing(1, 2, 3, 4))
@@ -162,7 +162,7 @@ end
 end
 
 @testitem "geometry: in is inclusive at both edges" begin
-    using DualUI
+    using ManyUI
 
     r = Region(2, 3, 4, 5)   # x: 2..5, y: 3..7
     @test Offset(2, 3) in r           # top-left corner
@@ -195,7 +195,7 @@ end
 end
 
 @testitem "geometry: split_row and split_col partition exactly" begin
-    using DualUI
+    using ManyUI
 
     r = Region(3, 4, 10, 6)
 
@@ -249,7 +249,7 @@ end
 end
 
 @testitem "geometry: Spacing shorthand constructors" begin
-    using DualUI
+    using ManyUI
 
     # One-value shorthand: all four edges.
     @test Spacing(2) === Spacing(2, 2, 2, 2)
@@ -285,7 +285,7 @@ end
 end
 
 @testitem "geometry: all types are isbits" begin
-    using DualUI
+    using ManyUI
 
     @test isbitstype(Size)
     @test isbitstype(Offset)
@@ -311,7 +311,7 @@ end
 end
 
 @testitem "geometry: constants and translation" begin
-    using DualUI
+    using ManyUI
 
     @test ORIGIN === Offset(0, 0)
     @test NO_SPACING === Spacing(0, 0, 0, 0)
@@ -336,7 +336,7 @@ end
 end
 
 @testitem "geometry: Offset and Size algebra" begin
-    using DualUI
+    using ManyUI
 
     @test Offset(1, 2) + Offset(3, 4) === Offset(4, 6)
     @test Offset(5, 7) - Offset(1, 2) === Offset(4, 5)
@@ -354,7 +354,7 @@ end
 end
 
 @testitem "geometry: clamp_size clamps per axis" begin
-    using DualUI
+    using ManyUI
 
     lo = Size(2, 3)
     hi = Size(10, 12)

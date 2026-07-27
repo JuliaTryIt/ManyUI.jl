@@ -1,6 +1,6 @@
 # widgets_datatable_tests.jl -- a sortable Table (layer 7).
 #
-# Every testitem is self-contained, starts `using DualUI`, needs no tty,
+# Every testitem is self-contained, starts `using ManyUI`, needs no tty,
 # never sleeps and bounds every wait.
 #
 # THE TWO NORMATIVE PROPERTIES OF THE SORT, asserted on BEHAVIOUR rather
@@ -18,7 +18,7 @@
 # --- construction -----------------------------------------------------
 
 @testitem "datatable: key is a REQUIRED keyword" begin
-    using DualUI
+    using ManyUI
     rows = [("Bob", 30), ("Amy", 25)]
     cols = [Column("Name"; width = cells(6))]
     # A `DataTable` exists to sort; one without a sort key is a `Table`.
@@ -29,7 +29,7 @@
 end
 
 @testitem "datatable: is focusable by construction" begin
-    using DualUI
+    using ManyUI
     dt = DataTable([("a",)], [Column("X")]; key = (r, j) -> r[j])
     @test dt isa Widget
     @test dt isa RowsWidget
@@ -40,7 +40,7 @@ end
 end
 
 @testitem "datatable: starts in SOURCE order with no indicator" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",), ("b",)]
     dt = DataTable(rows, [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1])
@@ -57,7 +57,7 @@ end
 # --- the sort: the two normative properties ---------------------------
 
 @testitem "datatable: sort_by! NEVER mutates rows" begin
-    using DualUI
+    using ManyUI
     rows = [("c", 3), ("a", 1), ("b", 2)]
     before = copy(rows)
     dt = DataTable(rows, [Column("N"; width = cells(3)),
@@ -82,7 +82,7 @@ end
 end
 
 @testitem "datatable: sort_by! is stable ASCENDING" begin
-    using DualUI
+    using ManyUI
     # Duplicate keys, distinct payloads: ties MUST keep SOURCE order.
     rows = [(2, :a), (1, :b), (2, :c), (1, :d), (2, :e)]
     dt = DataTable(rows, [Column("K"; width = cells(3))];
@@ -95,7 +95,7 @@ end
 end
 
 @testitem "datatable: sort_by! DESCENDING keeps ties in SOURCE order" begin
-    using DualUI
+    using ManyUI
     rows = [(2, :a), (1, :b), (2, :c), (1, :d), (2, :e)]
     dt = DataTable(rows, [Column("K"; width = cells(3))];
                    key = (r, j) -> r[1])
@@ -111,7 +111,7 @@ end
 end
 
 @testitem "datatable: a tie-only column still flips its indicator" begin
-    using DualUI
+    using ManyUI
     # EVERY key is equal, so ASC and DESC give the IDENTICAL order --
     # stability guarantees it. The arrow still has to turn over, and a
     # `sort_by!` that reported "nothing changed" here would skip the
@@ -135,7 +135,7 @@ end
 end
 
 @testitem "datatable: sorting ascending and descending" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",), ("b",)]
     dt = DataTable(rows, [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1])
@@ -150,7 +150,7 @@ end
 end
 
 @testitem "datatable: the sort compares the KEY, not the cell" begin
-    using DualUI
+    using ManyUI
     # Sorting a numeric column by its RENDERED string puts "10" before
     # "9". The two callbacks exist precisely so it cannot.
     rows = [(9,), (10,), (1,)]
@@ -163,7 +163,7 @@ end
 # --- the sort: refusals and edges -------------------------------------
 
 @testitem "datatable: sort_by! throws on a non-sortable column" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",)]
     cols = [Column("X"; width = cells(3), sortable = false)]
     dt = DataTable(rows, cols; key = (r, j) -> r[1])
@@ -176,7 +176,7 @@ end
 end
 
 @testitem "datatable: sort_by! throws outside 0:ncols" begin
-    using DualUI
+    using ManyUI
     dt = DataTable([("c",), ("a",)], [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1])
     @test_throws BoundsError sort_by!(dt, 2)
@@ -187,7 +187,7 @@ end
 end
 
 @testitem "datatable: sort_by!(w, 0) restores source order exactly" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",), ("b",)]
     dt = DataTable(rows, [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1])
@@ -211,7 +211,7 @@ end
 end
 
 @testitem "datatable: sort_by! is deterministic whatever the history" begin
-    using DualUI
+    using ManyUI
     rows = [("c", 2), ("a", 3), ("b", 1)]
     dt = DataTable(rows, [Column("N"; width = cells(3)),
                           Column("V"; width = cells(3))];
@@ -237,7 +237,7 @@ end
 end
 
 @testitem "datatable: sorting a mixed-type column THROWS" begin
-    using DualUI
+    using ManyUI
     # A column of MIXED types THROWS a MethodError from `isless` -- it is
     # not "merely slow". `key` must return values mutually
     # `isless`-comparable WITHIN a column.
@@ -248,7 +248,7 @@ end
 end
 
 @testitem "datatable: sort on an empty table" begin
-    using DualUI
+    using ManyUI
     rows = Tuple{String}[]
     dt = DataTable(rows, [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1])
@@ -280,7 +280,7 @@ end
 end
 
 @testitem "datatable: sort on one row" begin
-    using DualUI
+    using ManyUI
     rows = [("only",)]
     dt = DataTable(rows, [Column("X"; width = cells(5))];
                    key = (r, j) -> r[1])
@@ -300,7 +300,7 @@ end
 # --- the permutation invariants ---------------------------------------
 
 @testitem "datatable: rank[order[k]] == k after every sort" begin
-    using DualUI
+    using ManyUI
     rows = [(x,) for x in [5, 3, 9, 1, 3, 7, 3]]
     dt = DataTable(rows, [Column("K"; width = cells(3))];
                    key = (r, j) -> r[1])
@@ -318,7 +318,7 @@ end
 end
 
 @testitem "datatable: order is always a permutation of 1:n" begin
-    using DualUI
+    using ManyUI
     rows = [(x,) for x in [5, 3, 9, 1, 3, 7, 3]]
     dt = DataTable(rows, [Column("K"; width = cells(3))];
                    key = (r, j) -> r[1])
@@ -341,7 +341,7 @@ end
 # --- the selection across a sort --------------------------------------
 
 @testitem "datatable: the SELECTION survives a sort by ROW" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",), ("b",)]
     dt = DataTable(rows, [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1], mode = SelectMode.MULTI)
@@ -365,7 +365,7 @@ end
 end
 
 @testitem "datatable: the selection is UNCHANGED by a sort" begin
-    using DualUI
+    using ManyUI
     rows = [(x,) for x in [5, 3, 9, 1]]
     dt = DataTable(rows, [Column("K"; width = cells(3))];
                    key = (r, j) -> r[1], mode = SelectMode.MULTI)
@@ -387,7 +387,7 @@ end
 end
 
 @testitem "datatable: the cursor's ROW survives a sort, scrolled to" begin
-    using DualUI
+    using ManyUI
     # key = -i, so ASCENDING exactly reverses the source order.
     rows = [(i,) for i in 1:100]
     dt = DataTable(rows, [Column("N"; width = cells(4))];
@@ -414,7 +414,7 @@ end
 end
 
 @testitem "datatable: navigation after a re-sort walks the VIEW" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",), ("b",)]
     dt = DataTable(rows, [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1])
@@ -434,7 +434,7 @@ end
 # --- the indicator ----------------------------------------------------
 
 @testitem "datatable: the indicator is on the sorted column ONLY" begin
-    using DualUI
+    using ManyUI
     dt = DataTable([("a", 1)], [Column("N"; width = cells(6)),
                                 Column("V"; width = cells(4))];
                    key = (r, j) -> r[j])
@@ -459,7 +459,7 @@ end
 end
 
 @testitem "datatable: the indicator is in the column's last cell" begin
-    using DualUI
+    using ManyUI
     rows = [("Bob", 30), ("Amy", 25)]
     cols = [Column("Name"; width = cells(6)), Column("Age";
                                                      width = cells(4))]
@@ -499,7 +499,7 @@ end
 end
 
 @testitem "datatable: the indicator is never truncated away" begin
-    using DualUI
+    using ManyUI
     # APPENDING the indicator to the caption would truncate it away in a
     # narrow column -- so the ONE column whose state you must see is the
     # one that hides it. It is painted in the column's LAST cell instead.
@@ -523,7 +523,7 @@ end
 end
 
 @testitem "datatable: the indicator survives a 1-cell column" begin
-    using DualUI
+    using ManyUI
     dt = DataTable([("x",)], [Column("Name"; width = cells(1))];
                    key = (r, j) -> r[1])
     apply_stylesheet!(STYLESHEET_EMPTY, dt)
@@ -537,7 +537,7 @@ end
 end
 
 @testitem "datatable: the gutter is reserved when unsorted" begin
-    using DualUI
+    using ManyUI
     # "Names" is exactly 5 cells and the column is 5 cells. APPENDING
     # would render the caption WHOLE while unsorted and re-truncate it
     # the moment you sort -- the header would twitch. THE GUTTER IS
@@ -563,7 +563,7 @@ end
 end
 
 @testitem "datatable: a non-sortable column reserves no gutter" begin
-    using DualUI
+    using ManyUI
     dt = DataTable([("x",)],
                    [Column("Names"; width = cells(5), sortable = false)];
                    key = (r, j) -> r[1])
@@ -576,7 +576,7 @@ end
 end
 
 @testitem "datatable: the header honours Align in the caption area" begin
-    using DualUI
+    using ManyUI
     dt = DataTable([("x",)], [Column("Ab"; width = cells(6),
                                      align = Align.END)];
                    key = (r, j) -> r[1])
@@ -593,7 +593,7 @@ end
 end
 
 @testitem "datatable: column widths do NOT change when you sort" begin
-    using DualUI
+    using ManyUI
     # `_tc_auto!` samples SOURCE rows 1:sample, NEVER view rows, so a
     # width that moved under a sort is impossible by construction. A
     # table that reflows under the reader's eyes is a worse bug than a
@@ -624,7 +624,7 @@ end
 # --- the mouse --------------------------------------------------------
 
 @testitem "datatable: a header click sorts, a second toggles it" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",), ("b",)]
     dt = DataTable(rows, [Column("X"; width = cells(4))];
                    key = (r, j) -> r[1])
@@ -653,7 +653,7 @@ end
 end
 
 @testitem "datatable: a header click on a NEW column sorts ASCENDING" begin
-    using DualUI
+    using ManyUI
     rows = [("c", 1), ("a", 3), ("b", 2)]
     dt = DataTable(rows, [Column("N"; width = cells(4)),
                           Column("V"; width = cells(4))];
@@ -676,7 +676,7 @@ end
 end
 
 @testitem "datatable: a header click on a non-sortable column no-ops" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",)]
     dt = DataTable(rows, [Column("X"; width = cells(4),
                                  sortable = false)];
@@ -696,7 +696,7 @@ end
 end
 
 @testitem "datatable: a body click selects and does not sort" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",), ("b",)]
     dt = DataTable(rows, [Column("X"; width = cells(4))];
                    key = (r, j) -> r[1])
@@ -721,7 +721,7 @@ end
 end
 
 @testitem "datatable: a body click after a sort selects by position" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",), ("b",)]
     dt = DataTable(rows, [Column("X"; width = cells(4))];
                    key = (r, j) -> r[1])
@@ -741,7 +741,7 @@ end
 end
 
 @testitem "datatable: a header click before the first paint no-ops" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",)]
     dt = DataTable(rows, [Column("X"; width = cells(4))];
                    key = (r, j) -> r[1])
@@ -757,7 +757,7 @@ end
 end
 
 @testitem "datatable: the wheel still scrolls over the header" begin
-    using DualUI
+    using ManyUI
     rows = [(i,) for i in 1:100]
     dt = DataTable(rows, [Column("N"; width = cells(4))];
                    key = (r, j) -> r[1])
@@ -777,7 +777,7 @@ end
 end
 
 @testitem "datatable: a header click with padding hits the right col" begin
-    using DualUI
+    using ManyUI
     # `_tc_local` measures from the CONTENT box, so padding and a border
     # shift the header without moving the column under the pointer.
     # `local_offset` -- measured from the UNSHIFTED BORDER box -- would
@@ -807,7 +807,7 @@ end
 end
 
 @testitem "datatable: a header click follows a horizontal scroll" begin
-    using DualUI
+    using ManyUI
     # THE HEADER FOLLOWS THE COLUMNS HORIZONTALLY, so the hit test must
     # too: `_tc_col_at` reads `scroll_of(w).x`, and without it every
     # click past a scroll would sort the column to its left.
@@ -838,7 +838,7 @@ end
 # --- the O(window) contract -------------------------------------------
 
 @testitem "datatable: paint after a sort is still O(window)" begin
-    using DualUI
+    using ManyUI
     hits = Ref(0)
     rows = [(i, -i) for i in 1:100_000]
     cols = [Column("A"; width = cells(8)), Column("B"; width = cells(8))]
@@ -864,7 +864,7 @@ end
 end
 
 @testitem "datatable: a 100 000-row sort never touches the frame" begin
-    using DualUI
+    using ManyUI
     kh = Ref(0)
     ch = Ref(0)
     rows = [(i,) for i in 100_000:-1:1]
@@ -893,7 +893,7 @@ end
 end
 
 @testitem "datatable: a row is not a widget, at ANY size" begin
-    using DualUI
+    using ManyUI
     # THE RULE THE WHOLE TIER RESTS ON, MEASURED rather than assumed: a
     # row is an element of a Vector and ZERO WidgetNodes. A `DataTable`
     # has a header, a grid painter AND a sort -- all three are data or
@@ -950,7 +950,7 @@ end
 end
 
 @testitem "datatable: sort_by! calls key exactly n times" begin
-    using DualUI
+    using ManyUI
     hits = Ref(0)
     rows = [(x,) for x in [5, 3, 9, 1, 3, 7, 3, 2, 8, 4]]
     dt = DataTable(rows, [Column("K"; width = cells(3))];
@@ -973,7 +973,7 @@ end
 end
 
 @testitem "datatable: over-scroll paints blanks, never a BoundsError" begin
-    using DualUI
+    using ManyUI
     dt = DataTable([("x",), ("y",)], [Column("N"; width = cells(3))];
                    key = (r, j) -> r[1])
     apply_stylesheet!(STYLESHEET_EMPTY, dt)
@@ -991,7 +991,7 @@ end
 # --- the scrollable seam ----------------------------------------------
 
 @testitem "datatable: Scrollbar{DataTable} needs ZERO new scroll code" begin
-    using DualUI
+    using ManyUI
     rows = [(i,) for i in 1:20]
     dt = DataTable(rows, [Column("N"; width = cells(4))];
                    key = (r, j) -> r[1])
@@ -1014,7 +1014,7 @@ end
 end
 
 @testitem "datatable: Scrollpane(DataTable(...)) composes" begin
-    using DualUI
+    using ManyUI
     rows = [(i,) for i in 1:20]
     dt = DataTable(rows, [Column("N"; width = cells(4))];
                    key = (r, j) -> r[1])
@@ -1034,7 +1034,7 @@ end
 end
 
 @testitem "datatable: content_extent counts the header rows" begin
-    using DualUI
+    using ManyUI
     for (sh, ru, hh) in ((true, false, 1), (true, true, 2),
                          (false, false, 0), (false, true, 0))
         dt = DataTable([(i,) for i in 1:7],
@@ -1050,7 +1050,7 @@ end
 end
 
 @testitem "datatable: END lands the last row on the last window row" begin
-    using DualUI
+    using ManyUI
     # `content_extent`'s `+ hh` and `_tc_follow_cursor!`'s `- hh` are the
     # same fact stated twice. If they ever drift, this fails.
     dt = DataTable([(i,) for i in 1:100],
@@ -1074,7 +1074,7 @@ end
 # --- data ops ---------------------------------------------------------
 
 @testitem "datatable: push_row! reapplies the current sort" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",)]
     dt = DataTable(rows, [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1])
@@ -1098,7 +1098,7 @@ end
 end
 
 @testitem "datatable: insert_row! reindexes and reapplies the sort" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",)]
     dt = DataTable(rows, [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1], mode = SelectMode.MULTI)
@@ -1120,7 +1120,7 @@ end
 end
 
 @testitem "datatable: delete_row! reindexes and rebuilds rank" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",), ("b",)]
     dt = DataTable(rows, [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1], mode = SelectMode.MULTI)
@@ -1151,7 +1151,7 @@ end
 end
 
 @testitem "datatable: set_rows! clears the selection and the scroll" begin
-    using DualUI
+    using ManyUI
     rows = [(i,) for i in 1:50]
     dt = DataTable(rows, [Column("N"; width = cells(4))];
                    key = (r, j) -> -r[1], mode = SelectMode.MULTI)
@@ -1187,7 +1187,7 @@ end
 end
 
 @testitem "datatable: refresh_rows! is the escape hatch" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",)]
     dt = DataTable(rows, [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1])
@@ -1210,7 +1210,7 @@ end
 end
 
 @testitem "datatable: a data change is a PAINT mark and nothing more" begin
-    using DualUI
+    using ManyUI
     dt = DataTable([("c",), ("a",)], [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1])
     root = Container(dt; id = :root)
@@ -1232,7 +1232,7 @@ end
 end
 
 @testitem "datatable: refresh_extent! is the exact rescan" begin
-    using DualUI
+    using ManyUI
     # AUTO measures the header and SOURCE rows 1:sample, and NOTHING
     # else, ever -- unless you call this and pay for it. It is the ONLY
     # thing that can make an AUTO column NARROWER.
@@ -1257,7 +1257,7 @@ end
 end
 
 @testitem "datatable: set_columns! resets a sort on a gone column" begin
-    using DualUI
+    using ManyUI
     rows = [("c", 1), ("a", 3), ("b", 2)]
     dt = DataTable(rows, [Column("N"; width = cells(4)),
                           Column("V"; width = cells(4))];
@@ -1288,7 +1288,7 @@ end
 end
 
 @testitem "datatable: set_columns! resets an unsortable sort" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",)]
     dt = DataTable(rows, [Column("N"; width = cells(4))];
                    key = (r, j) -> r[1])
@@ -1304,7 +1304,7 @@ end
 end
 
 @testitem "datatable: refresh_columns! re-seeds the AUTO marks" begin
-    using DualUI
+    using ManyUI
     dt = DataTable([("x",)], [Column("N")];  # AUTO
                    key = (r, j) -> r[1])
     apply_stylesheet!(STYLESHEET_EMPTY, dt)
@@ -1319,7 +1319,7 @@ end
 end
 
 @testitem "datatable: refresh_columns! keeps a neighbour's width" begin
-    using DualUI
+    using ManyUI
     # `_tc_auto_reset!` LOWERS every AUTO mark to its header seed, so a
     # refresh that stopped there would collapse every AUTO column to its
     # own caption: re-spec ONE column and its NEIGHBOURS silently shrink
@@ -1347,7 +1347,7 @@ end
 end
 
 @testitem "datatable: AUTO seeds the sort gutter" begin
-    using DualUI
+    using ManyUI
     # 1 for a `sortable` column: the indicator needs a cell to live in,
     # and an AUTO column sized to its header text ALONE would have
     # nowhere to draw it.
@@ -1364,7 +1364,7 @@ end
 end
 
 @testitem "datatable: the seam answers every RowsWidget question" begin
-    using DualUI
+    using ManyUI
     rows = [("c",), ("a",), ("b",)]
     dt = DataTable(rows, [Column("X"; width = cells(3))];
                    key = (r, j) -> r[1])

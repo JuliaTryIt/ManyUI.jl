@@ -1,6 +1,6 @@
 # List
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/list.jl"]
 ```

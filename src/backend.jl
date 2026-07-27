@@ -33,15 +33,15 @@ rather than being handed one.
 
 Implement a new backend with two things and nothing else:
 
-    struct MyBackend <: DualUI.Backend end
-    DualUI.make_driver(::MyBackend) = MyDriver()
+    struct MyBackend <: ManyUI.Backend end
+    ManyUI.make_driver(::MyBackend) = MyDriver()
 
 If a backend ever needs more than `make_driver` to work with `launch`, the
 seam has leaked -- fix the seam, do not widen the backend.
 
 A backend whose target multiplexes -- one app per connection, as the web
 does -- instead defines its own [`launch`](@ref) method and never uses
-`make_driver`. See `DualUIWeb.WebBackend`.
+`make_driver`. See `ManyUIWeb.WebBackend`.
 """
 abstract type Backend end
 
@@ -192,6 +192,17 @@ function launch(factory, backend::Backend;
     app = App(root, driver; config = config, stylesheet = stylesheet)
     wait || return _await_start!(app)
     return run!(app)
+end
+
+"""
+$(SIGNATURES)
+
+Declarative entry point: launch a generic application `model` onto a specific `Projection`.
+For a `TUI` projection, it automatically renders the widget tree.
+"""
+function launch(model, proj::TUI; kwargs...)
+    factory = () -> render(model, proj)
+    return launch(factory, TerminalBackend(); kwargs...)
 end
 
 """

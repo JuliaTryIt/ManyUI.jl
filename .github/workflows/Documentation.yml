@@ -42,7 +42,7 @@ jobs:
         # make.jl sets `warnonly = false`, so any docs warning fails the job.
         #
         # To enable publishing later:
-        #   1. append deploydocs(repo = "github.com/s-celles/DualUI.jl")
+        #   1. append deploydocs(repo = "github.com/s-celles/ManyUI.jl")
         #      to docs/make.jl, and drop the `remotes = nothing` /
         #      `repolink = nothing` / `edit_link = nothing` overrides, which
         #      are only there because there is no git remote yet;

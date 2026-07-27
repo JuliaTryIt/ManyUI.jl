@@ -56,7 +56,7 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v2
       # No "dev unregistered dependencies" step here: every dep in
-      # Project.toml is registered or a stdlib. DualUIWeb is the one that
+      # Project.toml is registered or a stdlib. ManyUIWeb is the one that
       # needs to dev this package by URL.
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1

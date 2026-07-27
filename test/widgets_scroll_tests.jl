@@ -12,7 +12,7 @@
 # testing `BOX_DEFAULT`.
 
 @testitem "scroll: the canvas overflows its viewport" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:8]...)
     pane = Scrollpane(inner)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -32,7 +32,7 @@
 end
 
 @testitem "scroll: an empty Scrollpane has zero extent and cannot scroll" begin
-    using DualUI
+    using ManyUI
     pane = Scrollpane()
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
     layout!(pane, Region(1, 1, 9, 3))
@@ -52,7 +52,7 @@ end
 end
 
 @testitem "scroll: content_extent unions the children's margin boxes" begin
-    using DualUI
+    using ManyUI
     a = Static("ab")
     b = Static("cdef")
     holder = Container(a, b)
@@ -72,7 +72,7 @@ end
 end
 
 @testitem "scroll: content_extent is independent of the current offset" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:8]...)
     pane = Scrollpane(inner)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -90,7 +90,7 @@ end
 end
 
 @testitem "scroll: max_scroll is zero when the content fits" begin
-    using DualUI
+    using ManyUI
     inner = Container(Static("L1"), Static("L2"))
     pane = Scrollpane(inner)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -104,7 +104,7 @@ end
 end
 
 @testitem "scroll: wheel up/down/left/right scroll by wheel_step" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:20]...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER,
                       wheel_step = 3, wheel_step_x = 6)
@@ -128,7 +128,7 @@ end
 end
 
 @testitem "scroll: the wheel scrolls horizontally on wide content" begin
-    using DualUI
+    using ManyUI
     pane = Scrollpane(Static("ABCDEFGHIJKLMNOP");
                       bar_y = ScrollMode.NEVER, wheel_step_x = 6)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -151,7 +151,7 @@ end
 end
 
 @testitem "scroll: shift+wheel scrolls the horizontal axis" begin
-    using DualUI
+    using ManyUI
     pane = Scrollpane(Static("ABCDEFGHIJKLMNOP");
                       bar_y = ScrollMode.NEVER, wheel_step_x = 4)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -172,7 +172,7 @@ end
 end
 
 @testitem "scroll: scrolling past the end clamps and does not consume" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:8]...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER, wheel_step = 3)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -200,7 +200,7 @@ end
 end
 
 @testitem "scroll: scrolling before the start clamps at zero" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:8]...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER, wheel_step = 3)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -221,7 +221,7 @@ end
 end
 
 @testitem "scroll: an exhausted inner pane chains to the outer pane" begin
-    using DualUI
+    using ManyUI
     inner_content = Container([Static("i$i") for i in 1:6]...)
     inner = Scrollpane(inner_content; bar_y = ScrollMode.NEVER,
                        wheel_step = 2, id = :inner)
@@ -263,7 +263,7 @@ end
 end
 
 @testitem "scroll: scrolled-inside-scrolled composes offsets" begin
-    using DualUI
+    using ManyUI
     inner_content = Container([Static("i$i") for i in 1:6]...)
     inner = Scrollpane(inner_content; bar_y = ScrollMode.NEVER,
                        id = :inner)
@@ -301,7 +301,7 @@ end
 end
 
 @testitem "scroll: arrows, PageUp/PageDown, Home/End" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:20]...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER, wheel_step = 2)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -336,7 +336,7 @@ end
 end
 
 @testitem "scroll: arrows scroll the horizontal axis too" begin
-    using DualUI
+    using ManyUI
     pane = Scrollpane(Static("ABCDEFGHIJKLMNOP");
                       bar_y = ScrollMode.NEVER, wheel_step = 2)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -351,7 +351,7 @@ end
 end
 
 @testitem "scroll: PageDown overlaps by one row" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:20]...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -375,7 +375,7 @@ end
 end
 
 @testitem "scroll: a shrinking resize re-clamps the offset" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:8]...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -401,7 +401,7 @@ end
 end
 
 @testitem "scroll: reveal_child! brings a focused child into view" begin
-    using DualUI
+    using ManyUI
     kids = [Static("L$i") for i in 1:8]
     inner = Container(kids...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER)
@@ -431,7 +431,7 @@ end
 end
 
 @testitem "scroll: reveal_child! does not move already-visible content" begin
-    using DualUI
+    using ManyUI
     kids = [Static("L$i") for i in 1:8]
     inner = Container(kids...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER)
@@ -450,7 +450,7 @@ end
 end
 
 @testitem "scroll: reveal_child! is a no-op for the pane's own machinery" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:8]...)
     pane = Scrollpane(inner)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -468,7 +468,7 @@ end
 end
 
 @testitem "scroll: reveal_child! through NESTED panes" begin
-    using DualUI
+    using ManyUI
     kids = [Static("i$i") for i in 1:6]
     inner_content = Container(kids...)
     inner = Scrollpane(inner_content; bar_y = ScrollMode.NEVER,
@@ -501,7 +501,7 @@ end
 end
 
 @testitem "scroll: on_focus! reveals a focused child through the pane" begin
-    using DualUI
+    using ManyUI
     kids = [Button("B$i", b -> nothing) for i in 1:8]
     inner = Container(kids...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER)
@@ -516,7 +516,7 @@ end
 end
 
 @testitem "scroll: a wheel tick does not re-run layout" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:20]...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -554,7 +554,7 @@ end
 end
 
 @testitem "scroll: thumb_span pins the thumb to the FIRST cell at 0" begin
-    using DualUI
+    using ManyUI
     for (track, view, total) in ((10, 5, 20), (3, 3, 8), (40, 1, 40),
                                  (7, 2, 3))
         (start, len) = thumb_span(track, view, total, 0)
@@ -565,7 +565,7 @@ end
 end
 
 @testitem "scroll: thumb_span pins the thumb to the LAST cell at max" begin
-    using DualUI
+    using ManyUI
     for (track, view, total) in ((10, 5, 20), (3, 3, 8), (40, 1, 40),
                                  (7, 2, 3))
         (start, len) = thumb_span(track, view, total, total - view)
@@ -577,7 +577,7 @@ end
 end
 
 @testitem "scroll: thumb_span never returns a zero-length thumb" begin
-    using DualUI
+    using ManyUI
     # A 1-cell thumb on a 40-cell track is the honest rendering of a 40x
     # document; a zero-cell thumb is a broken scrollbar.
     #
@@ -600,7 +600,7 @@ end
 end
 
 @testitem "scroll: thumb_span stays inside the track at every offset" begin
-    using DualUI
+    using ManyUI
     escaped = NTuple{4,Int}[]
     backwards = NTuple{4,Int}[]
     for (track, view, total) in ((10, 3, 30), (5, 2, 9), (20, 7, 8),
@@ -621,7 +621,7 @@ end
 end
 
 @testitem "scroll: thumb_span returns (0,0) when nothing can scroll" begin
-    using DualUI
+    using ManyUI
     @test thumb_span(10, 10, 10, 0) === (0, 0)   # content == viewport
     @test thumb_span(10, 20, 10, 0) === (0, 0)   # content < viewport
     @test thumb_span(0, 5, 20, 0) === (0, 0)     # no track
@@ -631,7 +631,7 @@ end
 end
 
 @testitem "scroll: ScrollMode.AUTO reserves the gutter but omits the ink" begin
-    using DualUI
+    using ManyUI
     # Content that FITS: the gutter is still reserved (stable), but no
     # ink is drawn in it.
     fits = Scrollpane(Container(Static("a"), Static("b"));
@@ -654,12 +654,12 @@ end
     clear!(buf2)
     paint!(buf2, over)
     s = string(buf2)
-    @test occursin(DualUI.SB_THUMB, s)
-    @test occursin(DualUI.SB_TRACK_V, s)
+    @test occursin(ManyUI.SB_THUMB, s)
+    @test occursin(ManyUI.SB_TRACK_V, s)
 end
 
 @testitem "scroll: ScrollMode.ALWAYS draws a full thumb when it fits" begin
-    using DualUI
+    using ManyUI
     pane = Scrollpane(Container(Static("a"), Static("b"));
                       bar_y = ScrollMode.ALWAYS)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -667,13 +667,13 @@ end
     buf = Buffer(4, 3)
     clear!(buf)
     paint!(buf, pane)
-    t = DualUI.SB_THUMB
+    t = ManyUI.SB_THUMB
     # "All of it is visible" drawn honestly: the thumb fills the track.
     @test string(buf) == "a  $t\nb  $t\n   $t"
 end
 
 @testitem "scroll: ScrollMode.NEVER reserves no gutter and still scrolls" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:8]...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER, wheel_step = 3)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -695,10 +695,10 @@ end
 end
 
 @testitem "scroll: both bar glyphs are width-1" begin
-    using DualUI
+    using ManyUI
     # A width-2 glyph in a 1-cell gutter would desynchronise every
     # column to its right, exactly as a width-2 border glyph would.
-    for g in (DualUI.SB_TRACK_V, DualUI.SB_TRACK_H, DualUI.SB_THUMB)
+    for g in (ManyUI.SB_TRACK_V, ManyUI.SB_TRACK_H, ManyUI.SB_THUMB)
         @test text_width(g) == 1
         @test grapheme_width(g) == 1
         @test length(collect(Base.Unicode.graphemes(g))) == 1
@@ -706,7 +706,7 @@ end
 end
 
 @testitem "scroll: content never overwrites the gutter" begin
-    using DualUI
+    using ManyUI
     # Content far wider than the window, scrolled to the right, with a
     # vertical bar: not one glyph may reach the gutter column.
     pane = Scrollpane(Static("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -716,7 +716,7 @@ end
     vp = viewport(pane)
     @test layout_of(vp).content.width == 5
 
-    t = DualUI.SB_THUMB
+    t = ManyUI.SB_THUMB
     for off in 0:max_scroll(vp).x
         scroll_to!(vp, Offset(off, 0))
         buf = Buffer(6, 2)
@@ -730,7 +730,7 @@ end
 end
 
 @testitem "scroll: a scrolled child never paints outside the pane" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:8]...)
     pane = Scrollpane(inner; bar_y = ScrollMode.NEVER, id = :pane)
     pane.node.inline_box = merge(pane.node.inline_box,
@@ -757,7 +757,7 @@ end
 end
 
 @testitem "scroll: a Scrollbar observes a bare Container" begin
-    using DualUI
+    using ManyUI
     # The scrollable seam is THREE FUNCTIONS, not a type: a plain
     # Container carrying an offset is scrollable, and one Scrollbar
     # reports on it with no new code.
@@ -788,20 +788,20 @@ end
     paint!(buf, root)
     col = [buf[9, y].content for y in 1:4]
     # track 4, view 4, total 8 -> a 2-cell thumb pinned to the top.
-    @test col == [DualUI.SB_THUMB, DualUI.SB_THUMB,
-                  DualUI.SB_TRACK_V, DualUI.SB_TRACK_V]
+    @test col == [ManyUI.SB_THUMB, ManyUI.SB_THUMB,
+                  ManyUI.SB_TRACK_V, ManyUI.SB_TRACK_V]
 
     scroll_to!(canvas, Offset(0, 4))     # the maximum
     clear!(buf)
     paint!(buf, root)
     col2 = [buf[9, y].content for y in 1:4]
     # At the maximum the thumb is pinned to the LAST cell.
-    @test col2 == [DualUI.SB_TRACK_V, DualUI.SB_TRACK_V,
-                   DualUI.SB_THUMB, DualUI.SB_THUMB]
+    @test col2 == [ManyUI.SB_TRACK_V, ManyUI.SB_TRACK_V,
+                   ManyUI.SB_THUMB, ManyUI.SB_THUMB]
 end
 
 @testitem "scroll: a Scrollbar jumps the viewport on a LEFT press" begin
-    using DualUI
+    using ManyUI
     inner = Container([Static("L$i") for i in 1:20]...)
     pane = Scrollpane(inner; bar_y = ScrollMode.ALWAYS)
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -831,7 +831,7 @@ end
 end
 
 @testitem "scroll: mount! forwards to the canvas" begin
-    using DualUI
+    using ManyUI
     pane = Scrollpane()
     child = Static("hi")
     @test mount!(pane, child) === pane
@@ -851,7 +851,7 @@ end
 end
 
 @testitem "scroll: viewport is the canvas and carries the offset" begin
-    using DualUI
+    using ManyUI
     pane = Scrollpane(Container([Static("L$i") for i in 1:8]...))
     apply_stylesheet!(STYLESHEET_EMPTY, pane)
     layout!(pane, Region(1, 1, 9, 3))
@@ -875,7 +875,7 @@ end
 end
 
 @testitem "scroll: ScrollMode and ScrollAxis are module-scoped enums" begin
-    using DualUI
+    using ManyUI
     @test ScrollMode.AUTO isa ScrollMode.T
     @test ScrollMode.NEVER isa ScrollMode.T
     @test ScrollMode.ALWAYS isa ScrollMode.T
@@ -889,7 +889,7 @@ end
 end
 
 @testitem "scroll: a Scrollpane is focusable by default" begin
-    using DualUI
+    using ManyUI
     # A pane with no focusable children is still keyboard-scrollable.
     p = Scrollpane(Container(Static("a")))
     @test is_focusable(p)
@@ -899,7 +899,7 @@ end
 end
 
 @testitem "scroll: measure of a Scrollbar is one cell thick" begin
-    using DualUI
+    using ManyUI
     c = Container()
     v = Scrollbar(c, ScrollAxis.VERTICAL)
     h = Scrollbar(c, ScrollAxis.HORIZONTAL)
@@ -913,7 +913,7 @@ end
 end
 
 @testitem "scroll: a horizontal Scrollbar reports the horizontal axis" begin
-    using DualUI
+    using ManyUI
     pane = Scrollpane(Static("ABCDEFGHIJKLMNOPQRST");
                       bar_y = ScrollMode.NEVER,
                       bar_x = ScrollMode.ALWAYS)
@@ -930,19 +930,19 @@ end
     paint!(buf, pane)
     row = [buf[x, 3].content for x in 1:5]
     # track 5, view 5, total 20 -> a 1-cell thumb pinned to the left.
-    @test row[1] == DualUI.SB_THUMB
-    @test all(==(DualUI.SB_TRACK_H), row[2:5])
+    @test row[1] == ManyUI.SB_THUMB
+    @test all(==(ManyUI.SB_TRACK_H), row[2:5])
 
     scroll_to!(vp, Offset(15, 0))
     clear!(buf)
     paint!(buf, pane)
     row2 = [buf[x, 3].content for x in 1:5]
-    @test row2[5] == DualUI.SB_THUMB
-    @test all(==(DualUI.SB_TRACK_H), row2[1:4])
+    @test row2[5] == ManyUI.SB_THUMB
+    @test all(==(ManyUI.SB_TRACK_H), row2[1:4])
 end
 
 @testitem "scroll: the public API scrolls the pane, not its shell" begin
-    using DualUI
+    using ManyUI
 
     # REGRESSION. `viewport(::Scrollpane)` delegates to the canvas but
     # `content_extent`, `max_scroll`, `scroll_to!` and `scroll_by!` did

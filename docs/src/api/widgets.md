@@ -1,7 +1,7 @@
 # Built-in widgets
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/label.jl", "widgets/container.jl", "widgets/button.jl",
          "widgets/overlay.jl"]
 ```
@@ -9,21 +9,21 @@ Pages = ["widgets/label.jl", "widgets/container.jl", "widgets/button.jl",
 ## Toggles
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/toggle.jl"]
 ```
 
 ## Tabs
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/tabs.jl"]
 ```
 
 ## Tree
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["widgets/tree.jl"]
 ```
 

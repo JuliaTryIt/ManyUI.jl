@@ -1,10 +1,10 @@
 # driver.jl -- layer 4. May reference: types, geometry, color, events.
-# U3: THE contract that makes DualUIWeb possible. NINE methods.
+# U3: THE contract that makes ManyUIWeb possible. NINE methods.
 #
 # NORMATIVE NEGATIVE INVARIANT: no method in REQUIRED_DRIVER_METHODS
 # accepts or returns a Buffer, BufferView, Patch, Span, Widget, Region,
 # LayoutBox, LayoutMap, Style or Cell. A driver moves bytes, reports a
-# size and capabilities, and yields events. If DualUIWeb ever needs a
+# size and capabilities, and yields events. If ManyUIWeb ever needs a
 # tenth method, the abstraction has leaked and the fix is to reshape the
 # seam -- not to reach inside. This invariant is a @testitem, not a
 # comment.
@@ -66,10 +66,10 @@ end
 """
 Report the driver type and the missing method by name, so a
 half-implemented driver fails with "WebSocketDriver does not implement
-DualUI.flush!" rather than with a MethodError soup.
+ManyUI.flush!" rather than with a MethodError soup.
 """
 Base.showerror(io::IO, e::DriverInterfaceError)::Nothing =
-    print(io, e.driver, " does not implement DualUI.", e.method)
+    print(io, e.driver, " does not implement ManyUI.", e.method)
 
 """
 Acquire the target: raw mode, alternate screen, socket attach. Spawn
@@ -177,7 +177,7 @@ The required method names `D` fails to implement; an empty vector means
 conformant.
 
 Exported for downstream test suites, so a bridge package can PROVE it
-implements the interface without reading DualUI's source:
+implements the interface without reading ManyUI's source:
 
     @test check_driver_interface(WebSocketDriver) == Symbol[]
 """
@@ -215,10 +215,10 @@ function _implements_driver_method(f, ::Type{D})::Bool where {D<:Driver}
 end
 
 """
-The complete set of DualUI names a bridge package is permitted to use.
+The complete set of ManyUI names a bridge package is permitted to use.
 
-A DualUIWeb `@testitem` asserts that every `DualUI.<name>` occurring in
-`DualUIWeb/src` is a member. That turns "a tenth method means the
+A ManyUIWeb `@testitem` asserts that every `ManyUI.<name>` occurring in
+`ManyUIWeb/src` is a member. That turns "a tenth method means the
 abstraction leaked" from an honour-system norm into a checkable
 artifact.
 """

@@ -1,6 +1,6 @@
 # Geometry and Unicode
 
 ```@autodocs
-Modules = [DualUI]
+Modules = [ManyUI]
 Pages = ["geometry.jl", "unicode.jl", "types.jl"]
 ```

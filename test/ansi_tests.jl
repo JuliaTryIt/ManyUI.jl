@@ -1,4 +1,4 @@
-# ansi_tests.jl -- tests for DualUI/src/ansi.jl.
+# ansi_tests.jl -- tests for ManyUI/src/ansi.jl.
 #
 # This is a WIRE FORMAT. Assertions pin exact byte strings, not shapes:
 # a terminal that receives one byte too many corrupts the screen, and a
@@ -8,7 +8,7 @@
 # and EARS 2.3 (alternate screen + cursor control codes).
 
 @testitem "ansi: control codes for alt screen and cursor" begin
-    using DualUI
+    using ManyUI
     # EARS 2.3: the codes terminal.jl drives the host terminal with.
     @test Ansi.ESC == "\e"
     @test Ansi.CSI == "\e["
@@ -36,7 +36,7 @@
 end
 
 @testitem "ansi: mouse and bracketed paste toggles" begin
-    using DualUI
+    using ManyUI
     # EARS 2.3. Mouse ON enables 1000 (press/release), 1002 (drag),
     # 1003 (any motion) and 1006 (SGR extended coordinates).
     @test Ansi.MOUSE_ON == "\e[?1000h\e[?1002h\e[?1003h\e[?1006h"
@@ -54,7 +54,7 @@ end
 end
 
 @testitem "ansi: cup is row-first and 1-based" begin
-    using DualUI
+    using ManyUI
     # The API is (x, y); the wire is CSI row ; col H. Getting this
     # backwards is the single most common ANSI bug.
     @test Ansi.cup(1, 1) == "\e[1;1H"
@@ -68,7 +68,7 @@ end
 end
 
 @testitem "ansi: sgr cuf and title builders" begin
-    using DualUI
+    using ManyUI
     @test Ansi.sgr(0) == "\e[0m"
     @test Ansi.sgr(0) == Ansi.SGR_RESET
     @test Ansi.sgr(1) == "\e[1m"
@@ -84,7 +84,7 @@ end
 end
 
 @testitem "ansi: fg_seq and bg_seq wire forms" begin
-    using DualUI
+    using ManyUI
     tc = ColorDepth.TRUECOLOR
     # UNSET says nothing at all -- it is the cascade's "inherit".
     @test Ansi.fg_seq(COLOR_UNSET, tc) == ""
@@ -112,7 +112,7 @@ end
 end
 
 @testitem "ansi: fg_seq degrades before emitting" begin
-    using DualUI
+    using ManyUI
     # X1. The sequence FORM follows the depth, not the authorial kind:
     # a TrueColor value must never reach a 256-color terminal as 38;2.
     orange = rgb(255, 136, 0)
@@ -135,7 +135,7 @@ end
 end
 
 @testitem "ansi: AnsiEncoder starts unsynced" begin
-    using DualUI
+    using ManyUI
     e = AnsiEncoder(ColorDepth.ANSI256)
     @test e.depth === ColorDepth.ANSI256
     @test e.style === STYLE_NONE
@@ -149,7 +149,7 @@ end
 end
 
 @testitem "ansi: sgr! from s to s writes zero bytes" begin
-    using DualUI
+    using ManyUI
     # THE law. Without it the encoder re-emits an SGR per cell and E2's
     # "minimal set" is a lie.
     red = Color(ColorKind.RGB, 0xff, 0x00, 0x00)
@@ -167,7 +167,7 @@ end
 end
 
 @testitem "ansi: sgr! resets before turning an attribute off" begin
-    using DualUI
+    using ManyUI
     d = ColorDepth.TRUECOLOR
     bold = Style(COLOR_DEFAULT, COLOR_DEFAULT, UInt16(Attr.BOLD),
                  UInt16(Attr.BOLD))
@@ -198,7 +198,7 @@ end
 end
 
 @testitem "ansi: sgr! emits attribute codes in ascending order" begin
-    using DualUI
+    using ManyUI
     all_on = Style(COLOR_DEFAULT, COLOR_DEFAULT, 0x00ff, 0x00ff)
     io = IOBuffer()
     sgr!(io, STYLE_DEFAULT, all_on, ColorDepth.TRUECOLOR)
@@ -218,7 +218,7 @@ end
 end
 
 @testitem "ansi: sgr! orders attrs then fg then bg" begin
-    using DualUI
+    using ManyUI
     red = Color(ColorKind.ANSI16, 0x01, 0x00, 0x00)
     blue = Color(ColorKind.ANSI16, 0x04, 0x00, 0x00)
     to = Style(red, blue, UInt16(Attr.BOLD), UInt16(Attr.BOLD))
@@ -228,7 +228,7 @@ end
 end
 
 @testitem "ansi: encode! emits cup only for non-contiguous spans" begin
-    using DualUI
+    using ManyUI
     # EARS 2.2 / E2: a cursor move is bytes on the wire. Emit one only
     # when the next run does not start where the last one ended.
     S31 = typeof(CELL_BLANK.content)
@@ -262,7 +262,7 @@ end
 end
 
 @testitem "ansi: encode! skips continuation cells" begin
-    using DualUI
+    using ManyUI
     # S3. The terminal advanced two columns for the wide glyph itself.
     # Emitting the CELL_CONT as a space is the classic corruption bug.
     S31 = typeof(CELL_BLANK.content)
@@ -291,7 +291,7 @@ end
 end
 
 @testitem "ansi: encode! emits sgr only when the style changes" begin
-    using DualUI
+    using ManyUI
     S31 = typeof(CELL_BLANK.content)
     bold = Style(COLOR_DEFAULT, COLOR_DEFAULT, UInt16(Attr.BOLD),
                  UInt16(Attr.BOLD))
@@ -308,7 +308,7 @@ end
 end
 
 @testitem "ansi: encoder tracks style across frames" begin
-    using DualUI
+    using ManyUI
     S31 = typeof(CELL_BLANK.content)
     bold = Style(COLOR_DEFAULT, COLOR_DEFAULT, UInt16(Attr.BOLD),
                  UInt16(Attr.BOLD))
@@ -327,7 +327,7 @@ end
 end
 
 @testitem "ansi: reset! forces a full re-emit" begin
-    using DualUI
+    using ManyUI
     S31 = typeof(CELL_BLANK.content)
     bold = Style(COLOR_DEFAULT, COLOR_DEFAULT, UInt16(Attr.BOLD),
                  UInt16(Attr.BOLD))
@@ -349,7 +349,7 @@ end
 end
 
 @testitem "ansi: full patch clears and resets first" begin
-    using DualUI
+    using ManyUI
     S31 = typeof(CELL_BLANK.content)
     a = Cell(S31("a"), STYLE_NONE, Int8(1))
     sz = Size(10, 1)
@@ -373,7 +373,7 @@ end
 end
 
 @testitem "ansi: sync_frames wraps in 2026h/2026l" begin
-    using DualUI
+    using ManyUI
     S31 = typeof(CELL_BLANK.content)
     a = Cell(S31("a"), STYLE_NONE, Int8(1))
     p = Patch([Span(1, 1, [a])], Size(10, 1), false)
@@ -394,7 +394,7 @@ end
 end
 
 @testitem "ansi: encode! degrades colors at the depth" begin
-    using DualUI
+    using ManyUI
     # X1, observed through the encoder: the SAME patch yields a
     # different wire form per depth, and the Patch is never mutated.
     S31 = typeof(CELL_BLANK.content)
@@ -426,7 +426,7 @@ end
 end
 
 @testitem "ansi: encode! collapses styles that share a degraded form" begin
-    using DualUI
+    using ManyUI
     # Two distinct authorial colors that both degrade to white must not
     # produce two SGR sequences at MONOCHROME.
     S31 = typeof(CELL_BLANK.content)
@@ -442,7 +442,7 @@ end
 end
 
 @testitem "ansi: empty patch encodes to zero bytes" begin
-    using DualUI
+    using ManyUI
     # E2 at its limit: nothing changed, so nothing goes on the wire --
     # not even a sync wrapper.
     e = AnsiEncoder(ColorDepth.TRUECOLOR)
@@ -459,7 +459,7 @@ end
 end
 
 @testitem "ansi: encode agrees with encode! byte for byte" begin
-    using DualUI
+    using ManyUI
     S31 = typeof(CELL_BLANK.content)
     bold = Style(COLOR_DEFAULT, COLOR_DEFAULT, UInt16(Attr.BOLD),
                  UInt16(Attr.BOLD))

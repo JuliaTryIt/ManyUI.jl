@@ -1,7 +1,7 @@
 # Styling
 
 ```@meta
-CurrentModule = DualUI
+CurrentModule = ManyUI
 ```
 
 Appearance is declarative. Rules are written in a CSS-like syntax,
@@ -14,7 +14,7 @@ tree by specificity.
 same at parse time:
 
 ```@example css
-using DualUI
+using ManyUI
 
 sheet = parse_css("""
     Container { layout: column; padding: 1; gap: 1; border: round cyan; }
@@ -95,14 +95,14 @@ extensible, and is used only by the parser, never in a render loop.
 Colors come in four kinds:
 
 ```@example color
-using DualUI
+using ManyUI
 (rgb(0xFF, 0x64, 0x00), ansi256(202), ansi16(9), COLOR_DEFAULT)
 ```
 
 ## Color degradation
 
 Not every terminal speaks 24-bit color. Rather than refuse to draw,
-DualUI maps a color down to whatever the target actually supports.
+ManyUI maps a color down to whatever the target actually supports.
 `degrade` is a pure function of the color and the depth:
 
 ```@example color
