@@ -22,6 +22,8 @@ The ecosystem is extended by companion packages that provide different rendering
    Automatically generate a Command-Line Interface from your declarative UI model using `Comonicon.jl`. Expose your domain actions as flags and subcommands instantly.
 5. **[ManyUIDemos.jl](https://github.com/s-celles/ManyUIDemos.jl)**
    A centralized demonstration hub showcasing how to write a domain model once and launch it across all `ManyUI` projections.
+6. **[ManyUIDoc.jl](https://github.com/s-celles/ManyUIDoc.jl)**
+   The centralized, complete documentation repository for the entire ManyUI ecosystem.
 
 ## Quickstart
 
@@ -64,10 +66,6 @@ ManyUI.launch(model, TUI())
 |---|---|
 | `src/core.jl` | Core primitives: `Action`, `Widget`, `Projection` and the `execute!` / `render` / `launch` interfaces |
 | `src/widgets/` | Standard widgets (`Container`, `Label`, `Button`, `TextInput`, etc.) |
-| `src/events.jl` | Event definitions (`Click`, `KeyPress`, etc.) and the dispatch mechanism |
-| `src/style.jl` | Declarative CSS-like styling constraints and layout engine |
-| `src/terminal/` | The ANSI backend, terminal raw mode, diffing engine, and input parsing |
-| `src/reactive.jl` | Reactive state primitives for the TUI event loop |
 
 ## Testing
 
