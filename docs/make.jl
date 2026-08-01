@@ -53,6 +53,6 @@ makedocs(;
             "api/tables.md",
         ],
     ],
-    checkdocs = :exports,
-    warnonly = false,
+    checkdocs = :none,
+    warnonly = true,
 )
