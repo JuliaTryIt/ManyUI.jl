@@ -151,11 +151,6 @@ reactivity. Pure w.r.t. the tree.
 """
 measure(w::Table, avail::Size)::Size = avail
 
-"""
-The pinned header, the optional rule, then the visible body rows in view
-order. O(visible rows x VISIBLE COLUMNS). See _tc_render_table!.
-"""
-    _tc_render_table!(w, buf)
 
 """
 Keys: see `_tc_key!`. Consumes only when something actually moved.
