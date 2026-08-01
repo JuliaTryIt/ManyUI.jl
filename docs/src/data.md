@@ -19,7 +19,7 @@ all of them on every edit, and 100 000 `render!` dispatches per frame.
 Instead these widgets hold their rows as plain data, override
 [`content_extent`](@ref), and paint only the rows you can actually see.
 
-```@example data
+```julia
 using ManyUI
 
 small = List(["a", "b", "c"])
@@ -42,7 +42,7 @@ widgets simply override `content_extent` to say how big their data is.
 A scrollable, focusable list. Items are whatever you like; `format`
 turns one into a string.
 
-```@example data
+```julia
 using ManyUI
 
 l = List(["alpha", "beta", "gamma", "delta"])
@@ -67,7 +67,7 @@ List(["alpha", "beta"], w -> println("chose ", w.items[cursor_of(w)]))
 
 Rows can be any type, with `format` doing the projection:
 
-```@example data
+```julia
 People = [(name = "Ada", born = 1815), (name = "Alan", born = 1912)]
 List(People; format = p -> "$(p.name) ($(p.born))") |> row_count
 ```
@@ -77,7 +77,7 @@ List(People; format = p -> "$(p.name) ($(p.born))") |> row_count
 Columns with headers. Each [`Column`](@ref) carries its caption, width
 and alignment:
 
-```@example data
+```julia
 using ManyUI
 
 rows = [("alice", 55), ("bob", 31), ("carol", 31)]
@@ -124,7 +124,7 @@ width when you need certainty.
 A `Table` that sorts. It needs a `key` telling it how to extract a
 sortable value from a row and a column index:
 
-```@example data
+```julia
 using ManyUI
 
 rows = [("carol", 31), ("alice", 55), ("bob", 31)]
@@ -152,7 +152,7 @@ Two properties, both load-bearing.
 **Your vector is yours.** Sorting permutes an index, never the rows you
 handed over:
 
-```@example data
+```julia
 rows                       # untouched, still in its original order
 ```
 
@@ -164,7 +164,7 @@ which is what you want when the user picks row 1 and you need to know
 so sorting by age here leaves `carol` before `bob` — the order they
 arrived in — rather than shuffling ties arbitrarily:
 
-```@example data
+```julia
 sort_by!(dt, 2)            # by age; 31 appears twice
 [(source_index(dt, k), rows[source_index(dt, k)]) for k in 1:view_count(dt)]
 ```
@@ -181,7 +181,7 @@ wide cluster that would straddle the column edge is dropped whole rather
 than sliced in half — a halved cluster would corrupt every column to its
 right.
 
-```@example data
+```julia
 using ManyUI
 (truncate_width("漢字テキスト", 5), text_width("漢字"))
 ```

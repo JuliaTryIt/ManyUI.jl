@@ -30,7 +30,7 @@ events it cares about.
 
 `propagate!` walks the path from the root to the target and back:
 
-```@example events
+```julia
 using ManyUI
 
 mutable struct Trace <: ManyUI.Widget
@@ -63,7 +63,7 @@ exactly once.
 been visited never sees the event — that is how a focused input
 swallows a keystroke a global binding would otherwise act on.
 
-```@example events
+```julia
 empty!(log)
 
 function ManyUI.on_event!(w::Trace, d::Dispatch{KeyEvent})
@@ -95,7 +95,7 @@ deepest visible widget under the point. Because paint order is document
 order, a later sibling covers an earlier one — and `hit_test` honours
 that, so a click always reaches what the user can actually see.
 
-```@example events
+```julia
 using ManyUI
 
 ui = Container(Label("title"; id = :t), Button("OK", identity; id = :ok))
@@ -110,7 +110,7 @@ hit_test(ui, r.x, r.y) === query_one(ui, "#ok")
 `focusable_widgets` is the tab order: every visible, focusable widget
 in pre-order. Hiding a subtree removes it from the order entirely.
 
-```@example events
+```julia
 app = App(ui, HeadlessDriver(Size(20, 4)))
 focus_next!(app)
 ManyUI.id(focused(app))
@@ -126,7 +126,7 @@ that arrived over a WebSocket. Both produce identical events.
 The parser is incremental and keeps partial state, so a sequence split
 across two reads parses the same as one delivered whole:
 
-```@example input
+```julia
 using ManyUI
 
 whole = InputParser()

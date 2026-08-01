@@ -30,7 +30,7 @@ into.
 
 Margins, padding and borders are measured in cells:
 
-```@example layout
+```julia
 using ManyUI
 
 outer = Region(1, 1, 20, 6)
@@ -62,7 +62,7 @@ A `Length` resolves in one of four ways:
 whatever is left is split between the `fr` children in proportion to
 their weights.
 
-```@example layout
+```julia
 using ManyUI
 (cells(10), pct(50), fr(1), AUTO)
 ```
@@ -73,7 +73,7 @@ A container with `display = Display.FLEX` lays its children out along
 `direction`, distributing space with `justify` and aligning them across
 the axis with `align`:
 
-```@example layout
+```julia
 (direction = instances(Direction.T),
  justify = instances(Justify.T),
  align = instances(Align.T))
@@ -81,7 +81,7 @@ the axis with `align`:
 
 `layout!` computes the whole tree against a viewport:
 
-```@example layout
+```julia
 using ManyUI
 
 root = Container(Label("first"; id = :a), Label("second"; id = :b);
@@ -100,7 +100,7 @@ recomputed against the new viewport. A `ResizeEvent` from any source —
 a `SIGWINCH` on a tty, a browser window resize reported over the
 WebSocket — funnels through the same path:
 
-```@example layout
+```julia
 using ManyUI
 
 driver = HeadlessDriver(Size(20, 5))

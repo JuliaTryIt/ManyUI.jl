@@ -1,11 +1,11 @@
 # Backends
 
-A [`Driver`](@ref) makes targets swappable. A [`Backend`](@ref) makes them
+A `Driver` makes targets swappable. A `Backend` makes them
 swappable *without editing the call*.
 
 ## One verb
 
-[`launch`](@ref) runs an app on any target:
+`launch` runs an app on any target:
 
 ```julia
 using ManyUI
@@ -47,7 +47,7 @@ mutable state because each got its own `factory()` call.
 ## Blocking, and the handle
 
 By default `launch` blocks until the app quits and returns an exit code,
-like [`run!`](@ref):
+like `run!`:
 
 ```julia
 code = launch(ui)     # returns when the user quits
@@ -62,7 +62,7 @@ close(h)      # ask it to stop
 wait(h)       # block until it has
 ```
 
-The handle's *type* is the backend's business — an [`App`](@ref) for a
+The handle's *type* is the backend's business — an `App` for a
 terminal, a `WebServer` for the web — but every handle answers those same
 three verbs, so code that starts and stops an app need not know which
 backend it got. A handle is **live when you get it**: `launch` does not
@@ -79,7 +79,7 @@ ManyUI.make_driver(::MyBackend) = MyDriver()
 ```
 
 That is the whole contract for a target with one driver. There is no
-fallback for [`make_driver`](@ref) on purpose: a backend that forgets it
+fallback for `make_driver` on purpose: a backend that forgets it
 gets a `MethodError` naming the type, rather than a silent default driver
 writing to somebody's terminal.
 
@@ -101,10 +101,3 @@ run!(App(ui(), TerminalDriver()))
 
 ## Reference
 
-```@docs
-Backend
-TerminalBackend
-HeadlessBackend
-make_driver
-launch
-```

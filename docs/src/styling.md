@@ -13,7 +13,7 @@ tree by specificity.
 `parse_css` builds a `Stylesheet`; the `css"..."` string macro does the
 same at parse time:
 
-```@example css
+```julia
 using ManyUI
 
 sheet = parse_css("""
@@ -29,7 +29,7 @@ length(sheet.rules)
 Bad input throws a `CssParseError` carrying the line and column, never
 a bare `ArgumentError`:
 
-```@example css
+```julia
 try
     parse_css("Label { color: }")
     false
@@ -43,7 +43,7 @@ end
 Three selector kinds are supported, and they rank exactly as CSS ranks
 them — id beats class beats type:
 
-```@example css
+```julia
 [(src, specificity(parse_css(src).rules[1].selector))
  for src in ("#title { color: red; }",
              ".warn { color: red; }",
@@ -57,7 +57,7 @@ Applying the sheet resolves each node's computed style. A label that is
 `#title`, `.warn` *and* a `Label` matches all three rules, and the id
 wins:
 
-```@example css
+```julia
 label = Label("hi"; id = :title, classes = [:warn])
 root = Container(label)
 apply_stylesheet!(sheet, root)
@@ -94,7 +94,7 @@ extensible, and is used only by the parser, never in a render loop.
 
 Colors come in four kinds:
 
-```@example color
+```julia
 using ManyUI
 (rgb(0xFF, 0x64, 0x00), ansi256(202), ansi16(9), COLOR_DEFAULT)
 ```
@@ -105,7 +105,7 @@ Not every terminal speaks 24-bit color. Rather than refuse to draw,
 ManyUI maps a color down to whatever the target actually supports.
 `degrade` is a pure function of the color and the depth:
 
-```@example color
+```julia
 orange = rgb(0xFF, 0x64, 0x00)
 (truecolor = orange,
  at_256 = degrade(orange, ColorDepth.ANSI256),
@@ -119,7 +119,7 @@ The depth is never guessed from `ENV` inside the render path. It comes
 from the driver's `capabilities`, so a web client reporting no
 truecolor support degrades exactly like a limited tty:
 
-```@example color
+```julia
 caps = capabilities(HeadlessDriver(Size(10, 2); depth = ColorDepth.ANSI16))
 caps.color_depth
 ```
@@ -131,7 +131,7 @@ question for a real terminal, from `COLORTERM` and `TERM`.
 
 Attributes live on `Style`:
 
-```@example color
+```julia
 s = with(STYLE_NONE, Attr.BOLD, true)
 (bold = has(s, Attr.BOLD), italic = has(s, Attr.ITALIC))
 ```

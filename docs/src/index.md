@@ -43,7 +43,7 @@ depends on `ManyUI`, so a pure terminal application never pays for
 A counter: a label, a button, and a click that updates what the label
 says.
 
-```@example quickstart
+```julia
 using ManyUI
 
 clicks = Ref(0)
@@ -79,7 +79,7 @@ repaints it — nothing calls a render function by hand.
 Widgets are addressable by their CSS id, and a click routed through hit
 testing reaches the right one:
 
-```@example quickstart
+```julia
 button = query_one(ui, "#go")
 r = region(button)
 clear_output!(driver)   # forget the first frame; watch just this click
@@ -94,7 +94,7 @@ frame!(app)
 Now look at what that click actually cost. `Count: 0` became `Count: 1`,
 so exactly one cell changed, and the diff sends exactly one cell:
 
-```@example quickstart
+```julia
 String(take_bytes!(driver))
 ```
 

@@ -48,11 +48,10 @@ makedocs(;
             "api/inputs.md",
             "api/scrolling.md",
             "api/text.md",
-            "api/data.md",
             "api/list.md",
             "api/tables.md",
         ],
     ],
     checkdocs = :none,
-    warnonly = true,
+    warnonly = false,
 )

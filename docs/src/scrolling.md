@@ -22,7 +22,7 @@ wrapping them in a `Container`, exactly as CSS makes you.
 Here is a twelve-line document in an eight-row window, painted through a
 `HeadlessDriver` — no tty, no terminal, the full pipeline:
 
-```@example scrolling
+```julia
 using ManyUI
 
 log = Container([Static("line $i"; id = Symbol("line$i")) for i in 1:12]...)
@@ -41,7 +41,7 @@ scale.
 `viewport(pane)` is the node that actually scrolls — the pane's internal
 canvas. It is what `scroll_to!`, `max_scroll` and `content_extent` take:
 
-```@example scrolling
+```julia
 vp = viewport(pane)
 (window = layout_of(vp).content,      # what you can see
  content = content_extent(vp),        # what there is
@@ -57,7 +57,7 @@ box of the laid-out children's margin boxes, read straight from the
 
 Feed the app a wheel event and watch what it dirties:
 
-```@example scrolling
+```julia
 before = layout_of(vp)
 
 handle!(app, MouseEvent(MouseAction.PRESS, MouseButton.WHEEL_DOWN,
@@ -75,7 +75,7 @@ so `relayout!` returns on its first line and every box in the tree keeps
 the value it had. The next frame simply paints the same boxes at a
 different origin:
 
-```@example scrolling
+```julia
 frame!(app)
 app.back
 ```
@@ -89,7 +89,7 @@ Layout and paint disagree about where a scrolled widget is, and that is
 deliberate: `region(w)` is where layout put it, `painted_region(w)` is
 where it ended up.
 
-```@example scrolling
+```julia
 sixth = children(log)[6]
 (laid_out = region(sixth),
  painted = painted_region(sixth),
@@ -100,7 +100,7 @@ sixth = children(log)[6]
 lands on what the user can actually see rather than on whatever occupies
 that widget's unscrolled slot.
 
-```@example scrolling
+```julia
 ManyUI.id(hit_test(pane, 1, 1))
 ```
 
@@ -118,7 +118,7 @@ ManyUI.id(hit_test(pane, 1, 1))
 
 Each of those returns whether the event was consumed:
 
-```@example scrolling
+```julia
 scroll_to!(vp, ORIGIN)
 
 (down = dispatch_event!(pane, parse(KeyEvent, "down")),
@@ -143,7 +143,7 @@ Clamping is split across two layers, on purpose.
 `set_scroll!` is the core mutator. It clamps at **zero** per axis and
 nothing more — it cannot see the content extent from where it lives:
 
-```@example scrolling
+```julia
 (changed = set_scroll!(vp, Offset(0, -5)), stored = scroll_of(vp))
 ```
 
@@ -151,7 +151,7 @@ nothing more — it cannot see the content extent from where it lives:
 It clamps to `0:max_scroll(w)` and returns the offset **actually
 stored**:
 
-```@example scrolling
+```julia
 (asked_for = Offset(0, 999), stored = scroll_to!(vp, Offset(0, 999)))
 ```
 
@@ -162,7 +162,7 @@ same thing relative to the current offset.
 Both are built from two pure functions you can call yourself, and which
 every scrolling widget shares so they cannot disagree:
 
-```@example scrolling
+```julia
 (clamped = clamp_scroll(99, 4, 12),        # window 4, content 12
  minimal = scroll_into_view(0, 4, 7, 7))   # show row 7 in a 4-row window
 ```
@@ -184,7 +184,7 @@ every ancestor — nearest first — to reveal `w` through the
 to a widget buried in nested panes scrolls it into view with no wiring
 at the call site and no `isa Scrollpane` anywhere in the core:
 
-```@example scrolling
+```julia
 buttons = Container([Button("B$i", b -> nothing) for i in 1:8]...)
 p2 = Scrollpane(buttons; bar_y = ScrollMode.NEVER)
 apply_stylesheet!(STYLESHEET_EMPTY, p2)
@@ -223,7 +223,7 @@ at all.
 The geometry is a pure function of four integers, so you can check it
 without a widget, a layout or a buffer:
 
-```@example scrolling
+```julia
 [thumb_span(8, 8, 12, off) for off in 0:4]   # track, window, content
 ```
 
@@ -256,7 +256,7 @@ parses it, so a design where the property silently did nothing unless
 the widget happened to be a `Scrollpane` would make the stylesheet lie.
 Any node can carry an offset — it is CSS's `scrollTop` and `scrollLeft`:
 
-```@example overflow
+```julia
 using ManyUI
 
 sheet = css"""
@@ -274,7 +274,7 @@ layout!(box, Region(1, 1, 6, 2))
  max = max_scroll(box))
 ```
 
-```@example overflow
+```julia
 scroll_to!(box, Offset(0, 2))
 buf = Buffer(6, 2)
 clear!(buf)

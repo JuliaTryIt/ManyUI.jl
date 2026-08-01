@@ -15,7 +15,7 @@ Wrapping text. It measures and paints through `wrap_width` and
 would straddle the right edge moves to the next line rather than being
 cut in half.
 
-```@example widgets
+```julia
 using ManyUI
 
 l = Label("Hello, ManyUI!")
@@ -25,7 +25,7 @@ measure(l, Size(40, 4))
 Its text is reactive: assigning to it marks the label dirty for layout,
 because new text wraps differently and can move its siblings.
 
-```@example widgets
+```julia
 l.text[] = "Some considerably longer text that will wrap"
 measure(l, Size(20, 4))
 ```
@@ -36,7 +36,7 @@ A box that holds children, optionally with a border and a title. It is
 the workhorse of layout — give it a `layout:` and a `gap:` and it
 arranges whatever you put in it.
 
-```@example widgets
+```julia
 ui = Container(Label("first"), Label("second"))
 layout!(ui, Region(1, 1, 20, 6))
 length(children(ui))
@@ -52,7 +52,7 @@ Wiring one to a `Label` gives a counter, and shows the reactive loop
 end to end: the callback writes the label's text, the write marks it
 dirty, and the next frame repaints it.
 
-```@example widgets
+```julia
 clicks = Ref(0)
 readout = Label("Count: 0"; id = :count)
 
@@ -77,14 +77,14 @@ end
 A button also fires on ENTER when it holds focus, so the same counter
 works without a mouse:
 
-```@example widgets
+```julia
 dispatch_event!(root, parse(KeyEvent, "enter"), b)
 readout.text[]
 ```
 
 `is_focusable(b)` is true, so it takes part in the tab order:
 
-```@example widgets
+```julia
 is_focusable(b)
 ```
 
@@ -97,7 +97,7 @@ The offset lives on the tree, not in the pane — so a wheel tick marks
 `Dirty.PAINT` and layout never runs. `viewport(pane)` is the node that
 scrolls, and it is what the scrolling API takes:
 
-```@example widgets
+```julia
 lines = Container([Static("line $i") for i in 1:8]...)
 pane = Scrollpane(lines)
 apply_stylesheet!(STYLESHEET_EMPTY, pane)
@@ -110,7 +110,7 @@ vp = viewport(pane)
 Eight rows of content in a three-row window, so five rows can scroll
 past. `scroll_to!` clamps and returns what it actually stored:
 
-```@example widgets
+```julia
 (max = max_scroll(vp), stored = scroll_to!(vp, Offset(0, 99)))
 ```
 
@@ -131,7 +131,7 @@ and touches nothing else.
 check on its own — `(start, len)` on the track, for a window over some
 content at an offset:
 
-```@example widgets
+```julia
 thumb_span(3, 3, 8, 0)
 ```
 
@@ -141,7 +141,7 @@ Single-line entry, with a caret, a placeholder and a submit handler. It
 takes the width it is offered and scrolls horizontally rather than
 resizing, so a keystroke costs zero layout.
 
-```@example widgets
+```julia
 field = TextInput("hi", i -> nothing; placeholder = "name?")
 insert_text!(field, "!")
 (text = field.text[], cursor = field.cursor[])
@@ -156,7 +156,7 @@ Multi-line entry over a `Vector{String}`. It scrolls by indexing its
 lines, so painting is O(window) and a huge document costs the same frame
 as a small one.
 
-```@example widgets
+```julia
 notes = TextArea("alpha\nbeta")
 insert_newline!(notes)
 (text = text(notes), extent = content_extent(notes))
@@ -173,19 +173,19 @@ below the root's minimum, the App suspends normal rendering and paints
 this instead — no layout of your tree runs at all until there is room
 for it again.
 
-```@example widgets
+```julia
 should_suspend(Size(12, 3), Size(20, 5))
 ```
 
-```@example widgets
+```julia
 should_suspend(Size(80, 24), Size(20, 5))
 ```
 
 You rarely construct it yourself; `AppConfig(; min_size = ...)` decides
 when it appears.
 
-```@example widgets
-AppConfig().min_size
+```julia
+OVERLAY_MIN_SIZE
 ```
 
 Below a certain size even the overlay cannot be laid out, so a
@@ -197,7 +197,7 @@ window got small.
 The data widgets, covered in full on the [Data widgets](@ref) page.
 `List` shows items, `Table` shows columns, `DataTable` also sorts.
 
-```@example widgets
+```julia
 l = List(["alpha", "beta", "gamma"])
 (rows = row_count(l), nodes = length(descendants(l)))
 ```
@@ -211,7 +211,7 @@ a frame costs the same however much data you hand them.
 A widget is a mutable struct holding a `WidgetNode`, plus whatever
 state it needs:
 
-```@example custom
+```julia
 using ManyUI
 
 mutable struct Spinner <: ManyUI.Widget
@@ -224,13 +224,11 @@ const FRAMES = ('|', '/', '-', '\\')
 
 ManyUI.measure(w::Spinner, avail::Size) = Size(1, 1)
 
-function ManyUI.render!(w::Spinner, buf::AbstractMatrix{Cell})
-    write_text!(buf, 1, 1, string(FRAMES[w.frame]), STYLE_NONE)
-    nothing
-end
-
-s = Spinner()
-measure(s, Size(10, 10))
+# In ManyUITUI or a specific projection, you would implement render!:
+# function ManyUITUI.render!(w::Spinner, buf::AbstractMatrix{Cell})
+#     write_text!(buf, 1, 1, string(FRAMES[w.frame]), STYLE_NONE)
+#     nothing
+# end
 ```
 
 Two methods make it real: `measure`, which reports how much room it

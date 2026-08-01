@@ -13,7 +13,7 @@ break makes them differ.
 
 A single-line field with a placeholder, a submit handler and a caret:
 
-```@example textentry
+```julia
 using ManyUI
 
 submitted = String[]
@@ -31,13 +31,13 @@ buf
 The placeholder shows while the text is empty, and it is painted dimmed
 rather than as content:
 
-```@example textentry
+```julia
 has(buf[1, 1].style, Attr.DIM)
 ```
 
 Type into it and press `enter`:
 
-```@example textentry
+```julia
 for c in "ada"
     dispatch_event!(field, key(c), field)
 end
@@ -50,7 +50,7 @@ dispatch_event!(field, parse(KeyEvent, "enter"), field)
 the conservative `Dirty.LAYOUT` default — and that is a design
 commitment, not an optimisation. `measure` is text-independent:
 
-```@example textentry
+```julia
 measure(field, Size(30, 9))
 ```
 
@@ -66,7 +66,7 @@ Give it a narrow box with `width: 20` if you want one.
 
 A multi-line editor over a `Vector{String}`:
 
-```@example textentry
+```julia
 notes = TextArea("alpha\nbeta")
 apply_stylesheet!(STYLESHEET_EMPTY, notes)
 layout!(notes, Region(1, 1, 10, 3))
@@ -78,7 +78,7 @@ insert_newline!(notes)
 
 `measure` returns everything it is offered:
 
-```@example textentry
+```julia
 measure(notes, Size(30, 9))
 ```
 
@@ -103,7 +103,7 @@ every edit goes through the operations below.
 integration with the scrolling machinery. A `Scrollbar` reports on a
 `TextArea` with no new code at all:
 
-```@example textarea
+```julia
 using ManyUI
 
 area = TextArea(join(["line $i" for i in 1:20], "\n"); id = :area)
@@ -120,7 +120,7 @@ layout!(row, Region(1, 1, 10, 4))
 (content = content_extent(area), window = layout_of(area).content)
 ```
 
-```@example textarea
+```julia
 scroll_to!(area, Offset(0, 8))
 buf = Buffer(10, 4)
 clear!(buf)
@@ -158,7 +158,7 @@ visually different column across wide clusters. Its absence is the
 single most-noticed bug in a text editor — run down through a short line
 and back up, and the caret comes home:
 
-```@example textentry
+```julia
 g = TextArea("aaaaaaaa\nbb\ncccccccc")
 apply_stylesheet!(STYLESHEET_EMPTY, g)
 layout!(g, Region(1, 1, 10, 3))
@@ -195,7 +195,7 @@ what they act on.
 and modified keys falling through is what stops a focused field silently
 shadowing your application bindings:
 
-```@example textentry
+```julia
 box = TextInput("x")
 (tab = dispatch_event!(box, parse(KeyEvent, "tab"), box),
  letter = dispatch_event!(box, parse(KeyEvent, "a"), box),
@@ -234,7 +234,7 @@ treat it differently because their content differs.
 single-line field has nowhere to put a line break, and silently
 accepting one would make its text unrenderable.
 
-```@example textentry
+```julia
 one = TextInput()
 dispatch_event!(one, PasteEvent("one\ntwo"), one)
 one.text[]
@@ -243,7 +243,7 @@ one.text[]
 `TextArea` splits it into real lines — it is exactly the widget a
 multi-line paste belongs in:
 
-```@example textentry
+```julia
 many = TextArea()
 dispatch_event!(many, PasteEvent("one\ntwo"), many)
 (text = text(many), lines = length(many.lines))
@@ -262,7 +262,7 @@ A terminal grid is not a string, and a user's text is not a sequence of
 codepoints. Take a ZWJ family emoji — man, zero-width joiner, woman,
 zero-width joiner, girl:
 
-```@example graphemes
+```julia
 using ManyUI
 
 fam = "👨‍👩‍👧"
@@ -281,7 +281,7 @@ error goes both ways.)
 The rule is: **a cursor steps by grapheme cluster.** One step, however
 many codepoints or cells that cluster is.
 
-```@example graphemes
+```julia
 w = TextInput("a$(fam)b")
 move_to!(w, 0)                       # Home
 [move_by!(w, 1) for _ in 1:4]        # four presses of `right`
@@ -294,7 +294,7 @@ not five, and not eighteen.
 Now watch the same cluster occupy two cells. Put the caret on it, paint,
 and find the cell the caret reversed:
 
-```@example graphemes
+```julia
 apply_stylesheet!(STYLESHEET_EMPTY, w)
 layout!(w, Region(1, 1, 8, 1))
 w.focused[] = true
@@ -306,7 +306,7 @@ paint!(buf, w)
 buf
 ```
 
-```@example graphemes
+```julia
 caret = findfirst(x -> has(buf[x, 1].style, Attr.REVERSE), 1:8)
 cell = buf[caret, 1]
 
@@ -326,7 +326,7 @@ well as the right.
 Deleting is the same rule. One `backspace` over the family takes all
 eighteen bytes of it, not the last codepoint:
 
-```@example graphemes
+```julia
 move_to!(w, 2)                       # just past the family
 backspace!(w)
 (text = w.text[], cursor = w.cursor[])
@@ -336,7 +336,7 @@ The subtlest case is insertion, and it is why the caret is always
 **recomputed from the new prefix** and never advanced by the number of
 clusters inserted. Type a combining acute onto an `e`:
 
-```@example graphemes
+```julia
 v = TextInput("e")
 move_to!(v, typemax(Int))            # End -- one cluster behind the caret
 insert_text!(v, "́")            # COMBINING ACUTE ACCENT

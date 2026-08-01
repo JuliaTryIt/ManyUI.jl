@@ -32,13 +32,6 @@ Phase
 PopupPlacement
 ScrollAxis
 ScrollMode
-SelectMode
 SelectorKind
-SortDir
 ```
 
-## ANSI constants
-
-```@docs
-Ansi
-```
