@@ -177,12 +177,6 @@ content. Pure w.r.t. the tree.
 """
 measure(w::DataTable, avail::Size)::Size = avail
 
-"""
-The pinned header, the optional rule, then the visible body rows IN VIEW
-ORDER -- `view_source(w, k)` inlines to `w.order[k]` and that is the
-whole of the sort's read side. See _tc_render_table!.
-"""
-    _tc_render_table!(w, buf)
 
 """
 Keys: see `_tc_key!`. Consumes only when something actually moved.
