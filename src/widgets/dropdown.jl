@@ -378,7 +378,7 @@ function _dd_open!(w::DropDown)::Bool
     w.open[] && return false
     isempty(w.panel.list.items) && return false
     a = app(w)
-    a isa App || return false
+    a !== nothing || return false
     focus!(a, w)                       # F3. See above.
     open_popup!(a, Popup(w.panel, w, _dd_popup_size(w);
                          placement = PopupPlacement.BELOW))
@@ -399,7 +399,7 @@ stranded believing it is open. Internal.
 """
 function _dd_close!(w::DropDown)::Bool
     a = app(w)
-    a isa App || return (w.open[] = false; false)
+    a !== nothing || return (w.open[] = false; false)
     return close_popup!(a, w)          # -> on_popup_close!(w)
 end
 

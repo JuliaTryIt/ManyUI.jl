@@ -45,3 +45,45 @@ Presentation entry point. Applications should implement this method to
 project their current model state onto the targeted channel.
 """
 function render end
+
+"""
+    post!(app, event)
+
+Schedule an event to be processed by the application loop.
+"""
+function post! end
+
+"""
+    focus!(app, widget)
+
+Focus the specified widget.
+"""
+function focus! end
+
+"""
+    popup_of(app)
+
+Get the current popup of the application.
+"""
+function popup_of end
+
+"""
+    open_popup!(app, popup)
+
+Open a popup in the application.
+"""
+function open_popup! end
+
+"""
+    close_popup!(app, widget)
+
+Close the popup if it belongs to the given widget.
+"""
+function close_popup! end
+
+"""
+    on_popup_close!(widget)
+
+Callback invoked when a widget's popup is closed.
+"""
+function on_popup_close! end

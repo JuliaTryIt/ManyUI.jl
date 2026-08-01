@@ -76,7 +76,7 @@ include("precompile.jl")
 
 # core.jl
 export Projection, CLI, TUI, WebTerminal, WebNative
-export Action, execute!, render
+export Action, execute!, render, post!
 
 # types.jl
 export Widget, Event
@@ -145,7 +145,7 @@ export Reactive, bind_owner!, attach_reactives!
 
 # dispatch.jl
 export propagation_path, hit_test, propagate!, dispatch_event!
-export focusable_widgets
+export focusable_widgets, focus!
 
 # layout.jl
 export LayoutMap, measure
@@ -198,7 +198,7 @@ export TreeNode, TreeRow, TreeView, is_leaf, is_expanded
 export expand_node!, collapse_node!, toggle_node!, expand_all!, collapse_all!
 export tree_rows, tree_cursor, node_at, set_roots!, refresh_tree!
 # widgets/popup.jl
-export Popup, PopupPlacement, popup_region
+export Popup, PopupPlacement, popup_region, popup_of, open_popup!, close_popup!, on_popup_close!
 # widgets/dropdown.jl
 export DropDown, DropDownList, options, selected_item, is_open, set_open!
 # widgets/form.jl
