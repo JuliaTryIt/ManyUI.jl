@@ -26,7 +26,7 @@ WHAT IT ADDS OVER `Table`, EXHAUSTIVELY:
 
 Everything else -- the columns, the sizing, the header, the truncation,
 the selection, the navigation, the scrolling, the paint -- is
-`tablecore`'s, reached through `_tc_render_table!` and the seam.
+`tablecore`'s, reached through _tc_render_table! and the seam.
 
 WHY TWO TYPES AND NOT ONE WITH A NULLABLE `order`: because `view_source`
 is the ONLY behavioural difference, and it is `k` for one and `order[k]`
@@ -180,7 +180,7 @@ measure(w::DataTable, avail::Size)::Size = avail
 """
 The pinned header, the optional rule, then the visible body rows IN VIEW
 ORDER -- `view_source(w, k)` inlines to `w.order[k]` and that is the
-whole of the sort's read side. See `_tc_render_table!`.
+whole of the sort's read side. See _tc_render_table!.
 """
     _tc_render_table!(w, buf)
 
@@ -264,7 +264,7 @@ function _tc_header_text(w::DataTable, j::Int)::AbstractString
     # caption, and `_tc_put!` aligns and truncates it exactly as it does
     # a `Table`'s.
     _tc_header_reserve(w, j) == 0 && return col.header
-    # `_tc_render_table!` resolves the columns BEFORE it paints the
+    # _tc_render_table! resolves the columns BEFORE it paints the
     # header, and guards this call with `ws[j] > 0`, so this is the width
     # the caption is about to be painted into.
     cw = g.widths[j]

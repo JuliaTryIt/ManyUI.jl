@@ -3,7 +3,7 @@
 # `RowsWidget`/`Selection`/`Column`/`TableGrid`, which
 # widgets/tablecore.jl DEFINES and this file USES and MUST NOT redefine.
 #
-# This file is THIN and contains NO PAINT LOOP: `_tc_render_table!` is
+# This file is THIN and contains NO PAINT LOOP: _tc_render_table! is
 # generic over `W<:RowsWidget` and lives in `tablecore.jl`, so
 # `datatable.jl` does not depend on this file for anything.
 #
@@ -13,7 +13,7 @@
 # -- and it is not a mechanism here, it is the ABSENCE of one: the
 # painter reads `xs[j] - off.x` for the header AND the body, and reads
 # `off.y` for the body ALONE. One arithmetic, two `y` rules, in
-# `_tc_render_table!`.
+# _tc_render_table!.
 #
 # A ROW IS NOT A WIDGET: 100 000 rows are 100 000 elements of a `Vector`
 # and ZERO `WidgetNode`s. `content_extent` is overridden and O(1), and
@@ -153,7 +153,7 @@ measure(w::Table, avail::Size)::Size = avail
 
 """
 The pinned header, the optional rule, then the visible body rows in view
-order. O(visible rows x VISIBLE COLUMNS). See `_tc_render_table!`.
+order. O(visible rows x VISIBLE COLUMNS). See _tc_render_table!.
 """
     _tc_render_table!(w, buf)
 
