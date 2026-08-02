@@ -59,7 +59,7 @@ conservative, not normative.
 newline -- a list row is ONE row. Same contract as `TextArea.lines`, and
 policed the same way: not at all.
 """
-mutable struct List{T,F,A} <: RowsWidget
+mutable struct List{T,F,A,C} <: RowsWidget
     "Per-widget state."
     node::WidgetNode
     "The data, one entry per row. ALIASED. Mutated IN PLACE."
@@ -88,15 +88,15 @@ mutable struct List{T,F,A} <: RowsWidget
     focused::Reactive{Bool}
     "Called as `on_activate(list)` on ENTER."
     on_activate::A
+    "Called as `on_change(list)` when the cursor moves."
+    on_change::C
 end
 
 """
 A list over `items`, calling `on_activate(list)` on ENTER.
 
-`on_activate` is the SECOND POSITIONAL and it is NOT `on_change`:
-`List(files, f -> open(f))` with an `on_change` there would fire on
-every arrow key, which is a trap the shape of the call invites. There is
-ONE callback and it means what it says.
+`on_activate` is the SECOND POSITIONAL.
+`on_change` is an optional KEYWORD argument that fires when the cursor moves.
 
 Focusable by construction, so it appears in `focusable_widgets` and is
 reachable by TAB with no further wiring.
@@ -117,16 +117,18 @@ nothing, and the constructor stays O(1) over an aliased `Vector`.
 function List(items::Vector{T}, on_activate::A = _tc_noop;
               format::F = _tc_show,
               mode::SelectMode.T = SelectMode.SINGLE,
+              on_change::C = _tc_noop,
               id::Symbol = gensym(:list),
-              classes = Symbol[])::List{T,F,A} where {T,F,A}
-    w = List{T,F,A}(WidgetNode(; id = id, classes = classes,
-                               type_name = :List, focusable = true),
-                    items, format,
-                    Reactive(0; kind = Dirty.PAINT),
-                    Selection(mode, length(items)),
-                    0, isempty(items),
-                    Reactive(false; kind = Dirty.PAINT),
-                    on_activate)
+              classes = Symbol[])::List{T,F,A,C} where {T,F,A,C}
+    w = List{T,F,A,C}(WidgetNode(; id = id, classes = classes,
+                                 type_name = :List, focusable = true),
+                      items, format,
+                      Reactive(0; kind = Dirty.PAINT),
+                      Selection(mode, length(items)),
+                      0, isempty(items),
+                      Reactive(false; kind = Dirty.PAINT),
+                      on_activate,
+                      on_change)
     attach_reactives!(w)
     return w
 end
@@ -136,6 +138,8 @@ A list over any `AbstractVector`, collected ONCE into a `Vector`.
 """
 List(items::AbstractVector, args...; kwargs...) =
     List(collect(items), args...; kwargs...)
+
+_tc_on_change(w::List) = w.on_change(w)
 
 # --- the seam. FINAL: `tablecore.jl` dispatches on every one of these.
 selection_of(w::List)::Selection = w.sel

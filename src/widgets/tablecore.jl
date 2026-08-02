@@ -728,6 +728,8 @@ selected_rows(w::RowsWidget)::Vector{Int} =
 # not repaint and does not follow the cursor: the obvious call must be
 # the correct one.
 
+_tc_on_change(w::RowsWidget) = nothing
+
 """
 Pure op, then `_tc_touch!` and `_tc_follow_cursor!`. THE single exit of
 every cursor/selection change, so neither can be forgotten at a call
@@ -738,6 +740,7 @@ function _tc_moved!(w::RowsWidget, changed::Bool)::Bool
     changed || return false
     _tc_touch!(w)
     _tc_follow_cursor!(w)
+    _tc_on_change(w)
     return true
 end
 
