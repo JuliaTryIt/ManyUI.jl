@@ -97,6 +97,10 @@ mutable struct WidgetNode
     focusable::Bool
     "The owning App, once mounted."
     app::Any
+    "Optional callback when focus is gained."
+    on_focus::Union{Nothing,Function}
+    "Optional callback when focus is lost."
+    on_blur::Union{Nothing,Function}
 end
 
 """
@@ -107,11 +111,13 @@ WidgetNode(; id::Symbol = gensym(:w),
              classes = Symbol[],
              type_name::Symbol = :Widget,
              visible::Bool = true,
-             focusable::Bool = false)::WidgetNode =
+             focusable::Bool = false,
+             on_focus::Union{Nothing,Function} = nothing,
+             on_blur::Union{Nothing,Function} = nothing)::WidgetNode =
     WidgetNode(id, Set{Symbol}(classes), type_name, nothing, Widget[],
                STYLE_NONE, BOX_PATCH_NONE, STYLE_NONE, BOX_DEFAULT,
                LAYOUT_BOX_EMPTY, ORIGIN, DIRTY_ALL, visible, focusable,
-               nothing)
+               nothing, on_focus, on_blur)
 
 """
 The pre-scroll POSITIONAL form: `scroll` defaults to `ORIGIN`.
@@ -126,10 +132,25 @@ WidgetNode(id::Symbol, classes::Set{Symbol}, type_name::Symbol,
            inline_style::Style, inline_box::BoxPatch,
            computed_style::Style, box::BoxStyle, layout::LayoutBox,
            dirty::DirtyMask, visible::Bool, focusable::Bool,
-           app::Any)::WidgetNode =
+           app::Any, on_focus::Union{Nothing,Function} = nothing,
+           on_blur::Union{Nothing,Function} = nothing)::WidgetNode =
     WidgetNode(id, classes, type_name, parent, children, inline_style,
                inline_box, computed_style, box, layout, ORIGIN, dirty,
-               visible, focusable, app)
+               visible, focusable, app, on_focus, on_blur)
+
+"""
+The positional form that names `scroll` explicitly, retained for
+compatibility after adding focus callbacks to `WidgetNode`.
+"""
+WidgetNode(id::Symbol, classes::Set{Symbol}, type_name::Symbol,
+           parent::Union{Nothing,Widget}, children::Vector{Widget},
+           inline_style::Style, inline_box::BoxPatch,
+           computed_style::Style, box::BoxStyle, layout::LayoutBox,
+           scroll::Offset, dirty::DirtyMask, visible::Bool,
+           focusable::Bool, app::Any)::WidgetNode =
+    WidgetNode(id, classes, type_name, parent, children, inline_style,
+               inline_box, computed_style, box, layout, scroll, dirty,
+               visible, focusable, app, nothing, nothing)
 
 """
 THE one required method per widget type. The default duck-types on the
@@ -663,12 +684,31 @@ with no wiring at the call site.
 OVERRIDING THIS REPLACES IT: a widget type with its own `on_focus!` MUST
 call `reveal!(w)` itself.
 """
-on_focus!(w::Widget)::Nothing = (reveal!(w); nothing)
+function _focus_callback!(w::Widget)::Nothing
+    callback = node(w).on_focus
+    callback === nothing || callback(w)
+    return nothing
+end
+
+function _blur_callback!(w::Widget)::Nothing
+    callback = node(w).on_blur
+    callback === nothing || callback(w)
+    return nothing
+end
+
+function on_focus!(w::Widget)::Nothing
+    reveal!(w)
+    _focus_callback!(w)
+    return nothing
+end
 
 """
 Lifecycle hook: `w` has just lost focus. Default no-op.
 """
-on_blur!(w::Widget)::Nothing = nothing
+function on_blur!(w::Widget)::Nothing
+    _blur_callback!(w)
+    return nothing
+end
 
 """
 E1. Set `kind` on `w` ONLY. Touches no ancestor and no descendant.

@@ -167,7 +167,7 @@ slices. Storing it there anyway is what lets a `Scrollbar` observe a
 
 Parametric on the submit handler, the `Button{F}` pattern.
 """
-mutable struct TextInput{F} <: Widget
+mutable struct TextInput{F1, F2} <: Widget
     "Per-widget state."
     node::WidgetNode
     "The content. PAINT-reactive: the box cannot move."
@@ -177,13 +177,19 @@ mutable struct TextInput{F} <: Widget
     "True while focused; drives the caret cell. PAINT-reactive."
     focused::Reactive{Bool}
     "Shown dimmed while `text` is empty."
-    const placeholder::String
+    placeholder::String
+    "True if the input is disabled."
+    disabled::Reactive{Bool}
+    "True to hide characters (e.g. passwords)."
+    const is_password::Bool
     "Called as `on_submit(input)` on ENTER."
-    on_submit::F
+    on_submit::F1
+    "Called as `on_change(input)` when text changes."
+    on_change::F2
 end
 
 """
-An input holding `text`, calling `on_submit(input)` on ENTER.
+An input holding `text`, calling `on_submit(input)` on ENTER, and optionally `on_change(input)` on edits.
 
 Focusable by construction, so it appears in `focusable_widgets` and is
 reachable by TAB with no further wiring.
@@ -192,19 +198,24 @@ The caret starts at the END of `text`, where a user who is handed a
 pre-filled field expects to carry on typing.
 """
 function TextInput(text::AbstractString = "",
-                   on_submit::F = _ti_noop;
+                   on_submit::F1 = _ti_noop;
+                   on_change::F2 = _ti_noop,
                    placeholder::AbstractString = "",
+                   disabled::Bool = false,
+                   is_password::Bool = false,
                    id::Symbol = gensym(:textinput),
-                   classes = Symbol[])::TextInput{F} where {F}
+                   classes = Symbol[])::TextInput{F1, F2} where {F1, F2}
     s = String(text)
-    w = TextInput{F}(WidgetNode(; id = id, classes = classes,
-                                type_name = :TextInput,
-                                focusable = true),
-                     Reactive(s; kind = Dirty.PAINT),
-                     Reactive(_ngraphemes(s); kind = Dirty.PAINT),
-                     Reactive(false; kind = Dirty.PAINT),
-                     String(placeholder),
-                     on_submit)
+    w = TextInput{F1, F2}(WidgetNode(; id = id, classes = classes,
+                             type_name = :TextInput, focusable = true),
+                  Reactive(s; kind = Dirty.PAINT),
+                  Reactive(_ngraphemes(s); kind = Dirty.PAINT),
+                  Reactive(false; kind = Dirty.PAINT),
+                  String(placeholder),
+                  Reactive(disabled; kind = Dirty.PAINT),
+                  is_password,
+                  on_submit,
+                  on_change)
     attach_reactives!(w)
     return w
 end
@@ -347,6 +358,7 @@ function insert_text!(w::TextInput, t::AbstractString)::Nothing
     w.text[] = new
     w.cursor[] = _gindex_at(new, b + ncodeunits(t))
     _ti_sync_scroll!(w)
+    w.on_change(w)
     return nothing
 end
 
@@ -365,6 +377,7 @@ function backspace!(w::TextInput)::Bool
     w.text[] = new
     w.cursor[] = _gindex_at(new, b)
     _ti_sync_scroll!(w)
+    w.on_change(w)
     return true
 end
 
@@ -383,6 +396,7 @@ function delete_forward!(w::TextInput)::Bool
     w.text[] = new
     w.cursor[] = _gindex_at(new, b)
     _ti_sync_scroll!(w)
+    w.on_change(w)
     return true
 end
 
@@ -461,6 +475,7 @@ decide -- "go as far as you can" IS the implementation.
 """
 function on_event!(w::TextInput, d::Dispatch{KeyEvent})::Nothing
     _ti_edits(d) || return nothing
+    w.disabled[] && return nothing
     e = event(d)
     isempty(e.mods) || return nothing
     c = e.code
@@ -500,6 +515,7 @@ second delivery of the same event.
 """
 function on_event!(w::TextInput, d::Dispatch{PasteEvent})::Nothing
     _ti_edits(d) || return nothing
+    w.disabled[] && return nothing
     insert_text!(w, _ti_strip_controls(event(d).text))
     consume!(d)
     return nothing
@@ -510,9 +526,11 @@ Show the caret, and scroll every ancestor pane until this input is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it.
 """
-on_focus!(w::TextInput)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::TextInput)::Nothing =
+    (w.focused[] = true; reveal!(w); _focus_callback!(w))
 
 """
 Hide the caret.
 """
-on_blur!(w::TextInput)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::TextInput)::Nothing =
+    (w.focused[] = false; _blur_callback!(w))

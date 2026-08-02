@@ -86,16 +86,18 @@ mutable struct List{T,F,A,C} <: RowsWidget
     scanned::Bool
     "True while focused. PAINT-reactive."
     focused::Reactive{Bool}
-    "Called as `on_activate(list)` on ENTER."
-    on_activate::A
+    "True if the list is disabled."
+    disabled::Reactive{Bool}
+    "Called as `on_submit(list)` on ENTER."
+    on_submit::A
     "Called as `on_change(list)` when the cursor moves."
     on_change::C
 end
 
 """
-A list over `items`, calling `on_activate(list)` on ENTER.
+A list over `items`, calling `on_submit(list)` on ENTER.
 
-`on_activate` is the SECOND POSITIONAL.
+`on_submit` is the SECOND POSITIONAL.
 `on_change` is an optional KEYWORD argument that fires when the cursor moves.
 
 Focusable by construction, so it appears in `focusable_widgets` and is
@@ -114,9 +116,10 @@ nothing, and the constructor stays O(1) over an aliased `Vector`.
 `isempty(items)` is `scanned` BY CONSTRUCTION and is not a special case:
 `0` IS the exact maximum over no rows.
 """
-function List(items::Vector{T}, on_activate::A = _tc_noop;
+function List(items::Vector{T}, on_submit::A = _tc_noop;
               format::F = _tc_show,
               mode::SelectMode.T = SelectMode.SINGLE,
+              disabled::Bool = false,
               on_change::C = _tc_noop,
               id::Symbol = gensym(:list),
               classes = Symbol[])::List{T,F,A,C} where {T,F,A,C}
@@ -127,7 +130,8 @@ function List(items::Vector{T}, on_activate::A = _tc_noop;
                       Selection(mode, length(items)),
                       0, isempty(items),
                       Reactive(false; kind = Dirty.PAINT),
-                      on_activate,
+                      Reactive(disabled; kind = Dirty.PAINT),
+                      on_submit,
                       on_change)
     attach_reactives!(w)
     return w
@@ -347,12 +351,14 @@ Show the cursor, and scroll every ancestor pane until this list is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it (widget.jl:666).
 """
-on_focus!(w::List)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::List)::Nothing =
+    (w.focused[] = true; reveal!(w); _focus_callback!(w))
 
 """
 Hide the cursor.
 """
-on_blur!(w::List)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::List)::Nothing =
+    (w.focused[] = false; _blur_callback!(w))
 
 # --- data ops. Each routes through `refresh_rows!`. -------------------
 

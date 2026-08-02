@@ -74,6 +74,8 @@ mutable struct Checkbox{F} <: Widget
     label::Reactive{String}
     "UNCHECKED, CHECKED or MIXED. PAINT-reactive; see `CB_WIDTH`."
     state::Reactive{CheckState.T}
+    "True if the box is disabled."
+    disabled::Reactive{Bool}
     "True while focused. PAINT-reactive."
     focused::Reactive{Bool}
     "Called as `on_change(checkbox)` after a REAL change."
@@ -92,12 +94,14 @@ glyph is `CB_WIDTH` wide, so it cannot move a cell).
 """
 function Checkbox(label::AbstractString, on_change::F = _tc_noop;
                   state::CheckState.T = CheckState.UNCHECKED,
+                  disabled::Bool = false,
                   id::Symbol = gensym(:checkbox),
                   classes = Symbol[])::Checkbox{F} where {F}
     w = Checkbox{F}(WidgetNode(; id = id, classes = classes,
                                type_name = :Checkbox, focusable = true),
                     Reactive(String(label)),
                     Reactive(state; kind = Dirty.PAINT),
+                    Reactive(disabled; kind = Dirty.PAINT),
                     Reactive(false; kind = Dirty.PAINT),
                     on_change)
     attach_reactives!(w)
@@ -182,6 +186,7 @@ order stays alive.
 """
 function on_event!(w::Checkbox, d::Dispatch{KeyEvent})::Nothing
     (d.phase === Phase.CAPTURE || is_consumed(d)) && return nothing
+    w.disabled[] && return nothing
     e = event(d)
     isempty(e.mods) || return nothing
     if e.code === Key.SPACE || (e.code === Key.CHAR && e.char == ' ')
@@ -200,6 +205,7 @@ a click on the caption toggles it just like a click on the glyph.
 """
 function on_event!(w::Checkbox, d::Dispatch{MouseEvent})::Nothing
     (d.phase === Phase.CAPTURE || is_consumed(d)) && return nothing
+    w.disabled[] && return nothing
     e = event(d)
     e.button === MouseButton.LEFT || return nothing
     if e.action === MouseAction.PRESS
@@ -214,12 +220,14 @@ Show the focus underline. `reveal!` is called EXPLICITLY because
 overriding `on_focus!` REPLACES the default that would have called it
 (widget.jl:666).
 """
-on_focus!(w::Checkbox)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::Checkbox)::Nothing =
+    (w.focused[] = true; reveal!(w); _focus_callback!(w))
 
 """
 Clear the focus underline.
 """
-on_blur!(w::Checkbox)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::Checkbox)::Nothing =
+    (w.focused[] = false; _blur_callback!(w))
 
 # --- RadioGroup ------------------------------------------------------
 
@@ -276,6 +284,8 @@ mutable struct RadioGroup{F} <: Widget
     focused::Reactive{Bool}
     "Called as `on_change(group)` after a REAL choice."
     on_change::F
+    "Disabled option indices (1-based). PAINT-reactive."
+    disabled::Reactive{Set{Int}}
 end
 
 """
@@ -287,6 +297,7 @@ Focusable by construction. `selected` seeds to `0` (nothing chosen);
 ALIASED, not copied.
 """
 function RadioGroup(options::Vector{String}, on_change::F = _tc_noop;
+                    disabled::Set{Int} = Set{Int}(),
                     id::Symbol = gensym(:radiogroup),
                     classes = Symbol[])::RadioGroup{F} where {F}
     w = RadioGroup{F}(
@@ -296,7 +307,8 @@ function RadioGroup(options::Vector{String}, on_change::F = _tc_noop;
         Reactive(0; kind = Dirty.PAINT),
         Reactive(isempty(options) ? 0 : 1; kind = Dirty.PAINT),
         Reactive(false; kind = Dirty.PAINT),
-        on_change)
+        on_change,
+        Reactive(disabled; kind = Dirty.PAINT))
     attach_reactives!(w)
     return w
 end
@@ -370,6 +382,7 @@ function choose!(w::RadioGroup, i::Int)::Bool
     n = length(w.options)
     n == 0 && return false
     j = clamp(i, 1, n)
+    j in w.disabled[] && return false
     _rg_cursor!(w, j)
     w.selected[] == j && return false
     w.selected[] = j
@@ -450,9 +463,11 @@ end
 Show the focus underline. `reveal!` is called EXPLICITLY, as for
 `Checkbox`.
 """
-on_focus!(w::RadioGroup)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::RadioGroup)::Nothing =
+    (w.focused[] = true; reveal!(w); _focus_callback!(w))
 
 """
 Clear the focus underline.
 """
-on_blur!(w::RadioGroup)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::RadioGroup)::Nothing =
+    (w.focused[] = false; _blur_callback!(w))

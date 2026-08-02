@@ -77,6 +77,8 @@ mutable struct TextArea{F} <: Widget
     widest::Int
     "True while focused."
     focused::Reactive{Bool}
+    "True if the text area is disabled."
+    disabled::Reactive{Bool}
     "Called as `on_change(area)` after every edit."
     on_change::F
 end
@@ -100,16 +102,17 @@ An area holding `text`, calling `on_change(area)` after every edit.
 Focusable by construction, so it appears in `focusable_widgets` and is
 reachable by TAB with no further wiring.
 """
-function TextArea(text::AbstractString = "",
-                  on_change::F = _ta_noop;
+function TextArea(text::AbstractString = "", on_change::F = _ta_noop;
+                  disabled::Bool = false,
                   id::Symbol = gensym(:textarea),
                   classes = Symbol[])::TextArea{F} where {F}
     w = TextArea{F}(WidgetNode(; id = id, classes = classes,
                                type_name = :TextArea, focusable = true),
                     _ta_split(text),
-                    Reactive(0),
+                    Reactive(0; kind = Dirty.LAYOUT),
                     1, 0, 0, 0,
                     Reactive(false; kind = Dirty.PAINT),
+                    Reactive(disabled; kind = Dirty.PAINT),
                     on_change)
     refresh_extent!(w)
     attach_reactives!(w)
@@ -490,6 +493,7 @@ an ancestor pane whenever this area is not focused.
 """
 function on_event!(w::TextArea, d::Dispatch{KeyEvent})::Nothing
     _ta_acts(d) || return nothing
+    w.disabled[] && return nothing
     e = event(d)
     isempty(e.mods) || return nothing
     c = e.code
@@ -534,6 +538,7 @@ them, a `TextArea` is exactly the widget a multi-line paste belongs in.
 """
 function on_event!(w::TextArea, d::Dispatch{PasteEvent})::Nothing
     _ta_acts(d) || return nothing
+    w.disabled[] && return nothing
     insert_text!(w, event(d).text)
     consume!(d)
     return nothing
@@ -544,9 +549,11 @@ Show the caret, and scroll every ancestor pane until this area is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it.
 """
-on_focus!(w::TextArea)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::TextArea)::Nothing =
+    (w.focused[] = true; reveal!(w); _focus_callback!(w))
 
 """
 Hide the caret.
 """
-on_blur!(w::TextArea)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::TextArea)::Nothing =
+    (w.focused[] = false; _blur_callback!(w))

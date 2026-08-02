@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (breaking)
+
+- Widget callbacks now use one event vocabulary across projections:
+  `Button.on_press` is `on_click`, and row widgets use `on_submit` instead
+  of `on_activate`. `List`, `Table`, `DataTable`, and `TreeView` also accept
+  `on_change`, fired exactly once when their cursor or selection changes.
+
 ### Added
+
+- Every `WidgetNode` can carry universal `on_focus` and `on_blur` callbacks.
+  They run in addition to widget-specific focus hooks, including for widgets
+  that manage their own focused appearance.
+- Disabled states for interactive widgets, password text inputs, a
+  `ProgressBar`, an `ErrorBoundary`, and the `Immediate` procedural API.
 
 - A popup layer, and the two widgets that ride it. `DropDown` (a `<select>`
   over any vector, with `set_open!`/`options`/`selected_item`) opens its

@@ -127,13 +127,15 @@ mutable struct DropDown{T,F,C} <: Widget
     absent from `children(w)`. The popup is a paint-and-hit layer, not a
     focus layer: the DropDown KEEPS FOCUS while it is open and forwards.
     """
-    const panel::DropDownList{List{T,F,typeof(_tc_noop)}}
+    const panel::DropDownList{List{T,F,typeof(_tc_noop),typeof(_tc_noop)}}
     "True while the popup is open. PAINT-reactive: the arrow flips."
     open::Reactive{Bool}
     "The COMMITTED option, 1-based; `0` when nothing is chosen."
     selected::Reactive{Int}
     "True while focused. PAINT-reactive."
     focused::Reactive{Bool}
+    "True if the dropdown is disabled."
+    disabled::Reactive{Bool}
     "Rows the open list shows at most, before it scrolls."
     const max_rows::Int
     "Shown when `selected == 0`."
@@ -157,6 +159,7 @@ the popup is not a focus layer.
 function DropDown(items::Vector{T}, on_change::C = _tc_noop;
                   format::F = _tc_show, max_rows::Int = DD_MAX_ROWS,
                   placeholder::AbstractString = "",
+                  disabled::Bool = false,
                   id::Symbol = gensym(:dropdown),
                   classes = Symbol[])::DropDown{T,F,C} where {T,F,C}
     lst = List(items, _tc_noop; format = format,
@@ -178,6 +181,7 @@ function DropDown(items::Vector{T}, on_change::C = _tc_noop;
         Reactive(false; kind = Dirty.PAINT),
         Reactive(0; kind = Dirty.PAINT),
         Reactive(false; kind = Dirty.PAINT),
+        Reactive(disabled; kind = Dirty.PAINT),
         max_rows, String(placeholder), on_change)
     attach_reactives!(w)
     w.panel.owner = w
@@ -306,6 +310,7 @@ unconsumed and the tab order -- and close-on-TAB -- keep working.
 function on_event!(w::DropDown, d::Dispatch{KeyEvent})::Nothing
     e = event(d)
     _dd_acts(d, e) || return nothing
+    w.disabled[] && return nothing
     w.open[] ? _dd_key_open!(w, d, e) : _dd_key_closed!(w, d, e)
     return nothing
 end
@@ -318,8 +323,8 @@ false), which is why clicking the head of an open dropdown closes it
 here instead of dismiss-then-reopen. Wheel and drag fall through.
 """
 function on_event!(w::DropDown, d::Dispatch{MouseEvent})::Nothing
-    d.phase === Phase.CAPTURE && return nothing
-    is_consumed(d) && return nothing
+    (d.phase === Phase.CAPTURE || is_consumed(d)) && return nothing
+    w.disabled[] && return nothing
     e = event(d)
     is_scroll(e) && return nothing
     e.button === MouseButton.LEFT || return nothing
@@ -486,7 +491,8 @@ Gain focus: show as focused and reveal into any scrolling ancestor.
 `reveal!` is called EXPLICITLY because overriding `on_focus!` REPLACES
 the default that would have called it.
 """
-on_focus!(w::DropDown)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::DropDown)::Nothing =
+    (w.focused[] = true; reveal!(w); _focus_callback!(w))
 
 """
 Lose focus: the popup's lifetime is bounded by its owner's focus, which
@@ -494,7 +500,7 @@ is what makes TAB-while-open correct with ZERO code in app.jl -- TAB is
 not consumed -> `:focus_next` -> `focus!` -> `on_blur!` -> here.
 """
 on_blur!(w::DropDown)::Nothing =
-    (w.focused[] = false; _dd_close!(w); nothing)
+    (w.focused[] = false; _dd_close!(w); _blur_callback!(w))
 
 """
 Close on unmount: a popup outliving its owner is a list anchored to a

@@ -6,7 +6,7 @@
 # closure table -- just double dispatch on (widget type, event type).
 
 """
-A pressable button. Parametric on the handler, so `on_press` is a
+A pressable button. Parametric on the handler, so `on_click` is a
 CONCRETE field and never a boxed closure.
 """
 mutable struct Button{F} <: Widget
@@ -16,12 +16,14 @@ mutable struct Button{F} <: Widget
     label::Reactive{String}
     "True while the button is held."
     pressed::Reactive{Bool}
-    "Called as `on_press(button)` when activated."
-    on_press::F
+    "Called as `on_click(button)` when activated."
+    on_click::F
+    "True if the button is disabled and cannot be pressed."
+    disabled::Reactive{Bool}
 end
 
 """
-A button captioned `label` that calls `on_press(button)` when
+A button captioned `label` that calls `on_click(button)` when
 activated.
 
 Focusable by construction, so it appears in `focusable_widgets` and is
@@ -30,14 +32,16 @@ reachable by TAB with no further wiring.
 `label` is `Dirty.LAYOUT`-reactive (a new caption is a new extent);
 `pressed` is `Dirty.PAINT`-reactive (it cannot move a single cell).
 """
-function Button(label::AbstractString, on_press::F;
+function Button(label::AbstractString, on_click::F;
+                disabled::Bool = false,
                 id::Symbol = gensym(:button),
                 classes = Symbol[])::Button{F} where {F}
     w = Button{F}(WidgetNode(; id = id, classes = classes,
                              type_name = :Button, focusable = true),
                   Reactive(String(label)),
                   Reactive(false; kind = Dirty.PAINT),
-                  on_press)
+                  on_click,
+                  Reactive(disabled; kind = Dirty.PAINT))
     attach_reactives!(w)
     return w
 end
@@ -75,13 +79,13 @@ _bt_activates(d::Dispatch)::Bool =
 Fire the handler and stop the event.
 """
 function _bt_fire!(w::Button, d::Dispatch)::Nothing
-    w.on_press(w)
+    w.on_click(w)
     consume!(d)
     return nothing
 end
 
 """
-Activate on ENTER or SPACE: calls `w.on_press(w)` and `consume!(d)`.
+Activate on ENTER or SPACE: calls `w.on_click(w)` and `consume!(d)`.
 
 Unmodified keys only. `ctrl+enter` and friends belong to an
 application-level binding, and consuming them here would silently
@@ -89,6 +93,7 @@ shadow it.
 """
 function on_event!(w::Button, d::Dispatch{KeyEvent})::Nothing
     _bt_activates(d) || return nothing
+    w.disabled[] && return nothing
     e = event(d)
     isempty(e.mods) || return nothing
     if e.code === Key.ENTER || e.code === Key.SPACE ||
@@ -99,7 +104,7 @@ function on_event!(w::Button, d::Dispatch{KeyEvent})::Nothing
 end
 
 """
-Activate on a LEFT press: calls `w.on_press(w)` and `consume!(d)`.
+Activate on a LEFT press: calls `w.on_click(w)` and `consume!(d)`.
 
 The matching LEFT release clears `pressed` -- that is what makes "True
 while the button is held" true -- but activates nothing and consumes
@@ -107,6 +112,7 @@ nothing: the press already did the work.
 """
 function on_event!(w::Button, d::Dispatch{MouseEvent})::Nothing
     _bt_activates(d) || return nothing
+    w.disabled[] && return nothing
     e = event(d)
     e.button === MouseButton.LEFT || return nothing
     if e.action === MouseAction.PRESS

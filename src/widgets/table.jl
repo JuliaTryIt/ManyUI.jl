@@ -52,7 +52,7 @@ and MUST NOT contain a newline. It is called ONCE PER VISIBLE CELL PER
 FRAME -- never for a culled column, never for a row outside the window,
 and never during `_tc_auto!` for a non-AUTO column.
 """
-mutable struct Table{R,F,A} <: RowsWidget
+mutable struct Table{R,F,A,C} <: RowsWidget
     "Per-widget state."
     node::WidgetNode
     "The column model. IDENTICAL in kind to `DataTable`'s."
@@ -67,8 +67,12 @@ mutable struct Table{R,F,A} <: RowsWidget
     const sel::Selection
     "True while focused. PAINT-reactive."
     focused::Reactive{Bool}
-    "Called as `on_activate(table)` on ENTER."
-    on_activate::A
+    "True if the table is disabled."
+    disabled::Reactive{Bool}
+    "Called as `on_submit(table)` on ENTER."
+    on_submit::A
+    "Called as `on_change(w)` when the cursor moves."
+    on_change::C
 end
 
 """
@@ -80,22 +84,24 @@ exactly what the `cell` keyword is for. Internal.
 _tc_cell_default(row, j::Int)::AbstractString = _tc_show(row[j])
 
 """
-A table of `rows` under `cols`, calling `on_activate(table)` on ENTER.
+A table of `rows` under `cols`, calling `on_submit(table)` on ENTER.
 
 `rows` and `cols` are both ALIASED, never copied. Focusable by
 construction. Seeds every AUTO column from the headers and SOURCE rows
 `1 : min(sample, length(rows))`, once -- see `_tc_auto!`.
 """
 function Table(rows::Vector{R}, cols::Vector{Column},
-               on_activate::A = _tc_noop;
+               on_submit::A = _tc_noop;
+               on_change::C = _tc_noop,
                cell::F = _tc_cell_default,
                mode::SelectMode.T = SelectMode.SINGLE,
                sep::AbstractString = " ", show_header::Bool = true,
                rule::Bool = false, rule_glyph::AbstractString = TC_RULE,
                sample::Int = TC_AUTO_SAMPLE,
+               disabled::Bool = false,
                id::Symbol = gensym(:table),
-               classes = Symbol[])::Table{R,F,A} where {R,F,A}
-    w = Table{R,F,A}(WidgetNode(; id = id, classes = classes,
+               classes = Symbol[])::Table{R,F,A,C} where {R,F,A,C}
+    w = Table{R,F,A,C}(WidgetNode(; id = id, classes = classes,
                                 type_name = :Table, focusable = true),
                      TableGrid(cols; sep = sep,
                                show_header = show_header, rule = rule,
@@ -104,7 +110,9 @@ function Table(rows::Vector{R}, cols::Vector{Column},
                      Reactive(0; kind = Dirty.PAINT),
                      Selection(mode, length(rows)),
                      Reactive(false; kind = Dirty.PAINT),
-                     on_activate)
+                     Reactive(disabled; kind = Dirty.PAINT),
+                     on_submit,
+                     on_change)
     # The ONE seeding pass, and it is BOUNDED: the headers, then SOURCE
     # rows `1 : min(sample, n)`. Nothing measures anything again until a
     # row is inserted, the columns change, or `refresh_extent!` is called
@@ -113,6 +121,8 @@ function Table(rows::Vector{R}, cols::Vector{Column},
     attach_reactives!(w)
     return w
 end
+
+_tc_on_change(w::Table) = w.on_change(w)
 
 # --- the seam. FINAL: `tablecore.jl` dispatches on every one of these.
 selection_of(w::Table)::Selection = w.sel
@@ -170,12 +180,14 @@ Show the cursor, and scroll every ancestor pane until this table is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it (widget.jl:666).
 """
-on_focus!(w::Table)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::Table)::Nothing =
+    (w.focused[] = true; reveal!(w); _focus_callback!(w))
 
 """
 Hide the cursor.
 """
-on_blur!(w::Table)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::Table)::Nothing =
+    (w.focused[] = false; _blur_callback!(w))
 
 """
 Reset and re-measure every AUTO mark over EVERY row, re-resolve, and

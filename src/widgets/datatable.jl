@@ -60,7 +60,7 @@ FIXED `j`, so every comparison in a given `sort_by!` is homogeneous. A
 column of MIXED types THROWS a `MethodError` from `isless` -- it is not
 "merely slow".
 """
-mutable struct DataTable{R,F,K,A} <: RowsWidget
+mutable struct DataTable{R,F,K,A,C} <: RowsWidget
     "Per-widget state."
     node::WidgetNode
     "The column model. IDENTICAL in kind to `Table`'s."
@@ -100,19 +100,24 @@ mutable struct DataTable{R,F,K,A} <: RowsWidget
     const sel::Selection
     "True while focused. PAINT-reactive."
     focused::Reactive{Bool}
-    "Called as `on_activate(table)` on ENTER."
-    on_activate::A
+    "True if the table is disabled."
+    disabled::Reactive{Bool}
+    "Called as `on_submit(table)` on ENTER."
+    on_submit::A
+    "Called as `on_change(w)` when the cursor moves."
+    on_change::C
 end
 
 """
-A sortable table of `rows` under `cols`, calling `on_activate(table)` on
+A sortable table of `rows` under `cols`, calling `on_submit(table)` on
 ENTER. Starts in SOURCE order.
 
 `key` is REQUIRED and has no default: see the type's docstring. `rows`
 and `cols` are both ALIASED, never copied.
 """
 function DataTable(rows::Vector{R}, cols::Vector{Column},
-                   on_activate::A = _tc_noop;
+                   on_submit::A = _tc_noop;
+               on_change::C = _tc_noop,
                    key::K,                       # REQUIRED. No default.
                    cell::F = _tc_cell_default,
                    mode::SelectMode.T = SelectMode.SINGLE,
@@ -120,11 +125,12 @@ function DataTable(rows::Vector{R}, cols::Vector{Column},
                    rule::Bool = false,
                    rule_glyph::AbstractString = TC_RULE,
                    sample::Int = TC_AUTO_SAMPLE,
+                   disabled::Bool = false,
                    id::Symbol = gensym(:datatable),
-                   classes = Symbol[])::DataTable{R,F,K,A} where
-                  {R,F,K,A}
+                   classes = Symbol[])::DataTable{R,F,K,A,C} where
+                  {R,F,K,A,C}
     n = length(rows)
-    w = DataTable{R,F,K,A}(
+    w = DataTable{R,F,K,A,C}(
         WidgetNode(; id = id, classes = classes, type_name = :DataTable,
                    focusable = true),
         TableGrid(cols; sep = sep, show_header = show_header,
@@ -135,7 +141,9 @@ function DataTable(rows::Vector{R}, cols::Vector{Column},
         Reactive(0; kind = Dirty.PAINT),
         Selection(mode, n),
         Reactive(false; kind = Dirty.PAINT),
-        on_activate)
+        Reactive(disabled; kind = Dirty.PAINT),
+        on_submit,
+        on_change)
     attach_reactives!(w)
     # The AUTO seed, ONCE: the headers plus SOURCE rows 1:min(sample, n).
     # Nothing rescans them again unless `refresh_extent!` is called.
@@ -143,6 +151,8 @@ function DataTable(rows::Vector{R}, cols::Vector{Column},
     _tc_auto!(w, 1, min(sample, n))
     return w
 end
+
+_tc_on_change(w::DataTable) = w.on_change(w)
 
 # --- the seam. The `order`/`rank` indirection IS the whole delta. -----
 selection_of(w::DataTable)::Selection = w.sel
@@ -189,12 +199,14 @@ Show the cursor, and scroll every ancestor pane until this table is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it (widget.jl:666).
 """
-on_focus!(w::DataTable)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::DataTable)::Nothing =
+    (w.focused[] = true; reveal!(w); _focus_callback!(w))
 
 """
 Hide the cursor.
 """
-on_blur!(w::DataTable)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::DataTable)::Nothing =
+    (w.focused[] = false; _blur_callback!(w))
 
 """
 Reset and re-measure every AUTO mark over EVERY row, re-resolve, and

@@ -127,7 +127,7 @@ _tc_show(s::AbstractString)::AbstractString = s
 # one doc signature, and documenting each would replace the other.
 _tc_show(x)::AbstractString = string(x)
 
-"The default `on_activate`: do nothing. Internal."
+"The default `on_submit`: do nothing. Internal."
 _tc_noop(::Widget)::Nothing = nothing
 
 """
@@ -1011,7 +1011,7 @@ end
 """
 UP/DOWN by one; PAGE_UP/PAGE_DOWN by one body LESS ONE ROW of overlap;
 HOME/END to the ends; SPACE toggles (MULTI); ENTER calls
-`on_activate(w)`; LEFT/RIGHT scroll HORIZONTALLY by one cell. SHIFT on
+`on_submit(w)`; LEFT/RIGHT scroll HORIZONTALLY by one cell. SHIFT on
 any movement key EXTENDS from the anchor. Returns true iff it consumed.
 
 Each of the three widgets is exactly:
@@ -1022,7 +1022,7 @@ Each of the three widgets is exactly:
 CONSUMES ONLY WHEN SOMETHING ACTUALLY MOVED. That is `_sp_move!`'s rule
 (scroll.jl:435) applied to a cursor, and it is the whole of chaining: a
 `List` on its LAST row lets DOWN bubble to an outer `Scrollpane`. ENTER
-is the one exception and it is not one: firing `on_activate` IS the
+is the one exception and it is not one: firing `on_submit` IS the
 something that happened.
 
 MODIFIER POLICY, a DELIBERATE and BOUNDED departure from the "unmodified
@@ -1043,6 +1043,7 @@ Internal.
 """
 function _tc_key!(w::RowsWidget, d::Dispatch{KeyEvent})::Bool
     _tc_acts(d) || return false
+    w.disabled[] && return false
     e = event(d)
     bare = isempty(e.mods)
     (bare || e.mods === TC_SHIFT) || return false
@@ -1073,7 +1074,7 @@ function _tc_key!(w::RowsWidget, d::Dispatch{KeyEvent})::Bool
         moved = toggle_row!(w, _tc_cursor_view(w))
     elseif c === Key.ENTER
         bare || return false
-        w.on_activate(w)
+        w.on_submit(w)
         consume!(d)
         return true
     else
@@ -1128,6 +1129,7 @@ onto is not browsable.
 """
 function _tc_mouse!(w::RowsWidget, d::Dispatch{MouseEvent})::Bool
     _tc_acts(d) || return false
+    w.disabled[] && return false
     e = event(d)
     _tc_sync!(w)
     is_scroll(e) && return _tc_wheel!(w, d, e)

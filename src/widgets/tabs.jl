@@ -266,12 +266,14 @@ The strip gained focus: light the focus underline and reveal it.
 `reveal!` is called EXPLICITLY because overriding `on_focus!` REPLACES
 the default that would have called it (widget.jl:666).
 """
-on_focus!(w::TabStrip)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::TabStrip)::Nothing =
+    (w.focused[] = true; reveal!(w); _focus_callback!(w))
 
 """
 The strip lost focus: drop the focus underline.
 """
-on_blur!(w::TabStrip)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::TabStrip)::Nothing =
+    (w.focused[] = false; _blur_callback!(w))
 
 """
 Keyboard: LEFT/RIGHT step the selection (clamped, no wrap), HOME/END go

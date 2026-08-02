@@ -125,7 +125,7 @@ covers both.
 
 `roots` is ALIASED, never copied.
 """
-mutable struct TreeView{T,F,A} <: RowsWidget
+mutable struct TreeView{T,F,A,C} <: RowsWidget
     "Per-widget state."
     node::WidgetNode
     "The roots. ALIASED, mutated in place. A FOREST, not a tree: a file
@@ -145,23 +145,29 @@ mutable struct TreeView{T,F,A} <: RowsWidget
     widest::Int
     "True while focused. PAINT-reactive."
     focused::Reactive{Bool}
-    "Called as `on_activate(tree)` on ENTER. NAMED `on_activate` BY
-     FORCE: `_tc_key!` reads `w.on_activate` (tablecore.jl:1080)."
-    on_activate::A
+    "True if the tree is disabled."
+    disabled::Reactive{Bool}
+    "Called as `on_submit(tree)` on ENTER. NAMED `on_submit` BY
+     FORCE: `_tc_key!` reads `w.on_submit` (tablecore.jl:1080)."
+    on_submit::A
+    "Called as `on_change(tree)` when the cursor moves."
+    on_change::C
 end
 
 """
-A tree over `roots`, calling `on_activate(tree)` on ENTER.
+A tree over `roots`, calling `on_submit(tree)` on ENTER.
 
 Focusable by construction, so it appears in `focusable_widgets` and is
 reachable by TAB with no further wiring. `roots` is ALIASED, not copied.
 """
 function TreeView(roots::Vector{TreeNode{T}},
-                  on_activate::A = _tc_noop;
+                  on_submit::A = _tc_noop;
+               on_change::C = _tc_noop,
                   format::F = _tc_show,
+                  disabled::Bool = false,
                   id::Symbol = gensym(:treeview),
-                  classes = Symbol[])::TreeView{T,F,A} where {T,F,A}
-    w = TreeView{T,F,A}(
+                  classes = Symbol[])::TreeView{T,F,A,C} where {T,F,A,C}
+    w = TreeView{T,F,A,C}(
         WidgetNode(; id = id, classes = classes,
                    type_name = :TreeView, focusable = true),
         roots, format, TreeRow{T}[], false,
@@ -169,7 +175,9 @@ function TreeView(roots::Vector{TreeNode{T}},
         Selection(SelectMode.SINGLE, 0),
         0,
         Reactive(false; kind = Dirty.PAINT),
-        on_activate)
+        Reactive(disabled; kind = Dirty.PAINT),
+        on_submit,
+        on_change)
     attach_reactives!(w)
     _tv_rebuild!(w)
     return w
@@ -183,6 +191,7 @@ view_source(::TreeView, k::Int)::Int = k
 view_rank(::TreeView, s::Int)::Int = s
 _tc_touch!(w::TreeView)::Nothing =
     (w.version[] = w.version[] + 1; nothing)
+_tc_on_change(w::TreeView) = w.on_change(w)
 
 """
 The widest visible row, in cells. OVERRIDES the `RowsWidget` default,
@@ -558,7 +567,9 @@ Show the cursor, and scroll every ancestor pane until this tree is
 visible. `reveal!` is called EXPLICITLY because overriding `on_focus!`
 REPLACES the default that would have called it (widget.jl:666).
 """
-on_focus!(w::TreeView)::Nothing = (w.focused[] = true; reveal!(w))
+on_focus!(w::TreeView)::Nothing =
+    (w.focused[] = true; reveal!(w); _focus_callback!(w))
 
 "Hide the cursor."
-on_blur!(w::TreeView)::Nothing = (w.focused[] = false; nothing)
+on_blur!(w::TreeView)::Nothing =
+    (w.focused[] = false; _blur_callback!(w))

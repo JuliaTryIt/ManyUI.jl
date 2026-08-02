@@ -46,6 +46,7 @@ include("css.jl")
 include("widgets/container.jl")
 include("widgets/label.jl")
 include("widgets/button.jl")
+include("widgets/progressbar.jl")
 # The order within these is NORMATIVE: `scroll.jl` defines
 # `content_extent`, which `textarea.jl` and the three row widgets
 # override; `textinput.jl` defines the shared grapheme helpers, which
@@ -60,6 +61,7 @@ include("widgets/list.jl")
 include("widgets/table.jl")
 include("widgets/datatable.jl")
 include("widgets/overlay.jl")
+include("widgets/error_boundary.jl")
 # `toggle.jl` defines `Checkbox`/`RadioGroup`, `tabs.jl` defines `Tabs`,
 # `tree.jl` defines `TreeView` (needs `tablecore.jl`). `popup.jl` defines
 # the `Popup` value BEFORE app.jl, because `App` carries an `App.popup`
@@ -167,6 +169,9 @@ export TextInput, TextArea, visible_scroll
 export insert_text!, backspace!, delete_forward!, move_by!, move_to!
 export insert_newline!, move_line!, set_text!, text, refresh_extent!
 export should_suspend, OVERLAY_MIN_SIZE, MinSizeOverlay
+export ErrorBoundary
+# widgets/progressbar.jl
+export ProgressBar
 # widgets/tablecore.jl
 export SelectMode, SortDir, RowsWidget, Selection, Column, TableGrid
 export selection_of, row_count, view_count, view_source, view_rank
@@ -205,5 +210,8 @@ export DropDown, DropDownList, options, selected_item, is_open, set_open!
 export Form, form_value, add_field!, field, submit!, form_values
 export sort_column, sort_direction, source_index, sort_indicator
 
+# immediate.jl
+include("immediate.jl")
+export Immediate
 
 end # module

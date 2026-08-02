@@ -46,6 +46,8 @@ project their current model state onto the targeted channel.
 """
 function render end
 
+render(f::Function, ::Projection) = f()
+
 """
     post!(app, event)
 
