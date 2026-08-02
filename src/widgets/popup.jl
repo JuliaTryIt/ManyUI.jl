@@ -16,13 +16,15 @@
 Where a popup sits relative to the widget that opened it.
 
 `BELOW` and `ABOVE` are fixed; `AUTO` prefers `BELOW` and flips to `ABOVE`
-only when the popup would fall off the bottom.
+only when the popup would fall off the bottom. `CENTER` ignores the owner and
+centres the popup in the viewport, for modal dialogs.
 """
 module PopupPlacement
 @enum T::UInt8 begin
     BELOW = 0
     ABOVE = 1
     AUTO = 2
+    CENTER = 3
 end
 end
 
@@ -74,7 +76,8 @@ The on-screen [`Region`](@ref) a popup of `size` occupies when opened off
 `head` (the owner's border box) inside `viewport`. Pure, so placement is
 testable with no App.
 
-`ABOVE` always sits above. `BELOW` and `AUTO` both ANCHOR below and flip
+`CENTER` is centred on both axes and does not depend on `head`. `ABOVE`
+always sits above. `BELOW` and `AUTO` both ANCHOR below and flip
 above only when the popup would run off the bottom and there is room above
 -- an anchored dropdown wants to open downward but must stay on screen, so
 "below" is a preference, not a demand. Either way the result is clamped to
@@ -85,6 +88,11 @@ function popup_region(head::Region, size::Size,
                       placement::PopupPlacement.T, viewport::Size)::Region
     w = min(size.width, viewport.width)
     h = min(size.height, viewport.height)
+    if placement === PopupPlacement.CENTER
+        x = 1 + div(viewport.width - w, 2)
+        y = 1 + div(viewport.height - h, 2)
+        return Region(x, y, w, h)
+    end
     # x tracks the head, then slides left just enough to stay on screen.
     x = clamp(head.x, 1, max(1, viewport.width - w + 1))
     below_y = head.y + head.height            # first row under the head

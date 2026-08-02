@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `PopupPlacement.CENTER` centres popup content in the viewport independently
+  of its owner, providing a backend-neutral placement for modal dialogs.
 - Every `WidgetNode` can carry universal `on_focus` and `on_blur` callbacks.
   They run in addition to widget-specific focus hooks, including for widgets
   that manage their own focused appearance.

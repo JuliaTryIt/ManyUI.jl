@@ -21,6 +21,14 @@ import Pkg; Pkg.add("ManyUI")
 
 For full terminal rendering, you will also want to install the `ManyUITUI` backend.
 
+Centered modal content can use the popup layer without layout-specific
+positioning:
+
+```julia
+open_popup!(app, Popup(dialog, owner, Size(40, 12);
+    placement=PopupPlacement.CENTER))
+```
+
 ## The Ecosystem
 
 The ManyUI framework is divided into several composable packages:
