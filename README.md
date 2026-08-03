@@ -35,6 +35,7 @@ The ManyUI framework is divided into several composable packages:
 - **[ManyUI.jl](https://github.com/s-celles/ManyUI.jl)** (Core framework)
 - **[ManyUITUI.jl](https://github.com/s-celles/ManyUITUI.jl)** (Terminal TUI backend)
 - **[ManyUIWeb.jl](https://github.com/s-celles/ManyUIWeb.jl)** (Web backend)
+- **[ManyUICImGui.jl](https://github.com/s-celles/ManyUICImGui.jl)** (Dear ImGui desktop backend, in development)
 - **[ManyUICLI.jl](https://github.com/s-celles/ManyUICLI.jl)** (Command-line generator)
 - **[ManyUIDemos.jl](https://github.com/s-celles/ManyUIDemos.jl)** (Showcase and examples)
 
