@@ -176,6 +176,12 @@ function dispatch_event!(root::Widget, e::Event,
     return propagate!(root, target, e)
 end
 
+function dispatch_event!(root::Widget, e::TickEvent,
+                         focus::Union{Nothing,Widget} = nothing)::Bool
+    walk_visible(w -> on_event!(w, Dispatch(e, w)), root)
+    return true
+end
+
 """
 The tab order: every visible, focusable widget in pre-order. Pure.
 """
