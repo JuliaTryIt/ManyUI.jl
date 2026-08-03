@@ -48,6 +48,8 @@ mutable struct TabStrip <: Widget
     selected::Reactive{Int}
     "True while focused. PAINT-reactive."
     focused::Reactive{Bool}
+    "True if the tabs are disabled."
+    disabled::Reactive{Bool}
 end
 
 """
@@ -63,8 +65,9 @@ here would make a one-row `Label` beside a `Tabs` into a ZERO-row label.
 mutable struct Tabs <: Widget
     "Per-widget state."
     node::WidgetNode
-    "The caption row. CONCRETE, so `selected` dispatches statically."
     const strip::TabStrip
+    "True if the tabs are disabled."
+    disabled::Reactive{Bool}
 end
 
 """
@@ -77,24 +80,28 @@ idiom, scroll.jl:37), because `mount!(::Tabs, ::Widget)` throws to force
 `add_tab!`.
 """
 function Tabs(pairs::Pair{<:AbstractString,<:Widget}...;
-              id::Symbol = gensym(:tabs), classes = Symbol[])::Tabs
+              id::Symbol = gensym(:tabs), classes = Symbol[],
+              disabled::Bool = false)::Tabs
     strip = TabStrip(
         WidgetNode(; id = Symbol(id, :_strip), type_name = :TabStrip,
-                   focusable = true),
+                   focusable = !disabled),
         String[],
         Reactive(0; kind = Dirty.PAINT),
-        Reactive(false; kind = Dirty.PAINT))
+        Reactive(false; kind = Dirty.PAINT),
+        Reactive(disabled; kind = Dirty.PAINT))
     attach_reactives!(strip)
     _sp_box!(strip, BoxPatch(; height = cells(1), shrink = 0f0,
                              grow = 0f0))
     w = Tabs(WidgetNode(; id = id, classes = classes,
-                        type_name = :Tabs), strip)
+                        type_name = :Tabs), strip,
+             Reactive(disabled; kind = Dirty.PAINT))
     _sp_box!(w, BoxPatch(; display = Display.FLEX,
                          direction = Direction.COLUMN))
     invoke(mount!, Tuple{Widget,Widget}, w, strip)
     for (title, panel) in pairs
         add_tab!(w, title, panel)
     end
+    attach_reactives!(w)
     return w
 end
 
@@ -284,7 +291,8 @@ TAB, ESCAPE, modified keys and everything else are left untouched: a
 strip that ate TAB would trap focus forever.
 """
 function on_event!(w::TabStrip, d::Dispatch{KeyEvent})::Nothing
-    (d.phase !== Phase.CAPTURE && !is_consumed(d)) || return nothing
+    (d.phase === Phase.CAPTURE || is_consumed(d)) && return nothing
+    w.disabled[] && return nothing
     t = _tb_owner(w)
     t === nothing && return nothing
     e = event(d)
@@ -316,7 +324,8 @@ through `_tc_local` (NOT `local_offset`, which ignores scrolled
 ancestors). Consumes only on a real change.
 """
 function on_event!(w::TabStrip, d::Dispatch{MouseEvent})::Nothing
-    (d.phase !== Phase.CAPTURE && !is_consumed(d)) || return nothing
+    (d.phase === Phase.CAPTURE || is_consumed(d)) && return nothing
+    w.disabled[] && return nothing
     t = _tb_owner(w)
     t === nothing && return nothing
     e = event(d)

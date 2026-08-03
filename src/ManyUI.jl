@@ -71,6 +71,8 @@ include("widgets/error_boundary.jl")
 include("widgets/toggle.jl")
 include("widgets/tabs.jl")
 include("widgets/tree.jl")
+include("widgets/spinner.jl")
+include("widgets/slider.jl")
 include("widgets/popup.jl")
 include("widgets/dropdown.jl")
 include("widgets/form.jl")
@@ -172,6 +174,10 @@ export should_suspend, OVERLAY_MIN_SIZE, MinSizeOverlay
 export ErrorBoundary
 # widgets/progressbar.jl
 export ProgressBar
+# widgets/spinner.jl
+export Spinner
+# widgets/slider.jl
+export Slider
 # widgets/tablecore.jl
 export SelectMode, SortDir, RowsWidget, Selection, Column, TableGrid
 export selection_of, row_count, view_count, view_source, view_rank
@@ -192,6 +198,7 @@ export set_columns!, refresh_columns!, refresh_rows!
 # widgets/datatable.jl
 export DataTable, sort_by!, toggle_sort!
 # widgets/toggle.jl
+
 export CheckState, Checkbox, RadioGroup
 export check_state, is_checked, set_state!, toggle!
 export selected, selected_option, radio_cursor, choose!

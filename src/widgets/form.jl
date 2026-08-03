@@ -40,6 +40,7 @@ form_value(w::Checkbox)::CheckState.T = w.state[]
 form_value(w::RadioGroup)::Int = w.selected[]
 form_value(w::DropDown)::Int = w.selected[]
 form_value(w::Tabs)::Int = selected(w)
+form_value(w::Slider)::Float64 = w.value[]
 
 "The default validator: everything passes. Internal."
 _fm_ok(::Widget)::Bool = true
@@ -59,6 +60,8 @@ mutable struct Form{S,V} <: Widget
     on_submit::S
     "Called as `on_validate(form)::Bool`. False VETOES the submit."
     on_validate::V
+    "True if the form is disabled."
+    disabled::Reactive{Bool}
 end
 
 """
@@ -114,10 +117,15 @@ No chicken-and-egg, no registry, no `Ref`.
 """
 function Form(on_submit::S = _tc_noop; on_validate::V = _fm_ok,
               id::Symbol = gensym(:form),
-              classes = Symbol[])::Form{S,V} where {S,V}
-    return Form{S,V}(WidgetNode(; id = id, classes = classes,
-                                type_name = :Form),
-                     Pair{Symbol,Widget}[], on_submit, on_validate)
+              classes = Symbol[],
+              disabled::Bool = false)::Form{S,V} where {S,V}
+    w = Form{S,V}(WidgetNode(; id = id, classes = classes,
+                             type_name = :Form),
+                  Pair{Symbol,Widget}[],
+                  on_submit, on_validate,
+                  Reactive(disabled; kind = Dirty.PAINT))
+    attach_reactives!(w)
+    return w
 end
 
 """
@@ -149,9 +157,10 @@ Validate, then submit. `on_validate(f) || return false; on_submit(f);
 return true`. THE whole validation story: one predicate and a veto. True
 iff the submit ran.
 """
-function submit!(f::Form)::Bool
-    f.on_validate(f) || return false
-    f.on_submit(f)
+function submit!(w::Form)::Bool
+    w.disabled[] && return false
+    w.on_validate(w) || return false
+    w.on_submit(w)
     return true
 end
 
