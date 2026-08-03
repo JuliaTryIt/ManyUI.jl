@@ -80,6 +80,7 @@ include("precompile.jl")
 
 # core.jl
 export Projection, CLI, TUI, WebTerminal, WebNative
+export backend_available, backend_kind, backend_capabilities
 export Action, execute!, render, post!
 
 # types.jl

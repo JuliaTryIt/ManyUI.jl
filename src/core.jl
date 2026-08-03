@@ -5,6 +5,31 @@ A projection represents a specific target channel for the application UI.
 """
 abstract type Projection end
 
+"""Whether a backend or projection can be used in the current process."""
+function backend_available end
+
+"""Stable backend identifier, suitable for UI selectors and logs."""
+function backend_kind end
+
+"""Capabilities advertised by a backend.
+
+The tuple is intentionally semantic rather than library-specific. Backends
+may add fields in their own metadata, but these common fields are stable:
+`mouse`, `keyboard`, `text_input`, `focus`, `resize`, `transparency`,
+`animations`, `native_window`, `gpu` and `multi_session`.
+"""
+function backend_capabilities end
+
+const DEFAULT_BACKEND_CAPABILITIES = (
+    mouse = true, keyboard = true, text_input = true, focus = true,
+    resize = true, transparency = false, animations = true,
+    native_window = false, gpu = false, multi_session = false,
+)
+
+backend_available(::Projection) = true
+backend_kind(p::Projection) = Symbol(nameof(typeof(p)))
+backend_capabilities(::Projection) = DEFAULT_BACKEND_CAPABILITIES
+
 """
 Command-Line Interface projection.
 """
