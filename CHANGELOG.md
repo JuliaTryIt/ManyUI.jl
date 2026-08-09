@@ -42,6 +42,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plain` returns the text with the styling dropped, and a plain string
   converts to a `RichText` implicitly, so `label.text[] = "hi"` --
   spelled verbatim in `reactive.jl`'s own docstring -- keeps working.
+- `Splitter`: a row or column of panes separated by draggable handles.
+  A HANDLE IS A WIDGET, and that is the whole design -- a node between
+  two panes, so it is hit-tested, painted and laid out by machinery
+  that already exists. A pane's share of the main axis is its `grow`,
+  so the layout engine distributes it and this widget only ever
+  rewrites two numbers.
+- The one thing a handle cannot do for itself is follow a drag: a
+  pointer that outruns the redraw leaves the one-cell handle and the
+  DRAG lands on a pane. So the SPLITTER consumes drags, in the CAPTURE
+  phase, while a handle is down. Capture runs root-first, so it sees
+  the event before the pane the pointer strayed onto -- pointer capture
+  obtained from the propagation order that already exists, rather than
+  from a new mechanism in the app.
+- A drag moves ONLY the two panes it is between: their `grow` total is
+  preserved, so a third pane cannot shift under a resize it had nothing
+  to do with. Both are clamped to `SPLIT_MIN_PANE`, which is what stops
+  a drag past the end from inverting them.
+- `panes`, `handles`, `pane_count`, `weights_of` and `set_weights!`
+  exist so callers never index `children` and count in twos; `mount!`
+  on a `Splitter` throws, because a stray child would shift the parity
+  and silently turn a pane into a handle.
+- `on_resize` fires once per actual change, not once per mouse event: a
+  drag that lands on the coordinate it was already at reports nothing.
+- The web projection needed no code. A `Splitter` is a flex box whose
+  panes carry `grow`, so `flex-direction` and `flex-grow` already carry
+  the split to the browser -- though dragging it there does not work
+  yet.
 - A theme system: semantic colour TOKENS, named palettes, and a swap
   that costs a repaint. `token(:warning)` is a `Color` of the new
   `ColorKind.TOKEN`, carrying a token id rather than channels, so a

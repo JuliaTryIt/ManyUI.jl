@@ -77,6 +77,7 @@ include("widgets/spinner.jl")
 include("widgets/slider.jl")
 include("widgets/popup.jl")
 include("widgets/dropdown.jl")
+include("widgets/splitter.jl")
 include("widgets/form.jl")
 include("precompile.jl")
 
@@ -217,6 +218,11 @@ export selected, selected_option, radio_cursor, choose!
 # widgets/tabs.jl
 export Tabs, TabStrip, n_tabs, tab_title, tab_panel
 export add_tab!, select_tab!, tab_at
+# widgets/splitter.jl
+export Splitter, SplitHandle, panes, handles, pane_count
+export weights_of, set_weights!, is_horizontal
+export SPLIT_MIN_PANE
+
 # widgets/tree.jl
 export TreeNode, TreeRow, TreeView, is_leaf, is_expanded
 export expand_node!, collapse_node!, toggle_node!, expand_all!, collapse_all!
