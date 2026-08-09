@@ -14,20 +14,28 @@ mutable struct Label <: Widget
     "Per-widget state."
     node::WidgetNode
     "The text; writing it marks the label dirty."
-    text::Reactive{String}
+    text::Reactive{RichText}
 end
 
 """
-A label showing `text`.
+A label showing `text`, given either as a plain string or as a
+`RichText` whose style varies along the line.
 
 `text` is `Dirty.LAYOUT`-reactive: new text wraps differently, so it
 can change the label's extent and therefore its siblings' positions.
+
+The cell holds a `RichText` in BOTH cases -- a string converts on the
+way in, and on the way back out too, so `label.text[] = "hi"` keeps
+working. Styling is therefore never a different widget or a different
+code path, only a different value, and a `Label` that is coloured
+mid-line still wraps exactly where the same text wraps unstyled.
 """
-function Label(text::AbstractString; id::Symbol = gensym(:label),
+function Label(text::Union{AbstractString,RichText};
+               id::Symbol = gensym(:label),
                classes = Symbol[])::Label
     w = Label(WidgetNode(; id = id, classes = classes,
                          type_name = :Label),
-              Reactive(String(text)))
+              Reactive(convert(RichText, text)))
     attach_reactives!(w)
     return w
 end
@@ -64,17 +72,22 @@ mutable struct Static <: Widget
     "Per-widget state."
     node::WidgetNode
     "The text; writing it marks the widget dirty."
-    text::Reactive{String}
+    text::Reactive{RichText}
 end
 
 """
-A single-line label showing `text`.
+A single-line label showing `text`, given either as a plain string or
+as a `RichText` whose style varies along the line.
+
+This is the widget most rich text lands in: a status readout, a table
+cell, a tab caption -- one line, no wrapping, styled in places.
 """
-function Static(text::AbstractString; id::Symbol = gensym(:static),
+function Static(text::Union{AbstractString,RichText};
+                id::Symbol = gensym(:static),
                 classes = Symbol[])::Static
     w = Static(WidgetNode(; id = id, classes = classes,
                           type_name = :Static),
-               Reactive(String(text)))
+               Reactive(convert(RichText, text)))
     attach_reactives!(w)
     return w
 end

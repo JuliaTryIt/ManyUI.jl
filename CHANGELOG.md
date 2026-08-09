@@ -7,8 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `RichText` and `TextRun`: one line of text whose style varies along
+  it. A `Style` is per-widget and comes from the cascade; this is the
+  escape hatch for the styled things that are not nodes -- the key in a
+  tab caption, the level in a log line, the units in a status readout.
+  Making each of those a widget would put three nodes on a tab strip
+  and one per log row.
+- A run's style is folded OVER the painting widget's style with
+  `merge`, the cascade's own monoid, so a run describes a DIFFERENCE,
+  never an absolute appearance. `STYLE_NONE` -- the default -- means
+  exactly the widget's style, and a run naming only `bold` keeps the
+  widget's colours. One `RichText` therefore paints correctly under a
+  light and a dark theme without being rebuilt.
+- `RichText` normalises at construction: empty runs dropped, adjacent
+  runs of equal style coalesced. `RichText("ab")` and
+  `RichText(TextRun("a"), TextRun("b"))` are `==`, so a line may be
+  built however is convenient, and a wrap that emits one run per
+  grapheme costs two `write_text!` calls to paint, not forty.
+- `text_width`, `truncate_width` and `wrap_width` accept a `RichText`.
+  Wrapping runs the PLAIN text through the existing string wrap and
+  reattaches the styling, which is the whole design: it makes
+  `plain.(wrap_width(rt, w)) == wrap_width(plain(rt), w)` true by
+  construction, so colouring a paragraph cannot move one of its breaks.
+  A second wrap implementation would have to be kept in step forever to
+  promise that; there is only one wrap. A joining space inherits the
+  style of the whitespace run it stands for -- that cell still has a
+  background, and resetting it would leave a hole in a highlighted line.
+- `truncate_width` on a `RichText` yields a PREFIX: it stops at the
+  first cluster that does not fit rather than skipping it, so a wide
+  cluster refused at the edge does not let a narrow run behind it slide
+  forward. Same rule as the string method, which breaks out of its scan.
+- `plain` returns the text with the styling dropped, and a plain string
+  converts to a `RichText` implicitly, so `label.text[] = "hi"` --
+  spelled verbatim in `reactive.jl`'s own docstring -- keeps working.
+
 ### Changed (breaking)
 
+- `Label.text` and `Static.text` are `Reactive{RichText}` rather than
+  `Reactive{String}`. Both constructors still accept a plain string and
+  both cells still accept a string assignment, so only code READING
+  `label.text[]` as a `String` needs changing: wrap it in `plain`.
+  Styling is now a different value, never a different widget or a
+  different code path -- and a `Label` coloured mid-line wraps exactly
+  where the same text wraps unstyled.
 - Widget callbacks now use one event vocabulary across projections:
   `Button.on_press` is `on_click`, and row widgets use `on_submit` instead
   of `on_activate`. `List`, `Table`, `DataTable`, and `TreeView` also accept

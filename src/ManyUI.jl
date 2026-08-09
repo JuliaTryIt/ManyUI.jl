@@ -36,6 +36,7 @@ include("geometry.jl")
 include("unicode.jl")
 include("color.jl")
 include("style.jl")
+include("richtext.jl")
 include("events.jl")
 include("boxmodel.jl")
 include("widget.jl")
@@ -111,6 +112,9 @@ export degrade, detect_color_depth
 export Attr, AttrMask, Style, STYLE_NONE, STYLE_DEFAULT
 export has, specified, with, without
 export inheritable, resolve, parse_attrs
+
+# richtext.jl
+export TextRun, RichText, plain
 
 # events.jl
 export Key, Modifier, Modifiers, MouseButton, MouseAction, Phase
