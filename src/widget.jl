@@ -313,6 +313,31 @@ True when `w` takes part in the tab order. Pure.
 is_focusable(w::Widget)::Bool = node(w).focusable
 
 """
+The caption drawn ON `w`'s top border, or empty for none.
+
+A SEAM, not a field, for the same reason the scrollable one is three
+functions: a title belongs to the handful of widgets that frame
+something, and a slot on every `WidgetNode` would charge the other
+thousands for it. Override it and any widget gains a caption.
+
+It is a seam AT ALL because a widget cannot draw this itself.
+`_paint_node!` hands `render!` the CONTENT box, and the border is
+outside it, so a titled box drawing its own caption would have to
+reserve a content row -- which puts the caption inside the frame rather
+than on it. The paint pass asks instead.
+
+Empty by default, and the default returns a SHARED constant: this is
+asked of every node on every frame.
+"""
+border_title(::Widget)::RichText = RICHTEXT_EMPTY
+
+"""
+Where `border_title(w)` sits along the top edge: `Align.START`,
+`Align.CENTER` or `Align.END`. `Align.START` by default.
+"""
+border_title_align(::Widget)::Align.T = Align.START
+
+"""
 The `App` this widget is mounted on, or `nothing`. Walks the tree.
 """
 app(w::Widget)::Any = node(w).app

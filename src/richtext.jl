@@ -91,6 +91,15 @@ RichText(text::AbstractString, style::Style = STYLE_NONE)::RichText =
     RichText([TextRun(String(text), style)])
 
 """
+The empty line. THE value a seam returns for "there is nothing here".
+
+A shared constant rather than a fresh `RichText()`: `border_title` is
+asked of every node on every frame and the overwhelming majority have
+no caption, so the default answer must not allocate.
+"""
+const RICHTEXT_EMPTY = RichText(TextRun[])
+
+"""
 What a widget will accept where it wants one line of text.
 
 The seam every text-producing callback is typed against: a `format`, a

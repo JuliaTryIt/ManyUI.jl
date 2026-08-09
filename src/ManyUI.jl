@@ -114,7 +114,7 @@ export has, specified, with, without
 export inheritable, resolve, parse_attrs
 
 # richtext.jl
-export TextRun, RichText, TextLike, plain
+export TextRun, RichText, TextLike, RICHTEXT_EMPTY, plain
 
 # events.jl
 export Key, Modifier, Modifiers, MouseButton, MouseAction, Phase
@@ -138,6 +138,7 @@ export has_dirty, set_dirty, clear_dirty
 export WidgetNode, node, id, classes, type_name, parent, children
 export layout_of, region, content_region, computed_style, box
 export is_visible, is_focusable, app
+export border_title, border_title_align
 export mount!, insert_child!, unmount!, replace_child!
 export root_of, ancestors, descendants, path_from_root
 export walk, walk_visible

@@ -42,6 +42,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plain` returns the text with the styling dropped, and a plain string
   converts to a `RichText` implicitly, so `label.text[] = "hi"` --
   spelled verbatim in `reactive.jl`'s own docstring -- keeps working.
+- Border captions. `border_title(w)` and `border_title_align(w)` are a
+  SEAM, not a field: a caption belongs to the handful of widgets that
+  frame something, and a slot on every `WidgetNode` would charge the
+  other thousands for it. Override either and any widget gains one.
+  `Container` ships with `title` and `title_align` keywords.
+- It is a seam AT ALL because a widget cannot draw this itself:
+  `_paint_node!` hands `render!` the CONTENT box and the border is
+  outside it, so a titled box drawing its own caption would have to
+  reserve a content row -- which puts the caption INSIDE the frame
+  rather than on it. The paint pass asks each node instead, through
+  `paint_border_title!`.
+- A caption never touches a corner. It may use the top edge less one
+  glyph at each end, less two pad cells, and is truncated to what is
+  left; a box too narrow keeps its frame and drops the caption. An
+  overwritten corner is a broken frame, and it is the failure mode of
+  every hand-rolled version of this.
+- Each run of a caption folds over the BORDER's style rather than the
+  widget's, so an unstyled caption matches the line it sits on instead
+  of resetting against it.
+- `title` is `Dirty.PAINT`-reactive, and provably so rather than
+  optimistically: `Container` defines no `measure`, so a new caption
+  cannot move the widget or its siblings, and the border row it lands
+  on exists whether or not there is a caption on it.
 - `TextLike`, the union a widget accepts where it wants one line of
   text. `List`'s `format`, `Table`'s and `DataTable`'s `cell`, and a
   tab caption may all return either spelling. The widget neither
@@ -53,27 +76,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through `_tc_slice!`, so `List`, `Table`, `DataTable`, `TreeView`,
   `Tabs` and `Checkbox` gained it from a single `RichText` overload of
   that painter rather than from six edits.
-
-### Changed (breaking)
-
-- `Label.text` and `Static.text` are `Reactive{RichText}` rather than
-  `Reactive{String}`. Both constructors still accept a plain string and
-  both cells still accept a string assignment, so only code READING
-  `label.text[]` as a `String` needs changing: wrap it in `plain`.
-  Styling is now a different value, never a different widget or a
-  different code path -- and a `Label` coloured mid-line wraps exactly
-  where the same text wraps unstyled.
-- `TabStrip.titles` is a `Vector{RichText}`, and `tab_title` returns
-  one. `Tabs(...)` and `add_tab!` still take plain strings. `tab_at`
-  and `_tb_title_x` stayed generic over `TextLike`: they need nothing
-  but `text_width`, so a caller holding strings does not have to
-  convert in order to ask which tab a column falls in.
-- Widget callbacks now use one event vocabulary across projections:
-  `Button.on_press` is `on_click`, and row widgets use `on_submit` instead
-  of `on_activate`. `List`, `Table`, `DataTable`, and `TreeView` also accept
-  `on_change`, fired exactly once when their cursor or selection changes.
-
-### Added
 
 - `PopupPlacement.CENTER` centres popup content in the viewport independently
   of its owner, providing a backend-neutral placement for modal dialogs.
@@ -113,6 +115,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   backend produced it.
 - A "Backends" page in the documentation.
 
+### Changed (breaking)
+
+- `Label.text` and `Static.text` are `Reactive{RichText}` rather than
+  `Reactive{String}`. Both constructors still accept a plain string and
+  both cells still accept a string assignment, so only code READING
+  `label.text[]` as a `String` needs changing: wrap it in `plain`.
+  Styling is now a different value, never a different widget or a
+  different code path -- and a `Label` coloured mid-line wraps exactly
+  where the same text wraps unstyled.
+- `TabStrip.titles` is a `Vector{RichText}`, and `tab_title` returns
+  one. `Tabs(...)` and `add_tab!` still take plain strings. `tab_at`
+  and `_tb_title_x` stayed generic over `TextLike`: they need nothing
+  but `text_width`, so a caller holding strings does not have to
+  convert in order to ask which tab a column falls in.
+- Widget callbacks now use one event vocabulary across projections:
+  `Button.on_press` is `on_click`, and row widgets use `on_submit` instead
+  of `on_activate`. `List`, `Table`, `DataTable`, and `TreeView` also accept
+  `on_change`, fired exactly once when their cursor or selection changes.
+
 ### Fixed
 
 - `launch(...; wait = false)` returns a handle whose loop is already
@@ -121,3 +142,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `isopen == false` and could race a `close` against the loop starting. An
   app that throws on the way up now rethrows at the launch site rather
   than from a task nobody is waiting on.
+
