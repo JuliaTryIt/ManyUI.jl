@@ -42,6 +42,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plain` returns the text with the styling dropped, and a plain string
   converts to a `RichText` implicitly, so `label.text[] = "hi"` --
   spelled verbatim in `reactive.jl`'s own docstring -- keeps working.
+- `MarkdownPane`: a scrollable rendered Markdown document. Parsed by
+  the `Markdown` stdlib and only PROJECTED here -- AST to a
+  `Vector{RichText}`, which is the whole reason `RichText` had to exist
+  first. A heading is not a widget, a bold run is not a widget, and a
+  document is not a subtree: it is LINES, held as data, one node.
+- The line cache is keyed on the WIDTH it was built at. Everything
+  about a rendered document depends on the wrap width, so a cache that
+  ignored it would show the previous box's breaks in the new one, and
+  rebuilding unconditionally would reflow the whole document once a
+  frame. `md_lines` returns the SAME vector for a repeated width.
+- Wrapping takes TWO prefixes, a first and a rest, and that is the
+  point. A block quote wants its marker on every line; a list item
+  wants its bullet ONCE with blank indent under it, or a wrapped item
+  reads as two items. One prefix cannot be both -- which is exactly the
+  bug a single one produces.
+- A code block is NEVER wrapped: a broken line of code is a different
+  line of code. It is left long and the pane scrolls sideways.
+- A link renders its TEXT and not its URL, and the heading, code, quote
+  and link styles name THEME TOKENS -- so a document tracks the palette
+  instead of being rebuilt for it.
 - `ProgressList` and `ProgressItem`: a column of captioned bars. A ROW
   IS NOT A WIDGET, the seam `List` and the table widgets already take,
   so a hundred tasks are a `Vector` of a hundred items and ONE node --

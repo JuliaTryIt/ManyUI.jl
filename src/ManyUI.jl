@@ -10,6 +10,7 @@ module ManyUI
 
 using Unicode
 using InlineStrings
+using Markdown
 using DocStringExtensions
 import REPL
 
@@ -81,6 +82,7 @@ include("widgets/sparkline.jl")
 include("widgets/progresslist.jl")
 include("widgets/statusbar.jl")
 include("widgets/splitter.jl")
+include("widgets/markdownpane.jl")
 include("widgets/dialog.jl")
 include("widgets/form.jl")
 include("precompile.jl")
@@ -201,6 +203,10 @@ export StatusBar, segments, status_layout
 # widgets/progresslist.jl
 export ProgressList, ProgressItem, n_items, set_progress!
 export pl_label_width, PL_GAP, PL_MIN_BAR
+
+# widgets/markdownpane.jl
+export MarkdownPane, set_source!, md_lines, md_inline
+export MD_HEADING, MD_CODE, MD_QUOTE, MD_LINK, MD_MARKER
 
 # widgets/dialog.jl
 export Dialog, dialog_size, DIALOG_PAD, DIALOG_BUTTON_GAP
