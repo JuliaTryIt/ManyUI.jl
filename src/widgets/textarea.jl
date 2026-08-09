@@ -81,6 +81,20 @@ mutable struct TextArea{F} <: Widget
     disabled::Reactive{Bool}
     "Called as `on_change(area)` after every edit."
     on_change::F
+    """
+    `source -> Vector{RichText}`, or `nothing` for plain text. See
+    `codeeditor.jl`; a `CodeEditor` is a `TextArea` with this set, not
+    a second widget type.
+
+    Untyped on purpose: it runs once per EDIT, not once per frame, so
+    the dynamic call is off the hot path and a type parameter would buy
+    nothing but a wider signature.
+    """
+    highlight::Any
+    "Highlighted lines, valid for `hl_version`."
+    hl_lines::Vector{RichText}
+    "The `version` `hl_lines` was built at; `-1` when there are none."
+    hl_version::Int
 end
 
 """
@@ -113,7 +127,7 @@ function TextArea(text::AbstractString = "", on_change::F = _ta_noop;
                     1, 0, 0, 0,
                     Reactive(false; kind = Dirty.PAINT),
                     Reactive(disabled; kind = Dirty.PAINT),
-                    on_change)
+                    on_change, nothing, RichText[], -1)
     refresh_extent!(w)
     attach_reactives!(w)
     return w

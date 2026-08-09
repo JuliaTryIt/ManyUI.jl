@@ -42,6 +42,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plain` returns the text with the styling dropped, and a plain string
   converts to a `RichText` implicitly, so `label.text[] = "hi"` --
   spelled verbatim in `reactive.jl`'s own docstring -- keeps working.
+- `CodeEditor`: a `TextArea` that lexes. NOT a new widget type -- it is
+  a `TextArea` with a `highlight` field set, the same call a gauge did
+  not deserve a type for, so every editing verb still applies because
+  it IS one.
+- Highlighting runs on the WHOLE document, never line by line, because
+  a line is not a lexical unit: a triple-quoted string means line 40 is
+  only classifiable given lines 1 to 39. The result is cached against
+  `TextArea.version`, which every edit already bumps, so a keystroke
+  costs one relex and a frame costs none.
+- Unlexable text is drawn PLAIN rather than refused. Text under a
+  cursor is invalid most of the time it is being typed, and an editor
+  that stopped drawing then would be unusable.
+- `highlight_julia` uses the `JuliaSyntaxHighlighting` stdlib, so the
+  lexer is the one Julia itself ships and this package owns no
+  tokeniser. Its byte-region annotations become per-line runs, and a
+  region spanning a newline is split rather than dropped. Run
+  boundaries land on character boundaries.
+- `CODE_FACES` maps a highlighter face to a themed style, so code
+  tracks the palette. A face not named there falls back to the widget's
+  own style -- an unknown face is INVISIBLE rather than wrong.
 - `MarkdownPane`: a scrollable rendered Markdown document. Parsed by
   the `Markdown` stdlib and only PROJECTED here -- AST to a
   `Vector{RichText}`, which is the whole reason `RichText` had to exist
