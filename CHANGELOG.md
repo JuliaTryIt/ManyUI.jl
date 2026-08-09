@@ -42,6 +42,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plain` returns the text with the styling dropped, and a plain string
   converts to a `RichText` implicitly, so `label.text[] = "hi"` --
   spelled verbatim in `reactive.jl`'s own docstring -- keeps working.
+- `Sparkline`: a one-row plot of a numeric series, one cell per sample.
+  A SERIES IS DATA, not a widget per point -- the seam `List` and the
+  table widgets already use -- so a 10 000-sample series is one node
+  and a frame costs the WIDTH of the widget, since only the last
+  `width` samples can be on screen at all. New data arrives on the
+  right and the oldest scrolls off the left.
+- `lo`/`hi` fix a sparkline's scale, and fixing it is what makes two of
+  them comparable: auto-scaling redraws the same series differently the
+  moment one outlier arrives, which is when a reader most needs the
+  picture to hold still. A value outside a fixed scale is pinned to the
+  end it overshot rather than dropped -- silently omitting outliers is
+  worse than flattening them. A flat series draws the lowest level
+  rather than dividing by zero.
+- `StatusBar`: left, centre and right segments on one row, each a
+  `RichText`. It is a widget rather than three `Static`s in a flex row
+  for exactly one reason -- WHAT IT DROPS WHEN IT DOES NOT FIT. Flex
+  would shrink all three and leave three half-truncated fragments; this
+  drops the centre first, then the right, and truncates the left only
+  when it is alone and still too wide. `status_layout` is pure, so the
+  priority rule is testable with no buffer and no App.
+- `ProgressBar` gains a `label` drawn across it -- what other toolkits
+  call a gauge. A FIELD rather than a second widget, because a `Gauge`
+  would differ from a `ProgressBar` by exactly one of them. A labelled
+  bar cannot use the block glyphs (text over `█` is unreadable), so it
+  fills with a reversed span instead, which keeps the boundary legible
+  THROUGH the caption. `progress_cells` decides the split for both
+  render paths, so a labelled and an unlabelled bar cannot disagree
+  about where it falls.
 - Modal popups: `Popup(...; modal = true)`. What makes one modal rather
   than merely large is that the user cannot walk around the question it
   asks -- a press outside does not dismiss it, TAB does not leave it,

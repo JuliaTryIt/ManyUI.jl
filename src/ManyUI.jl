@@ -77,6 +77,8 @@ include("widgets/spinner.jl")
 include("widgets/slider.jl")
 include("widgets/popup.jl")
 include("widgets/dropdown.jl")
+include("widgets/sparkline.jl")
+include("widgets/statusbar.jl")
 include("widgets/splitter.jl")
 include("widgets/form.jl")
 include("precompile.jl")
@@ -186,7 +188,14 @@ export insert_newline!, move_line!, set_text!, text, refresh_extent!
 export should_suspend, OVERLAY_MIN_SIZE, MinSizeOverlay
 export ErrorBoundary
 # widgets/progressbar.jl
-export ProgressBar
+export ProgressBar, progress_cells, PROGRESS_FILL
+# widgets/sparkline.jl
+export Sparkline, SPARK_GLYPHS, SPARK_FLAT, push_value!, set_values!, n_values
+export spark_bounds, spark_level
+
+# widgets/statusbar.jl
+export StatusBar, segments, status_layout
+
 # widgets/spinner.jl
 export Spinner
 # widgets/slider.jl
