@@ -36,6 +36,7 @@ include("geometry.jl")
 include("unicode.jl")
 include("color.jl")
 include("style.jl")
+include("theme.jl")
 include("richtext.jl")
 include("events.jl")
 include("boxmodel.jl")
@@ -104,7 +105,7 @@ export ColorKind, ColorDepth, Color
 export COLOR_UNSET, COLOR_DEFAULT
 export rgb, ansi16, ansi256, color
 export is_unset, is_set, color_index
-export to_rgb, luminance, color_distance
+export to_rgb, luminance, color_distance, is_token
 export rgb_to_ansi256, ansi256_to_ansi16, rgb_to_ansi16
 export degrade, detect_color_depth
 
@@ -112,6 +113,11 @@ export degrade, detect_color_depth
 export Attr, AttrMask, Style, STYLE_NONE, STYLE_DEFAULT
 export has, specified, with, without
 export inheritable, resolve, parse_attrs
+
+# theme.jl
+export Theme, theme, set_theme!, register_theme!, themes
+export token, token_name, token_names, register_token!, theme_color
+export resolve_token
 
 # richtext.jl
 export TextRun, RichText, TextLike, RICHTEXT_EMPTY, plain

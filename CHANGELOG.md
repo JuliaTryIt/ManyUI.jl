@@ -42,6 +42,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plain` returns the text with the styling dropped, and a plain string
   converts to a `RichText` implicitly, so `label.text[] = "hi"` --
   spelled verbatim in `reactive.jl`'s own docstring -- keeps working.
+- A theme system: semantic colour TOKENS, named palettes, and a swap
+  that costs a repaint. `token(:warning)` is a `Color` of the new
+  `ColorKind.TOKEN`, carrying a token id rather than channels, so a
+  token fits an isbits `Style` and travels wherever a colour does.
+- WHEN A TOKEN BECOMES A COLOUR IS THE WHOLE DESIGN, and it is at
+  EMISSION -- inside `color_seq!`/`sgr!` on the terminal and
+  `_css_color` on the web, the one place an authorial-intent colour
+  meets a device. Not at parse time, and not at cascade time. Three
+  consequences follow, and they are the reason for the choice: one
+  parsed stylesheet serves every theme; `merge` carries a token
+  through, so a `TextRun` naming `:warning` is built once and is right
+  under every theme rather than frozen to whichever was current when it
+  was built; and `set_theme!` needs neither a re-cascade nor a
+  re-parse, because nothing in the tree holds a resolved colour.
+- `set_theme!` therefore requires a full REPAINT and says so: the frame
+  diff compares cells, the cells did not change, and it will not find
+  the swap on its own. On the terminal backend that is `refresh!`.
+- Ten tokens -- `bg`, `text`, `text_dim`, `accent`, `border`,
+  `success`, `warning`, `error`, `selection_bg`, `selection_fg` -- and
+  two built-in themes, `:dark` and `:light`. `register_token!` and
+  `register_theme!` extend both sets.
+- A `Theme` need not be total. A token it does not name falls back to
+  the colour declared with the token, so a theme that cares about three
+  colours is three entries long. The alternative fails as one
+  unreadable widget discovered at runtime, far from the theme that
+  caused it.
+- CSS names a token with `var(--accent)`, and an unknown name is a
+  `CssParseError` with a position, like every other bad value.
+- `is_token`, `token_name`, `token_names`, `theme_color` and
+  `resolve_token` round out the API. `resolve_token` is idempotent and
+  returns its argument ITSELF when there is no token, so the common
+  case on the emission path allocates nothing and compares by identity.
 - Border captions. `border_title(w)` and `border_title_align(w)` are a
   SEAM, not a field: a caption belongs to the handful of widgets that
   frame something, and a slot on every `WidgetNode` would charge the

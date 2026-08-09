@@ -11,10 +11,14 @@
     @test isbitstype(ColorKind.T)
     @test isbitstype(ColorDepth.T)
 
-    # The kinds are the five tagged readings of the same 3 bytes.
+    # The kinds are the six tagged readings of the same 3 bytes.
+    # TOKEN is the odd one out and deliberately so: it is not a colour
+    # but the NAME of one, packed into the same isbits payload so a
+    # theme can be swapped without rebuilding a single Style. It is
+    # `theme.jl` that says what the payload means.
     @test Set(instances(ColorKind.T)) == Set((
         ColorKind.UNSET, ColorKind.DEFAULT, ColorKind.ANSI16,
-        ColorKind.ANSI256, ColorKind.RGB))
+        ColorKind.ANSI256, ColorKind.RGB, ColorKind.TOKEN))
 
     # ColorDepth is ORDERED, so `depth < ColorDepth.TRUECOLOR` is a
     # legal capability test.

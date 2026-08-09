@@ -12,6 +12,7 @@ module ColorKind
     ANSI16 = 2   # palette index in `r`, 0:15
     ANSI256 = 3  # palette index in `r`, 0:255
     RGB = 4      # 24-bit `r`, `g`, `b`
+    TOKEN = 5    # SEMANTIC: theme-token id in `r`, 1:255
 end
 end
 
@@ -101,8 +102,19 @@ is_unset(c::Color)::Bool = c.kind === ColorKind.UNSET
 
 """
 True when `c` specifies something. Pure.
+
+A TOKEN counts as set: it NAMES a colour, it just has not been looked
+up yet. Deciding otherwise would make `merge` drop it and a themed rule
+would silently lose to the one under it.
 """
 is_set(c::Color)::Bool = !is_unset(c)
+
+"""
+True when `c` is a semantic theme token rather than a colour. See
+`theme.jl` -- this file owns the KIND, `theme.jl` owns what the payload
+means and when it is looked up. Pure.
+"""
+is_token(c::Color)::Bool = c.kind === ColorKind.TOKEN
 
 """
 Palette index of an ANSI16/ANSI256 color. Pure.
@@ -364,9 +376,12 @@ At MONOCHROME the result is white or black by luminance -- never
 """
 function degrade(c::Color, depth::ColorDepth.T)::Color
     k = c.kind
-    # UNSET and DEFAULT are not colors, they are instructions. No depth
-    # may rewrite them.
-    (k === ColorKind.UNSET || k === ColorKind.DEFAULT) && return c
+    # UNSET and DEFAULT are not colors, they are instructions, and a
+    # TOKEN is a colour NOT YET LOOKED UP. No depth may rewrite any of
+    # the three -- degrading a token would mean degrading whichever
+    # colour it happens to mean today, before the theme has spoken.
+    (k === ColorKind.UNSET || k === ColorKind.DEFAULT ||
+     k === ColorKind.TOKEN) && return c
     if depth === ColorDepth.TRUECOLOR
         return c
     elseif depth === ColorDepth.ANSI256

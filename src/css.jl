@@ -367,7 +367,22 @@ _squeeze(v::AbstractString)::String = replace(v, r"\s+" => "")
 """
 Parse a color value. Pure.
 """
-_color(v::AbstractString)::Color = parse(Color, _squeeze(v))
+function _color(v::AbstractString)::Color
+    s = _squeeze(v)
+    # `var(--name)` names a THEME TOKEN, and is kept as one: resolving
+    # it here would freeze the stylesheet to the theme in force when it
+    # was parsed, and one parsed sheet has to serve every theme.
+    if startswith(s, "var(--") && endswith(s, ")")
+        name = Symbol(s[7:(end - 1)])
+        try
+            return token(name)
+        catch e
+            e isa ArgumentError || rethrow()
+            throw(CssParseError("unknown theme token: $name", 0, 0))
+        end
+    end
+    return parse(Color, s)
+end
 
 """
 Parse a CSS keyword into the module-scoped enum `E`: lowercase and
