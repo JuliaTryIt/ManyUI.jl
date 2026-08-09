@@ -95,6 +95,23 @@ mutable struct WidgetNode
     visible::Bool
     "True makes the node part of the tab order."
     focusable::Bool
+    """
+    True when THIS node holds focus. What `:focus` reads.
+
+    Maintained by `focus!`, not by a widget's own `focused` cell: those
+    are per-widget appearance, this is the one authoritative answer the
+    cascade asks of every node.
+    """
+    focused::Bool
+    """
+    True when a DESCENDANT holds focus. What `:focus-within` reads.
+
+    A stored flag and not a walk of the subtree. The cascade asks this
+    of every node against every rule, so answering it by descending
+    would make one focus change cost the square of the tree; `focus!`
+    maintains it along the ONE chain from the focused node to the root.
+    """
+    focus_within::Bool
     "The owning App, once mounted."
     app::Any
     "Optional callback when focus is gained."
@@ -117,7 +134,7 @@ WidgetNode(; id::Symbol = gensym(:w),
     WidgetNode(id, Set{Symbol}(classes), type_name, nothing, Widget[],
                STYLE_NONE, BOX_PATCH_NONE, STYLE_NONE, BOX_DEFAULT,
                LAYOUT_BOX_EMPTY, ORIGIN, DIRTY_ALL, visible, focusable,
-               nothing, on_focus, on_blur)
+               false, false, nothing, on_focus, on_blur)
 
 """
 The pre-scroll POSITIONAL form: `scroll` defaults to `ORIGIN`.
@@ -136,7 +153,7 @@ WidgetNode(id::Symbol, classes::Set{Symbol}, type_name::Symbol,
            on_blur::Union{Nothing,Function} = nothing)::WidgetNode =
     WidgetNode(id, classes, type_name, parent, children, inline_style,
                inline_box, computed_style, box, layout, ORIGIN, dirty,
-               visible, focusable, app, on_focus, on_blur)
+               visible, focusable, false, false, app, on_focus, on_blur)
 
 """
 The positional form that names `scroll` explicitly, retained for
@@ -150,7 +167,7 @@ WidgetNode(id::Symbol, classes::Set{Symbol}, type_name::Symbol,
            focusable::Bool, app::Any)::WidgetNode =
     WidgetNode(id, classes, type_name, parent, children, inline_style,
                inline_box, computed_style, box, layout, scroll, dirty,
-               visible, focusable, app, nothing, nothing)
+               visible, focusable, false, false, app, nothing, nothing)
 
 """
 THE one required method per widget type. The default duck-types on the

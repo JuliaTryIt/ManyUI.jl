@@ -42,6 +42,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plain` returns the text with the styling dropped, and a plain string
   converts to a `RichText` implicitly, so `label.text[] = "hi"` --
   spelled verbatim in `reactive.jl`'s own docstring -- keeps working.
+- The `:focus` and `:focus-within` pseudo-classes, so a focus ring is a
+  STYLESHEET RULE instead of a branch in every widget's `render!`.
+  `.pane:focus-within { border: solid cyan; }` is the whole of what a
+  hand-written version spends one conditional per pane on -- Kaimon has
+  63 of them for its pane borders alone.
+- They read two new `WidgetNode` flags, `focused` and `focus_within`,
+  maintained by `focus!` along ONE chain from the focused node to the
+  root. Stored rather than computed: the cascade asks the question of
+  every node against every rule, so answering `focus-within` by walking
+  descendants would make a focus change cost the SIZE of the tree,
+  where maintaining it costs its DEPTH.
+- `focus!` marks each node on that chain `Dirty.STYLE`, which is what
+  makes the next `recascade!` re-run the rules that read them -- the
+  ring follows TAB with nothing else wired up.
+- A pseudo-class ranks with a class, exactly as in CSS: `Button:focus`
+  beats `Button` and loses to `#ok`. An unknown one is a `CssParseError`
+  with a position, not a selector that silently never matches.
 - `Sparkline`: a one-row plot of a numeric series, one cell per sample.
   A SERIES IS DATA, not a widget per point -- the seam `List` and the
   table widgets already use -- so a 10 000-sample series is one node

@@ -10,6 +10,7 @@ module SelectorKind
     TYPE = 1       # Button
     CLASS = 2      # .primary
     ID = 3         # #ok
+    PSEUDO = 4     # :focus, :focus-within -- STATE, not structure
 end
 end
 
@@ -134,7 +135,11 @@ function specificity(c::CompoundSelector)::Specificity
     tys = 0
     for p in c.parts
         k = p.kind
-        if k === SelectorKind.ID
+        if k === SelectorKind.PSEUDO
+            # A pseudo-class ranks with a class, exactly as in CSS, so
+            # `Container:focus` beats `Container` and loses to `#pane`.
+            cls += 1
+        elseif k === SelectorKind.ID
             ids += 1
         elseif k === SelectorKind.CLASS
             cls += 1
@@ -160,6 +165,18 @@ function matches(s::SimpleSelector, w::Widget)::Bool
     n = node(w)
     k === SelectorKind.TYPE && return n.type_name === s.name
     k === SelectorKind.CLASS && return s.name in n.classes
+    if k === SelectorKind.PSEUDO
+        # STATE, read off the node rather than computed. `focus_within`
+        # is a stored flag and not a walk of the subtree: the cascade
+        # asks this of every node against every rule, and answering it
+        # by walking descendants would make a focus change cost the
+        # square of the tree. `focus!` maintains the two flags along
+        # ONE chain instead -- see dispatch.jl.
+        s.name === :focus && return n.focused
+        s.name === Symbol("focus-within") && return n.focused ||
+                                              n.focus_within
+        return false
+    end
     return n.id === s.name
 end
 
@@ -682,7 +699,8 @@ _is_ident_char(ch::Char)::Bool =
 True when `ch` may open a simple selector.
 """
 _is_simple_start(ch::Char)::Bool =
-    ch == '*' || ch == '.' || ch == '#' || _is_ident_start(ch)
+    ch == '*' || ch == '.' || ch == '#' || ch == ':' ||
+    _is_ident_start(ch)
 
 """
 Consume one identifier.
@@ -730,6 +748,13 @@ function _parse_compound!(c::_CssCursor)::CompoundSelector
             push!(parts,
                   SimpleSelector(SelectorKind.ID,
                                  Symbol(_read_ident!(c))))
+        elseif ch == ':'
+            _advance!(c)
+            name = _read_ident!(c)
+            name in ("focus", "focus-within") ||
+                _err(c, "unknown pseudo-class: :$name")
+            push!(parts,
+                  SimpleSelector(SelectorKind.PSEUDO, Symbol(name)))
         elseif _is_ident_start(ch)
             push!(parts,
                   SimpleSelector(SelectorKind.TYPE,
