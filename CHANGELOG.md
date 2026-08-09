@@ -42,6 +42,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plain` returns the text with the styling dropped, and a plain string
   converts to a `RichText` implicitly, so `label.text[] = "hi"` --
   spelled verbatim in `reactive.jl`'s own docstring -- keeps working.
+- Modal popups: `Popup(...; modal = true)`. What makes one modal rather
+  than merely large is that the user cannot walk around the question it
+  asks -- a press outside does not dismiss it, TAB does not leave it,
+  and a keystroke does not reach the tree behind it. The popup layer
+  dismisses an ordinary popup on exactly that outside press, so this
+  had to be carved out of it.
+- `focus_root(app)` is THE focus trap, and it is one function rather
+  than a flag threaded through the dispatch: the tab order and the
+  keyboard belong to an open modal's content, and to the tree
+  otherwise. It asks about `modal` and not merely about `popup`,
+  because a `DropDown` keeps focus itself and forwards -- a non-modal
+  popup must not take the keyboard.
+- Opening a modal moves focus into it and closing puts it back where it
+  was, through the new `App.focus_before_modal`. A field rather than a
+  guess: without it, closing a dialog can only put focus at the top of
+  the tree, and a user who opened it from the eighth field of a form
+  lands on the first. Focus is restored only if the widget is still in
+  the tree.
+- A modal dims what it covers before painting itself, with
+  `MODAL_DIM`. `DIM` and not a fill: dimming keeps the tree readable
+  underneath, which is what says the application is still there and
+  waiting rather than gone.
 - `Splitter`: a row or column of panes separated by draggable handles.
   A HANDLE IS A WIDGET, and that is the whole design -- a node between
   two panes, so it is hit-tested, painted and laid out by machinery

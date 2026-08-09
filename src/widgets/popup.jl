@@ -29,6 +29,15 @@ end
 end
 
 """
+What a modal folds over everything it covers.
+
+`DIM` and not a black fill: dimming KEEPS the tree readable underneath,
+which is what tells the user the application is still there and merely
+waiting. A fill would say it had gone.
+"""
+const MODAL_DIM = Style(; dim = true)
+
+"""
 One open popup: a `content` root painted over the tree, the `owner` that
 opened it, the `size` the owner declares for it, and a `placement`.
 
@@ -48,6 +57,17 @@ mutable struct Popup
     const size::Size
     "Where it sits relative to the owner."
     const placement::PopupPlacement.T
+    """
+    True for a MODAL popup: the viewport behind it is dimmed, the tab
+    order and the keyboard are trapped inside it, and a press outside
+    is swallowed WITHOUT closing it.
+
+    That last one is what makes it modal rather than merely large. A
+    dialog asking a question the application cannot proceed without
+    must not be answerable by clicking next to it, and the popup layer
+    dismisses an ordinary popup on exactly that press.
+    """
+    const modal::Bool
 end
 
 """
@@ -55,10 +75,15 @@ $(SIGNATURES)
 
 A popup over `content`, owned by `owner`, `size` cells, placed by
 `placement` (default `AUTO`).
+
+`modal = true` dims the viewport behind it, traps focus and the
+keyboard inside it, and stops an outside press from dismissing it.
+`PopupPlacement.CENTER` is the placement such a dialog usually wants.
 """
 Popup(content::Widget, owner::Widget, size::Size;
-      placement::PopupPlacement.T = PopupPlacement.AUTO)::Popup =
-    Popup(content, owner, size, placement)
+      placement::PopupPlacement.T = PopupPlacement.AUTO,
+      modal::Bool = false)::Popup =
+    Popup(content, owner, size, placement, modal)
 
 """
 $(SIGNATURES)

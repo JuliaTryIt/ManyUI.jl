@@ -228,7 +228,7 @@ export TreeNode, TreeRow, TreeView, is_leaf, is_expanded
 export expand_node!, collapse_node!, toggle_node!, expand_all!, collapse_all!
 export tree_rows, tree_cursor, node_at, set_roots!, refresh_tree!
 # widgets/popup.jl
-export Popup, PopupPlacement, popup_region, popup_of, open_popup!, close_popup!, on_popup_close!
+export Popup, PopupPlacement, MODAL_DIM, popup_region, popup_of, open_popup!, close_popup!, on_popup_close!
 # widgets/dropdown.jl
 export DropDown, DropDownList, options, selected_item, is_open, set_open!
 # widgets/form.jl
