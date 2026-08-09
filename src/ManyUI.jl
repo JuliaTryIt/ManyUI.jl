@@ -114,7 +114,7 @@ export has, specified, with, without
 export inheritable, resolve, parse_attrs
 
 # richtext.jl
-export TextRun, RichText, plain
+export TextRun, RichText, TextLike, plain
 
 # events.jl
 export Key, Modifier, Modifiers, MouseButton, MouseAction, Phase

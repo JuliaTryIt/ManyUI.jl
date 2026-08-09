@@ -64,7 +64,7 @@ mutable struct List{T,F,A,C} <: RowsWidget
     node::WidgetNode
     "The data, one entry per row. ALIASED. Mutated IN PLACE."
     const items::Vector{T}
-    "`format(item)::AbstractString`. CONCRETE: dispatches statically."
+    "`format(item)::TextLike`. CONCRETE: dispatches statically."
     const format::F
     """
     Bumped by every data OR selection change. THE reactive cell.

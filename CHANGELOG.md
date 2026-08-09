@@ -42,6 +42,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plain` returns the text with the styling dropped, and a plain string
   converts to a `RichText` implicitly, so `label.text[] = "hi"` --
   spelled verbatim in `reactive.jl`'s own docstring -- keeps working.
+- `TextLike`, the union a widget accepts where it wants one line of
+  text. `List`'s `format`, `Table`'s and `DataTable`'s `cell`, and a
+  tab caption may all return either spelling. The widget neither
+  converts eagerly -- which would allocate a `RichText` per row per
+  frame for the overwhelmingly common plain case -- nor grows a second
+  code path, because `text_width`, `truncate_width` and the painters
+  all take the union.
+- A row widget's styled text costs ONE method: every one of them paints
+  through `_tc_slice!`, so `List`, `Table`, `DataTable`, `TreeView`,
+  `Tabs` and `Checkbox` gained it from a single `RichText` overload of
+  that painter rather than from six edits.
 
 ### Changed (breaking)
 
@@ -52,6 +63,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Styling is now a different value, never a different widget or a
   different code path -- and a `Label` coloured mid-line wraps exactly
   where the same text wraps unstyled.
+- `TabStrip.titles` is a `Vector{RichText}`, and `tab_title` returns
+  one. `Tabs(...)` and `add_tab!` still take plain strings. `tab_at`
+  and `_tb_title_x` stayed generic over `TextLike`: they need nothing
+  but `text_width`, so a caller holding strings does not have to
+  convert in order to ask which tab a column falls in.
 - Widget callbacks now use one event vocabulary across projections:
   `Button.on_press` is `on_click`, and row widgets use `on_submit` instead
   of `on_activate`. `List`, `Table`, `DataTable`, and `TreeView` also accept

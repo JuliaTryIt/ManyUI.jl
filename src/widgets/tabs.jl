@@ -4,7 +4,7 @@
 # (tablecore.jl) -- USED, never redefined, exactly as `list.jl` treats
 # `tablecore.jl`.
 #
-# A CAPTION IS NOT A WIDGET. Captions are `String`s and panels are
+# A CAPTION IS NOT A WIDGET. Captions are `RichText` values and panels are
 # children: an INACTIVE panel is `set_visible!(false)` and that is the
 # WHOLE implementation. From that one flag come four properties, none of
 # them code in this file -- an invisible panel paints nothing
@@ -30,9 +30,10 @@ which puts the strip OUTSIDE the very buffer it would draw into.
 mutable struct TabStrip <: Widget
     "Per-widget state."
     node::WidgetNode
-    "Captions in order. ALIASED with the owner `Tabs`: the SAME
-     `Vector`, so the strip cannot go stale and nothing is copied."
-    const titles::Vector{String}
+    "Captions in order, each one line whose style may vary along it.
+     ALIASED with the owner `Tabs`: the SAME `Vector`, so the strip
+     cannot go stale and nothing is copied."
+    const titles::Vector{RichText}
     """
     The chosen tab, 1-based; `0` IFF `isempty(titles)`. THE single
     source of truth -- `Tabs` has NO `selected` field and reads this.
@@ -79,13 +80,13 @@ The strip is mounted as child 1 through `invoke` (the `Scrollpane`
 idiom, scroll.jl:37), because `mount!(::Tabs, ::Widget)` throws to force
 `add_tab!`.
 """
-function Tabs(pairs::Pair{<:AbstractString,<:Widget}...;
+function Tabs(pairs::Pair{<:TextLike,<:Widget}...;
               id::Symbol = gensym(:tabs), classes = Symbol[],
               disabled::Bool = false)::Tabs
     strip = TabStrip(
         WidgetNode(; id = Symbol(id, :_strip), type_name = :TabStrip,
                    focusable = !disabled),
-        String[],
+        RichText[],
         Reactive(0; kind = Dirty.PAINT),
         Reactive(false; kind = Dirty.PAINT),
         Reactive(disabled; kind = Dirty.PAINT))
@@ -128,7 +129,7 @@ The strip-local column at which caption `i` begins. Captions abut with
 no separator, so this is one running sum -- the SAME one `render!` and
 `tab_at` walk. Internal.
 """
-function _tb_title_x(titles::Vector{String}, i::Int)::Int
+function _tb_title_x(titles::AbstractVector{<:TextLike}, i::Int)::Int
     x = 1
     for k in 1:(i - 1)
         x += text_width(titles[k]) + 2 * TABS_PAD
@@ -139,12 +140,12 @@ end
 """
 The 1-based caption covering strip-local column `x`; `0` for none.
 
-PURE -- a `Vector{String}` and an `Int`, no widget, no layout, no
+PURE -- a vector of captions and an `Int`, no widget, no layout, no
 buffer. `tab_at` and `render!` walk the SAME running sum in the SAME
 direction, which is what makes "click the caption you see" true by
 construction rather than by two arithmetics agreeing by luck.
 """
-function tab_at(titles::Vector{String}, x::Int)::Int
+function tab_at(titles::AbstractVector{<:TextLike}, x::Int)::Int
     x < 1 && return 0
     c = 1
     for (i, t) in enumerate(titles)
@@ -185,7 +186,7 @@ selected(w::Tabs)::Int = w.strip.selected[]
 The caption of tab `i`. Pure. Throws on a bad index -- a caller naming a
 tab that does not exist has a bug.
 """
-tab_title(w::Tabs, i::Int)::String = w.strip.titles[i]
+tab_title(w::Tabs, i::Int)::RichText = w.strip.titles[i]
 
 """
 The panel of tab `i`. The strip is child 1, so panel `i` is child
@@ -201,8 +202,8 @@ The panel is mounted through `invoke` (the strip's own idiom), given
 the selection. `mark!(w.strip, Dirty.LAYOUT)` because a new caption is a
 new strip extent.
 """
-function add_tab!(w::Tabs, title::AbstractString, panel::Widget)::Int
-    push!(w.strip.titles, String(title))
+function add_tab!(w::Tabs, title::TextLike, panel::Widget)::Int
+    push!(w.strip.titles, convert(RichText, title))
     invoke(mount!, Tuple{Widget,Widget}, w, panel)
     _sp_box!(panel, BoxPatch(; grow = 1f0))
     i = length(w.strip.titles)

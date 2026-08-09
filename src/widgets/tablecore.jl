@@ -141,7 +141,7 @@ than `text_width` on a 100 000-character cell. A 10 KB description
 column would otherwise cost 10 KB of grapheme iteration per measured
 cell to discover a fact `truncate_width` already knows. Pure. Internal.
 """
-_tc_measure(s::AbstractString, cap::Int)::Int =
+_tc_measure(s::TextLike, cap::Int)::Int =
     text_width(truncate_width(s, cap))
 
 """
@@ -154,6 +154,15 @@ codeunits and the comparison is exact. Pure. Internal.
 """
 _tc_truncated(t::SubString{String}, s::AbstractString)::Bool =
     ncodeunits(t) < ncodeunits(s)
+
+"""
+True when truncating `s` to `t` dropped something. The `RichText`
+reading of the rule above: `truncate_width` yields a PREFIX, so
+comparing the total text is comparing the same thing the string method
+compares -- the styling cannot differ without the text differing first.
+"""
+_tc_truncated(t::RichText, s::RichText)::Bool =
+    ncodeunits(plain(t)) < ncodeunits(plain(s))
 
 # --- the type lattice -------------------------------------------------
 
@@ -1493,14 +1502,14 @@ needs it for the selection anyway), so this is IDENTICAL for `Table` and
 `w.cell` is a CONCRETE field of a parametric struct, so this is a STATIC
 dispatch. Internal.
 """
-_tc_cell_text(w::RowsWidget, src::Int, j::Int)::AbstractString =
+_tc_cell_text(w::RowsWidget, src::Int, j::Int)::TextLike =
     w.cell(w.rows[src], j)
 
 """
 The header text of column `j`. `grid_of(w).cols[j].header` by default;
 `DataTable` overrides to add its indicator. Internal.
 """
-_tc_header_text(w::RowsWidget, j::Int)::AbstractString =
+_tc_header_text(w::RowsWidget, j::Int)::TextLike =
     grid_of(w).cols[j].header
 
 """

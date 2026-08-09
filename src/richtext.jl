@@ -91,6 +91,18 @@ RichText(text::AbstractString, style::Style = STYLE_NONE)::RichText =
     RichText([TextRun(String(text), style)])
 
 """
+What a widget will accept where it wants one line of text.
+
+The seam every text-producing callback is typed against: a `format`, a
+`cell` or a caption may return either spelling, and the widget neither
+converts eagerly -- which would allocate a `RichText` per row per frame
+for the overwhelmingly common plain case -- nor grows a second code
+path. `text_width`, `truncate_width` and the painters all take this
+union, so the choice is the caller's and costs nothing when unused.
+"""
+const TextLike = Union{AbstractString,RichText}
+
+"""
 A plain string IS a `RichText` of one unstyled run.
 
 This method is what keeps `label.text[] = "hi"` -- spelled verbatim in
