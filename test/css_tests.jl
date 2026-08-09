@@ -554,3 +554,23 @@ end
     @test length(parse(Stylesheet, "A { gap: 1; }").rules) == 1
     @test_throws CssParseError parse(Selector, "A { }")
 end
+
+@testitem "css: the border shorthand takes a theme token" begin
+    using ManyUI
+
+    # The shorthand parsed its colour itself and so did not accept
+    # `var(--name)`, unlike `color` and `background`. Found by building
+    # a screen, not by reading the parser.
+    ss = parse_css("Container { border: solid var(--accent); }")
+    b = ss.rules[1].box.border
+    @test b !== nothing
+    @test b.kind === BorderKind.SOLID
+    @test b.style.fg === token(:accent)
+
+    # A literal colour still works, and so does a bare kind.
+    @test parse_css("C { border: round #ff0000; }").rules[1].box.border.style.fg ==
+          rgb(0xff, 0, 0)
+    @test parse_css("C { border: solid; }").rules[1].box.border.kind ===
+          BorderKind.SOLID
+    @test_throws CssParseError parse_css("C { border: solid var(--nope); }")
+end

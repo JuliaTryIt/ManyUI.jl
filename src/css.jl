@@ -463,7 +463,10 @@ function _border(v::AbstractString)::Border
     k = _enum(BorderKind.T, t[1:prevind(t, sp)], "border")
     rest = _squeeze(t[nextind(t, sp):end])
     isempty(rest) && return Border(k, STYLE_NONE)
-    return Border(k, Style(fg = parse(Color, rest)))
+    # `_color` and not `parse(Color, ...)`: the border shorthand must
+    # accept `var(--accent)` like every other place a colour is named.
+    # It did not, which a rebuilt screen found and a unit test had not.
+    return Border(k, Style(fg = _color(rest)))
 end
 
 """
