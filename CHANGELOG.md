@@ -42,6 +42,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plain` returns the text with the styling dropped, and a plain string
   converts to a `RichText` implicitly, so `label.text[] = "hi"` --
   spelled verbatim in `reactive.jl`'s own docstring -- keeps working.
+- `ProgressList` and `ProgressItem`: a column of captioned bars. A ROW
+  IS NOT A WIDGET, the seam `List` and the table widgets already take,
+  so a hundred tasks are a `Vector` of a hundred items and ONE node --
+  composing this out of a hundred `ProgressBar`s would put a hundred
+  nodes on the tree to show a hundred numbers. It overrides
+  `content_extent`, so a `Scrollbar` reports on it with no new code.
+- The label column's AUTO width measures EVERY item, unlike a table's
+  AUTO column which samples. The two differ because the cost differs: a
+  caption is short and a progress list is a handful of rows, where a
+  table guards against a hundred thousand. Sampling here would let the
+  column change width as the list scrolled, and every bar would jump
+  sideways.
+- `Dialog` and `dialog_size`. NOT a new widget type: a dialog is a
+  captioned `Container` holding a message and a row of `Button`s, and
+  every part of that already existed. What did not exist is the
+  arrangement and the SIZE it needs, so that is what these two are --
+  the popup layer takes a declared size rather than measuring the
+  content, so guessing one line for a long question shows as a clipped
+  one. `dialog_size` wraps the message to the width it settles on.
+  Modality is not here either: `Popup(...; modal = true)` supplies it,
+  because it is a property of the layer and not of what is on it.
 - The `:focus` and `:focus-within` pseudo-classes, so a focus ring is a
   STYLESHEET RULE instead of a branch in every widget's `render!`.
   `.pane:focus-within { border: solid cyan; }` is the whole of what a
