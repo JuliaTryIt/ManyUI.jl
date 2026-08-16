@@ -1,7 +1,7 @@
 name = "ManyUI"
 uuid = "4f14d67d-91c5-4d6b-929d-6ac291535b21"
-authors = ["Sebastien Celles <s.celles@gmail.com>"]
 version = "0.1.0"
+authors = ["Sebastien Celles <s.celles@gmail.com>"]
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
@@ -15,7 +15,7 @@ Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 Aqua = "0.8"
 DocStringExtensions = "0.9"
 InlineStrings = "1"
-JuliaSyntaxHighlighting = "1"
+JuliaSyntaxHighlighting = "1, 0.1"
 Markdown = "1"
 REPL = "1"
 Test = "1"
