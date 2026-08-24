@@ -32,12 +32,12 @@ open_popup!(app, Popup(dialog, owner, Size(40, 12);
 ## The Ecosystem
 
 The ManyUI framework is divided into several composable packages:
-- **[ManyUI.jl](https://github.com/s-celles/ManyUI.jl)** (Core framework)
-- **[ManyUITUI.jl](https://github.com/s-celles/ManyUITUI.jl)** (Terminal TUI backend)
-- **[ManyUIWeb.jl](https://github.com/s-celles/ManyUIWeb.jl)** (Web backend)
-- **[ManyUICImGui.jl](https://github.com/s-celles/ManyUICImGui.jl)** (Dear ImGui desktop backend, in development)
-- **[ManyUICLI.jl](https://github.com/s-celles/ManyUICLI.jl)** (Command-line generator)
-- **[ManyUIDemos.jl](https://github.com/s-celles/ManyUIDemos.jl)** (Showcase and examples)
+- **[ManyUI.jl](https://github.com/juliatryit/ManyUI.jl)** (Core framework)
+- **[ManyUITUI.jl](https://github.com/juliatryit/ManyUITUI.jl)** (Terminal TUI backend)
+- **[ManyUIWeb.jl](https://github.com/juliatryit/ManyUIWeb.jl)** (Web backend)
+- **[ManyUICImGui.jl](https://github.com/juliatryit/ManyUICImGui.jl)** (Dear ImGui desktop backend, in development)
+- **[ManyUICLI.jl](https://github.com/juliatryit/ManyUICLI.jl)** (Command-line generator)
+- **[ManyUIDemos.jl](https://github.com/juliatryit/ManyUIDemos.jl)** (Showcase and examples)
 
 ## Testing
 
