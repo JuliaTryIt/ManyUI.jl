@@ -11,7 +11,7 @@ This repository (`ManyUI.jl`) is the core engine of the framework. It defines th
 
 The complete documentation for the ManyUI ecosystem, including tutorials, API references, and architecture overviews, is hosted centrally:
 
-👉 **[Read the Documentation (ManyUIDoc)](https://s-celles.github.io/ManyUIDoc.jl/)**
+👉 **[Read the Documentation (ManyUIDoc)](https://juliatryit.github.io/ManyUIDoc.jl/)**
 
 ## Installation
 
