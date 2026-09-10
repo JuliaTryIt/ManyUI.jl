@@ -42,3 +42,11 @@ function _catch_error!(w::ErrorBoundary, f)::Bool
         return false
     end
 end
+
+"""
+The guarded widget, which lives in a field rather than in `node.children`.
+
+Without this a backend walking the mounted children finds nothing and the
+boundary renders empty — hiding exactly the content it exists to protect.
+"""
+ManyUI.content_children(w::ErrorBoundary) = ManyUI.Widget[w.child]

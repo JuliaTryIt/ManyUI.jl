@@ -349,6 +349,28 @@ asked of every node on every frame.
 border_title(::Widget)::RichText = RICHTEXT_EMPTY
 
 """
+    content_children(w) -> Vector{Widget}
+
+The widgets that make up `w`'s content — its mounted children by default.
+
+A seam, and for the same reason `border_title` is one: a backend cannot see
+content a widget keeps in a FIELD. `ErrorBoundary` guards a widget it stores in
+`child` and mounts nothing, so a backend walking `node.children` finds an empty
+box and the guarded content disappears — silently, because the element is still
+emitted, just empty.
+
+Override this on any widget that holds child WIDGETS outside `node.children`, and
+every backend sees them without needing to know the type. It cannot help a widget
+whose content is DATA rather than widgets (`Static`'s `RichText`, `Sparkline`'s
+values): those need a rendering, not a traversal, and a backend must handle them
+explicitly.
+
+The default returns the children vector ITSELF, not a copy: this is asked of
+every node on every frame.
+"""
+content_children(w::Widget) = node(w).children
+
+"""
 Where `border_title(w)` sits along the top edge: `Align.START`,
 `Align.CENTER` or `Align.END`. `Align.START` by default.
 """

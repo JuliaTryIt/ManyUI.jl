@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`content_children(w)`** — a seam naming the widgets that make up a widget's
+  content, its mounted children by default. A backend cannot see content a
+  widget keeps in a **field**: `ErrorBoundary` guards a widget stored in `child`
+  and mounts nothing, so a backend walking `node.children` rendered an empty box
+  and the guarded content disappeared — silently, since the element was still
+  emitted, just blank.
+
+  Override it on any widget holding child widgets outside `node.children` and
+  every backend sees them without knowing the type. It deliberately does not try
+  to help a widget whose content is *data* rather than widgets — `Static`'s
+  `RichText`, `Sparkline`'s values — because those need a rendering, not a
+  traversal.
+
+
+### Added
+
 - `RichText` and `TextRun`: one line of text whose style varies along
   it. A `Style` is per-widget and comes from the cascade; this is the
   escape hatch for the styled things that are not nodes -- the key in a
